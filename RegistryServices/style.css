@@ -1,0 +1,209 @@
+/******************************************************************************
+    General Category
+ ******************************************************************************/
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
+}
+
+body {
+    background: #edeaea
+}
+
+.page-Content {
+    padding: 25px;
+    margin-left: 80px;
+}
+
+/******************************************************************************
+    Sidebar Styling
+ ******************************************************************************/
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 75px;
+    z-index: 1;
+    background: #000033;
+    overflow-x: hidden;
+    padding-top: 10px;
+    transition: 0.5s ease;
+    box-shadow: 0 0 10px rgba(0,0,0,0);
+}
+
+.sidebar:hover {
+    width: 450px;
+    transition: 0.5s ease;
+}
+
+.sidebar ul {
+    position: relative;
+    height: 97vh;
+}
+
+.sidebar ul li {
+    list-style: none;
+    margin: 5px 0;
+}
+
+.sidebar ul li:hover {
+    background: #A9A9D0;
+    transition: 0.15s ease;
+}
+
+.sidebar ul li a {
+    position: relative;
+    display: flex;
+    white-space: nowrap;
+    text-decoration: none;
+    color: #fff;
+}
+
+.sidebar ul li .logo {
+    margin-bottom: 80px;
+}
+
+.sidebar ul li .logo .text {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.sidebar ul li:last-child {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+}
+
+.sidebar ul li a .icon {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-width: 75px;
+    height: 60px;
+    font-size: 22px;
+}
+
+.sidebar ul li a .text {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 60px;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    font-weight: 500;
+}
+
+.child-element
+{
+    padding-left: 60px;
+}
+
+/******************************************************************************
+    List Styling
+ ******************************************************************************/
+
+ #myInput {
+    background-image: url('/css/searchicon.png'); /* Add a search icon to input */
+    background-position: 10px 12px; /* Position the search icon */
+    background-repeat: no-repeat; /* Do not repeat the icon image */
+    width: 100%; /* Full-width */
+    font-size: 16px; /* Increase font-size */
+    padding: 12px 20px 12px 40px; /* Add some padding */
+    border: 1px solid #ddd; /* Add a grey border */
+    margin-bottom: 12px; /* Add some space below the input */
+  }
+  
+  #myTable {
+    border-collapse: collapse; /* Collapse borders */
+    width: 100%; /* Full-width */
+    border: 1px solid #ddd; /* Add a grey border */
+    font-size: 14px; /* Reduce font size */
+    table-layout: auto; /* Allow columns to adjust width automatically */
+  }
+  
+  #myTable th, #myTable td {
+    text-align: left; /* Left-align text */
+    padding: 8px; /* Reduce padding */
+  }
+  
+  #myTable tr {
+    /* Add a bottom border to all table rows */
+    border-bottom: 1px solid #ddd;
+  }
+  
+  #myTable tr.header, #myTable tr:hover {
+    /* Add a grey background color to the table header and on hover */
+    background-color: #f1f1f1;
+  }
+
+.view-button {
+    padding: 5px 10px;
+    font-size: 12px;
+    color: #fff;
+    background-color: #F4A261; /* Updated to yellow */
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.view-button:hover {
+    background-color: #E68A3F; /* Slightly darker shade for hover effect */
+}
+
+.filter-container {
+    display: flex;
+    align-items: center; /* Vertically align items */
+    gap: 15px; /* Add spacing between elements */
+    margin-bottom: 20px; /* Add spacing below the filter row */
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+}
+
+.filter-container input[type="text"],
+.filter-container select {
+    flex: 1; /* Ensure all elements take equal width */
+    min-width: 200px; /* Set a minimum width for smaller screens */
+    padding: 10px; /* Add padding for better usability */
+    font-size: 14px; /* Consistent font size */
+    border: 1px solid #ccc; /* Add a light border */
+    border-radius: 4px; /* Rounded corners */
+    height: 40px; /* Set a consistent height for all elements */
+    box-sizing: border-box; /* Ensure padding doesn't affect height */
+    background-color: #fff; /* Ensure consistent background color */
+}
+
+.filter-container input[type="text"] {
+    background-image: url('/css/searchicon.png'); /* Add a search icon to input */
+    background-position: 10px center; /* Position the search icon */
+    background-repeat: no-repeat; /* Do not repeat the icon image */
+    padding-left: 40px; /* Add space for the search icon */
+}
+
+#pagination-controls {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: 10px;
+    gap: 10px;
+    font-size: 14px;
+}
+
+#pagination-controls select,
+#pagination-controls button {
+    padding: 5px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+    cursor: pointer;
+}
+
+#pagination-controls button:disabled {
+    background-color: #f1f1f1;
+    cursor: not-allowed;
+}
