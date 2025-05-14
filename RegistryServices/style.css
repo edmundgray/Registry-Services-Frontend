@@ -108,44 +108,63 @@ body {
  ******************************************************************************/
 
  #myInput {
-    background-image: url('/css/searchicon.png'); /* Add a search icon to input */
-    background-position: 10px 12px; /* Position the search icon */
-    background-repeat: no-repeat; /* Do not repeat the icon image */
-    width: 100%; /* Full-width */
-    font-size: 16px; /* Increase font-size */
-    padding: 12px 20px 12px 40px; /* Add some padding */
-    border: 1px solid #ddd; /* Add a grey border */
-    margin-bottom: 12px; /* Add some space below the input */
+    background-image: url('/css/searchicon.png');
+    background-position: 10px 12px;
+    background-repeat: no-repeat;
+    width: 100%;
+    font-size: 12px;
+    padding: 12px 20px 12px 40px;
+    border: 1px solid #ddd;
+    margin-bottom: 12px;
   }
   
   #myTable {
-    border-collapse: collapse; /* Collapse borders */
-    width: 100%; /* Full-width */
-    border: 1px solid #ddd; /* Add a grey border */
-    font-size: 14px; /* Reduce font size */
-    table-layout: auto; /* Allow columns to adjust width automatically */
+    border-collapse: collapse;
+    width: 100%;
+    border: 1px solid #ddd;
+    font-size: 12px;
+    table-layout: auto;
   }
   
   #myTable th, #myTable td {
-    text-align: left; /* Left-align text */
-    padding: 8px; /* Reduce padding */
+    text-align: left;
+    padding: 8px;
   }
   
   #myTable tr {
-    /* Add a bottom border to all table rows */
     border-bottom: 1px solid #ddd;
   }
   
   #myTable tr.header, #myTable tr:hover {
-    /* Add a grey background color to the table header and on hover */
     background-color: #f1f1f1;
   }
+
+#detailsTable {
+    border-collapse: collapse;
+    width: 100%;
+    border: 1px solid #ddd;
+    font-size: 12px;
+    table-layout: auto;
+}
+
+#detailsTable th, #detailsTable td {
+    text-align: left;
+    padding: 8px;
+}
+
+#detailsTable tr {
+    border-bottom: 1px solid #ddd;
+}
+
+#detailsTable tr:hover {
+    background-color: #f1f1f1;
+}
 
 .view-button {
     padding: 5px 10px;
     font-size: 12px;
     color: #fff;
-    background-color: #F4A261; /* Updated to yellow */
+    background-color: #F4A261;
     border: none;
     border-radius: 4px;
     cursor: pointer;
@@ -153,35 +172,35 @@ body {
 }
 
 .view-button:hover {
-    background-color: #E68A3F; /* Slightly darker shade for hover effect */
+    background-color: #E68A3F;
 }
 
 .filter-container {
     display: flex;
-    align-items: center; /* Vertically align items */
-    gap: 15px; /* Add spacing between elements */
-    margin-bottom: 20px; /* Add spacing below the filter row */
-    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
 }
 
 .filter-container input[type="text"],
 .filter-container select {
-    flex: 1; /* Ensure all elements take equal width */
-    min-width: 200px; /* Set a minimum width for smaller screens */
-    padding: 10px; /* Add padding for better usability */
-    font-size: 14px; /* Consistent font size */
-    border: 1px solid #ccc; /* Add a light border */
-    border-radius: 4px; /* Rounded corners */
-    height: 40px; /* Set a consistent height for all elements */
-    box-sizing: border-box; /* Ensure padding doesn't affect height */
-    background-color: #fff; /* Ensure consistent background color */
+    flex: 1;
+    min-width: 200px;
+    padding: 10px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    height: 40px;
+    box-sizing: border-box;
+    background-color: #fff;
 }
 
 .filter-container input[type="text"] {
-    background-image: url('/css/searchicon.png'); /* Add a search icon to input */
-    background-position: 10px center; /* Position the search icon */
-    background-repeat: no-repeat; /* Do not repeat the icon image */
-    padding-left: 40px; /* Add space for the search icon */
+    background-image: url('/css/searchicon.png');
+    background-position: 10px center;
+    background-repeat: no-repeat;
+    padding-left: 40px;
 }
 
 #pagination-controls {
@@ -206,4 +225,141 @@ body {
 #pagination-controls button:disabled {
     background-color: #f1f1f1;
     cursor: not-allowed;
+}
+
+.details-container {
+    padding: 20px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin: 20px;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/******************************************************************************
+    Styling for the Tabs in viewSpecification.html
+ ******************************************************************************/
+.tabs {
+    display: flex;
+    margin-top: 20px;
+    border-bottom: 2px solid #ddd;
+}
+
+.tab-button {
+    padding: 10px 20px;
+    cursor: pointer;
+    background-color: #f9f9f9;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+}
+
+.tab-button:hover {
+    background-color: #f1f1f1;
+}
+
+.tab-button.active {
+    border-bottom: 2px solid #007BFF;
+    font-weight: bold;
+    background-color: #fff;
+}
+
+/* Tab content styling */
+.tab-content {
+    display: none;
+    padding: 20px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-top: none;
+    margin-top: -1px;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.info-section {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    margin-top: 20px;
+    margin: 20px 0;
+}
+
+.info-table {
+    flex: 1;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    padding: 15px;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+.info-table h3 {
+    margin-bottom: 15px;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 5px;
+}
+
+.info-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 10px; /* Adds spacing between rows */
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.info-row label {
+    width: 250px; /* Increased width to give more room for longer labels */
+    font-weight: bold;
+}
+
+.info-row span {
+    flex: 1; /* Ensures the link takes up the remaining space */
+    flex: 1;
+}
+
+.info-row a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.info-row a:hover {
+    text-decoration: underline;
+}
+
+.info-table table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.info-table th, .info-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.info-table th {
+    background-color: #f9f9f9;
+    font-weight: bold;
+}
+
+.info-table tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+.info-table tr:hover {
+    background-color: #f1f1f1;
 }

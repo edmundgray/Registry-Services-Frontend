@@ -119,58 +119,44 @@ document.addEventListener("DOMContentLoaded", function ()
     // Populating the table
     function populateTable(data) {
         const table = document.getElementById("myTable");
-        // Don't forget to clear the table before populating it
         table.innerHTML = "";
 
-        // Dynamically create the header row based on the keys of the first object in the data array
-        if (data.length > 0) 
-        {
+        if (data.length > 0) {
             const headerRow = table.insertRow(0);
-            const headers = Object.keys(data[0]);
+            const headers = Object.keys(data[0]).filter(header => header !== "IDs");
 
-            headers.forEach(header => 
-            {
+            headers.forEach(header => {
                 const th = document.createElement("th");
                 th.textContent = header;
                 headerRow.appendChild(th);
             });
 
-            // Calculating the start and end indices for the current page
             const startIndex = (currentPage - 1) * rowsPerPage;
             const endIndex = Math.min(startIndex + rowsPerPage, data.length);
 
-            // Populating the table rows with data for the current page
-            for (let i = startIndex; i < endIndex; i++) 
-            {
+            for (let i = startIndex; i < endIndex; i++) {
                 const entry = data[i];
                 const row = table.insertRow(-1);
 
-                headers.forEach(header => 
-                {
+                headers.forEach(header => {
                     const cell = row.insertCell(-1);
 
-                    if (header === "View") 
-                    {
+                    if (header === "View") {
                         const button = document.createElement("button");
-
                         button.textContent = "View";
                         button.className = "view-button";
-                        button.addEventListener("click", () => 
-                        {
-                            alert(JSON.stringify(entry, null, 2));
+                        button.addEventListener("click", () => {
+                            const queryParams = new URLSearchParams(entry).toString();
+                            window.location.href = `viewSpecification.html?${queryParams}`;
                         });
-
                         cell.appendChild(button);
-                    }
-                    else 
-                    {
+                    } else {
                         cell.textContent = entry[header];
                     }
                 });
             }
         }
 
-        // Update the pagination controls
         const totalPages = Math.ceil(data.length / rowsPerPage);
         currentPageSpan.textContent = currentPage;
         prevPageButton.disabled = currentPage === 1;
