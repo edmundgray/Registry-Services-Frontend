@@ -23,7 +23,6 @@ function updateVisibility()
     Log in/out functionality 
     For the Core Invoice Model & Extension Component Data Model specifically
  ******************************************************************************/
-    // Select the two and ensure their 'child-element' class is removed when logged out and restored when logged in
     const coreInvoiceModel = document.querySelector("li:nth-of-type(6)");
     const extensionComponent = document.querySelector("li:nth-of-type(7)");
     
@@ -47,7 +46,7 @@ function updateVisibility()
  ******************************************************************************/
 let currentPage = 1;
 let rowsPerPage = 10;
-let filteredData = []; // <-- Add this line
+let filteredData = [];
 
 document.addEventListener("DOMContentLoaded", function () 
 {
@@ -106,8 +105,8 @@ document.addEventListener("DOMContentLoaded", function ()
         .then(data => 
         {
             originalData = data;
-            filteredData = data; // <-- Add this line
-            populateTable(filteredData); // <-- Use filteredData here
+            filteredData = data;
+            populateTable(filteredData);
         })
         .catch(error => console.error("Error loading JSON:", error));
 
@@ -119,15 +118,18 @@ document.addEventListener("DOMContentLoaded", function ()
     document.getElementById("extensionComponentFilter").addEventListener("change", applyFilters);
 
     // Populating the table
-    function populateTable(data) {
+    function populateTable(data) 
+    {
         const table = document.getElementById("myTable");
         table.innerHTML = "";
 
-        if (data.length > 0) {
+        if (data.length > 0) 
+        {
             const headerRow = table.insertRow(0);
             const headers = Object.keys(data[0]).filter(header => header !== "IDs");
 
-            headers.forEach(header => {
+            headers.forEach(header => 
+            {
                 const th = document.createElement("th");
                 th.textContent = header;
                 headerRow.appendChild(th);
@@ -136,23 +138,31 @@ document.addEventListener("DOMContentLoaded", function ()
             const startIndex = (currentPage - 1) * rowsPerPage;
             const endIndex = Math.min(startIndex + rowsPerPage, data.length);
 
-            for (let i = startIndex; i < endIndex; i++) {
+            for (let i = startIndex; i < endIndex; i++) 
+            {
                 const entry = data[i];
                 const row = table.insertRow(-1);
 
-                headers.forEach(header => {
+                headers.forEach(header => 
+                {
                     const cell = row.insertCell(-1);
 
-                    if (header === "View") {
+                    if (header === "View") 
+                    {
                         const button = document.createElement("button");
+
                         button.textContent = "View";
                         button.className = "view-button";
-                        button.addEventListener("click", () => {
+                        button.addEventListener("click", () => 
+                        {
                             const queryParams = new URLSearchParams(entry).toString();
                             window.location.href = `viewSpecification.html?${queryParams}`;
                         });
+
                         cell.appendChild(button);
-                    } else {
+                    } 
+                    else 
+                    {
                         cell.textContent = entry[header];
                     }
                 });
@@ -160,6 +170,7 @@ document.addEventListener("DOMContentLoaded", function ()
         }
 
         const totalPages = Math.ceil(data.length / rowsPerPage);
+        
         currentPageSpan.textContent = currentPage;
         prevPageButton.disabled = currentPage === 1;
         nextPageButton.disabled = currentPage === totalPages;

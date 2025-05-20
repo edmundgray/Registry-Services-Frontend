@@ -317,7 +317,7 @@ body {
     display: flex;
     flex-direction: row;
     align-items: center;
-    margin-bottom: 10px; /* Adds spacing between rows */
+    margin-bottom: 10px;
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -325,12 +325,12 @@ body {
 }
 
 .info-row label {
-    width: 250px; /* Increased width to give more room for longer labels */
+    width: 250px;
     font-weight: bold;
 }
 
 .info-row span {
-    flex: 1; /* Ensures the link takes up the remaining space */
+    flex: 1;
     flex: 1;
 }
 
@@ -402,19 +402,20 @@ body {
     background-color: #f3f3f3;
 }
 
-/* Highlight ONLY parent and show more rows that have children in green */
 .styled-table .has-children-parent-row,
 .styled-table .has-children-show-more-row {
-    background-color: #217a36 !important; /* dark green */
+    background-color: #217a36 !important;
     color: #fff;
 }
 
-/* Ensure child rows that are also parents get the dark green background */
 .styled-table tr.child-row.has-children-parent-row td {
     background-color: #217a36 !important;
     color: #fff;
 }
 
+/******************************************************************************
+    Styling for the Tooltip in coreInvoiceModel.html
+ ******************************************************************************/
 .semantic-tooltip {
     margin-left: 6px;
     color: #F4A261;
@@ -427,16 +428,19 @@ body {
     color: #d18c54;
 }
 
+/******************************************************************************
+    Styling for the Child Row in coreInvoiceModel.html
+ ******************************************************************************/
 .child-row td {
-    padding-left: 32px; /* Indent child rows */
-    background: #b9f5c1 !important; /* Light green for child rows */
+    padding-left: 32px;
+    background: #b9f5c1 !important;
 }
 
 .show-more-btn {
     display: inline-block;
     white-space: nowrap;
     min-width: 90px;
-    padding: 4px 14px;      /* Reduce vertical padding */
+    padding: 4px 14px;
     font-size: 12px;
     color: #fff;
     background-color: #F4A261;
@@ -447,12 +451,59 @@ body {
     box-shadow: 0 2px 8px rgba(244, 162, 97, 0.15);
     transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
     outline: none;
-    vertical-align: middle; /* Align with text baseline */
+    vertical-align: middle;
 }
 
 .styled-table td:last-child {
-    text-align: center;      /* Center the button horizontally */
-    vertical-align: middle;  /* Center the button vertically */
+    text-align: center;
+    vertical-align: middle;
     padding-top: 0;
     padding-bottom: 0;
+}
+
+/******************************************************************************
+    Styling for the Data Table in coreInvoiceModel.html
+ ******************************************************************************/
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.data-table th, .data-table td {
+    border: 1px solid #d0d8e4;
+    padding: 8px;
+    text-align: left;
+}
+.data-table th {
+    color: #000000;
+}
+.centered-cell {
+    text-align: center;
+    color: #555;
+}
+
+/******************************************************************************
+    Styling for the Select Dropdown in coreInvoiceModel.html
+ ******************************************************************************/
+select {
+    padding: 8px 12px;
+    border: 1px solid #d0d8e4;
+    border-radius: 4px;
+    font-size: 1rem;
+    color: #000000;
+    margin-top: 4px;
+    margin-bottom: 8px;
+    transition: border 0.2s, box-shadow 0.2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+
+select:focus {
+    border-color: #888;
+    outline: none;
+    box-shadow: 0 0 0 2px #d0d8e4;
+}
+
+select option:hover,
+select option:checked {
+    background: #22336b;
+    color: #fff;
 }

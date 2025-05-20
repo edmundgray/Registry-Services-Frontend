@@ -9,36 +9,6 @@
         <script src="../JS/javascript.js"></script>
         
         <title>Registry Services</title>
-        
-        <style>
-            .page-Content 
-            {
-                font-size: 0.9em;
-            }
-            .styled-table th,
-            .styled-table td 
-            {
-                padding: 10.8px 13.5px;
-                font-size: 0.9em;
-            }
-            .styled-table thead tr 
-            {
-                font-size: 1.2em;
-            }
-            .fa-solid 
-            {
-                font-size: 1.2em;
-            }
-            .show-more-btn 
-            {
-                font-size: 0.95em !important;
-                padding: 4px 12px !important;
-            }
-            .table-container 
-            {
-                font-size: 0.9em;
-            }
-        </style>
     </head>
     <body>
 <!----------------------------------------------------------------------------
@@ -113,32 +83,70 @@
         </div>
 
 <!----------------------------------------------------------------------------
-        Main Content
+        The Table
   ------------------------------------------------------------------------------>
         <div class="page-Content">
-            <h1><i class="fa-solid fa-car"></i> Core Invoice Model</h1>
-
-            <div class="table-container">
-                <table id="coreInvoiceTable" class="styled-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Level</th>
-                            <th>Cardinality</th>
-                            <th>Business Term</th>
-                            <th>Usage Note</th>
-                            <th>Business Rules</th>
-                            <th>Data Type</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Rows will be populated by JavaScript in coreInvoiceModel.js -->
-                    </tbody>
-                </table>
-            </div>
+            <h1><i class="fa-solid fa-trailer"></i> Extension Component Data Model</h1>
+            <br/>
+            <span><b>Select the required Extension Component and view its required elements</b></span>
+            <br/><br/>
+            <select id="extensionComponentSelect" onchange="updateExtensionTable()">
+                <option value="" selected>Select an Extension Component</option>
+                <option>Invoice Reminder</option>
+                <option>Proforma Invoice</option>
+                <option>Calculate VAT at line level</option>
+                <option>More than 2 decimals on amounts at line level</option>
+                <option>Grouping invoice lines by using sublines</option>
+                <option>Split Payments</option>
+                <option>Generic Trading Party</option>
+                <option>Using multiple languages</option>
+                <option>Received and Accepted Quantity</option>
+                <option>Delivery Information</option>
+                <option>Payment Terms Extension Component</option>
+                <option>Tax and Payment Currency</option>
+            </select>
+            
+            <br/>
+            
+            <table class="data-table" id="extensionComponentTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Level</th>
+                        <th>Cardinality</th>
+                        <th>Business Term</th>
+                        <th>Usage Note</th>
+                        <th>Justification</th>
+                        <th>Data Type</th>
+                        <th>Type of Extension</th>
+                    </tr>
+                </thead>
+                <tbody id="extensionTableBody">
+                    <tr>
+                        <td colspan="8" class="centered-cell">None selected</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
-        <script src="../JS/coreInvoiceModel.js"></script>
-        
+
+<!----------------------------------------------------------------------------
+        Javascript for the table
+  ------------------------------------------------------------------------------>
+        <script>
+        function updateExtensionTable() 
+        {
+            const select = document.getElementById('extensionComponentSelect');
+            const tbody = document.getElementById('extensionTableBody');
+            
+            if (select.value === "") 
+            {
+                tbody.innerHTML = `<tr><td colspan="8" class="centered-cell">None selected</td></tr>`;
+            } 
+            else 
+            {
+                tbody.innerHTML = `<tr><td colspan="8" class="centered-cell">Under development</td></tr>`;
+            }
+        }
+        </script>
     </body>
 </html>
