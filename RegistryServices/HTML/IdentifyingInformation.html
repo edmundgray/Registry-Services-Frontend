@@ -16,11 +16,11 @@
             .info-row input[type="date"],
             .info-row select {
                 width: 100%;
-                max-width: 243px;
-                min-width: 91px;
+                max-width: 240px;
+                min-width: 90px;
                 box-sizing: border-box;
-                padding: 4.75px;
-                font-size: 0.722rem;
+                padding: 4.5px;
+                font-size: 0.75rem;
             }
             .info-row label 
             {
@@ -33,8 +33,8 @@
             }
             .info-table h3 
             {
-                font-size: 0.817rem;
-                margin-bottom: 7.6px;
+                font-size: 0.8rem;
+                margin-bottom: 7.5px;
             }
             .info-row 
             {
@@ -48,6 +48,22 @@
             .page-Content 
             {
                 padding: 9.5px 1.52vw 1.52vw 1.52vw !important;
+            }
+            #contactInfo 
+            {
+                max-width: 240px;
+                width: 100%;
+                box-sizing: border-box;
+                font-size: 0.75rem;
+                padding: 4.5px;
+            }
+            #purpose 
+            {
+                max-width: 240px;
+                width: 100%;
+                box-sizing: border-box;
+                font-size: 0.75rem;
+                padding: 4.5px;
             }
             @media (max-width: 600px) 
             {
@@ -91,7 +107,7 @@
                     </a>
                 </li>
                 <li class="protected">
-                    <a href="#">
+                    <a href="mySpecifications.html">
                         <span class="icon"><i class="fa-solid fa-folder"></i></span>
                         <span class="text">My Specifications</span>
                     </a>
@@ -132,7 +148,6 @@
                         <span class="text">Specification Preview</span>
                     </a>
                 </li>
-                <!-- Logging in/out-->
                 <li id="loginLogoutItem">
                     <a href="#" onclick="toggleLogin()">
                         <span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span>
@@ -154,12 +169,14 @@
             </p>
 
 <!----------------------------------------------------------------------------
-        The Form
+        (1/2) The Form
+        General Information
   ------------------------------------------------------------------------------>            
-            <form id="identifyingForm" class="info-table" style="max-width: 800px; margin-left: 0;">
+            <form id="identifyingForm" class="info-table" style="max-width: 600px; margin-left: 0;">
                 <div style="background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #0001; padding: 24px 24px 10px 24px; margin-bottom: 30px;">
                     <h3>General Information</h3>
                     
+                    <!-- Specification Name (Required) -->
                     <div class="info-row">
                         <label for="specName">*Specification name:
                             <span class="semantic-tooltip" title="Enter the official name of the specification.">?</span>
@@ -167,6 +184,7 @@
                         <input type="text" id="specName" name="specName" required>
                     </div>
                     
+                    <!-- Governing Entity (Required) -->
                     <div class="info-row">
                         <label for="governingEntity">Governing Entity:
                             <span class="semantic-tooltip" title="Organization or authority responsible for the specification.">?</span>
@@ -174,18 +192,19 @@
                         <input type="text" id="governingEntity" name="governingEntity">
                     </div>
                     
+                    <!-- Contact Info (Required) -->
                     <div class="info-row">
                         <label for="contactInfo">*Contact Information:
                             <span class="semantic-tooltip" title="Provide an email or phone number for contact.">?</span>
                         </label>
-                        <input type="text" id="contactInfo" name="contactInfo" required>
+                        <textarea id="contactInfo" name="contactInfo" rows="2" required></textarea>
                     </div>
-                    
+
+                   <!-- Sector (Required) --> 
                     <div class="info-row">
                         <label for="sector">*Sector:
                             <span class="semantic-tooltip" title="Select the sector from the NACE list.">?</span>
                         </label>
-                        
                         <select id="sector" name="sector" required>
                             <option value="">Select Sector</option>
                             <option>Agriculture, Forestry & Fishing</option>
@@ -211,6 +230,7 @@
                         </select>
                     </div>
                     
+                    <!-- Sub Sector (Not Required) -->
                     <div class="info-row">
                         <label for="subSector">Sub Sector:
                             <span class="semantic-tooltip" title="Specify a more detailed sector if applicable.">?</span>
@@ -218,6 +238,7 @@
                         <input type="text" id="subSector" name="subSector">
                     </div>
                     
+                    <!-- Country (Required) -->
                     <div class="info-row">
                         <label for="country">*Country:
                             <span class="semantic-tooltip" title="Select the country using the official EC country codes.">?</span>
@@ -239,24 +260,30 @@
                         </select>
                     </div>
                     
+                    <!-- Purpose (Required) -->
                     <div class="info-row">
                         <label for="purpose">*Purpose:
                             <span class="semantic-tooltip" title="Describe the main purpose of the specification.">?</span>
                         </label>
-                        <input type="text" id="purpose" name="purpose" required>
+                        <textarea id="purpose" name="purpose" rows="3" required></textarea>
                     </div>
                 </div>
-
+<!----------------------------------------------------------------------------
+        (2/2) The Form
+        Technical Information
+  ------------------------------------------------------------------------------>   
                 <div style="background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #0001; padding: 24px 24px 10px 24px;">
                     <h3 style="margin-top:0;">Technical Information</h3>
                     
+                    <!-- Specification Identifier (Required) -->
                     <div class="info-row">
-                        <label for="specId">Specification Identifier:
+                        <label for="specId">*Specification Identifier:
                             <span class="semantic-tooltip" title="A unique identifier for this specification (e.g., internal code or reference).">?</span>
                         </label>
-                        <input type="text" id="specId" name="specId">
+                        <input type="text" id="specId" name="specId" required>
                     </div>
                     
+                    <!-- Specification Version (Not Required) -->
                     <div class="info-row">
                         <label for="specVersion">Specification Version:
                             <span class="semantic-tooltip" title="Version number or label for this specification.">?</span>
@@ -264,6 +291,7 @@
                         <input type="text" id="specVersion" name="specVersion">
                     </div>
                     
+                    <!-- Date of Implementation (Not Required) -->
                     <div class="info-row">
                         <label for="implDate">Date of Implementation:
                             <span class="semantic-tooltip" title="Date when this specification is planned to be or was implemented.">?</span>
@@ -271,6 +299,7 @@
                         <input type="date" id="implDate" name="implDate">
                     </div>
                     
+                    <!-- Core Version (Not Required) -->
                     <div class="info-row">
                         <label for="coreVersion">Core Version:
                             <span class="semantic-tooltip" title="Select the version of the core invoice model this specification is based on.">?</span>
@@ -283,6 +312,7 @@
                         </select>
                     </div>
                     
+                    <!-- Underlying Specification (Not Required) -->
                     <div class="info-row">
                         <label for="underlyingSpec">Underlying Specification:
                             <span class="semantic-tooltip" title="Reference to any underlying or base specification this builds on.">?</span>
@@ -290,6 +320,7 @@
                         <input type="text" id="underlyingSpec" name="underlyingSpec">
                     </div>
                     
+                    <!-- Specification Source Link (Not Required) -->
                     <div class="info-row">
                         <label for="sourceLink">Specification Source Link:
                             <span class="semantic-tooltip" title="A URL to the official source or documentation for this specification.">?</span>
@@ -297,6 +328,7 @@
                         <input type="url" id="sourceLink" name="sourceLink">
                     </div>
                     
+                    <!-- Preferred Syntax (Not Required) -->
                     <div class="info-row">
                         <label for="preferredSyntax">Preferred Syntax:
                             <span class="semantic-tooltip" title="Select the preferred syntax for this specification (e.g., UBL, EDIFACT, JSON).">?</span>
@@ -311,6 +343,7 @@
                     </div>
                 </div>
                 
+                <!-- Save, Cancel & Core Invoice Model Buttons -->
                 <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 30px;">
                     <div>
                         <button type="button" onclick="handleSave()" class="view-button">Save</button>
@@ -328,11 +361,13 @@
         JavaScript for mockup functionality
   ------------------------------------------------------------------------------>
         <script>
+            let isFormDirty = false;
+
             function handleSave() 
             {
                 const form = document.getElementById('identifyingForm');
-
                 if (!form.reportValidity()) return;
+
                 const data = 
                 {
                     "Specification name": form.specName.value,
@@ -352,7 +387,40 @@
                 };
 
                 alert("Saved Information:\n\n" + Object.entries(data).map(([k,v]) => `${k}: ${v}`).join('\n'));
+                isFormDirty = false;
             }
+
+            document.addEventListener('DOMContentLoaded', () => 
+            {
+                const form = document.getElementById('identifyingForm');
+                const elements = form.querySelectorAll('input, textarea, select');
+
+                elements.forEach(element => 
+                {
+                    element.addEventListener('change', () => 
+                    {
+                        isFormDirty = true;
+                    });
+                });
+            });
+
+            window.addEventListener('beforeunload', function (e) 
+            {
+                if (isFormDirty) 
+                {
+                    e.preventDefault();
+                    // This is required because most browsers need it to trigger the confirmation dialog
+                    e.returnValue = '';
+                }
+            });
+
+    document.addEventListener("DOMContentLoaded", function () {
+        let selectedSpec = localStorage.getItem("selectedSpecification");
+
+        if (selectedSpec) {
+            document.getElementById("specName").value = selectedSpec;
+        }
+    });
         </script>
     </body>
 </html>
