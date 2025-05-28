@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
     <head>
         <meta charset="UTF-8">
@@ -8,9 +9,7 @@
         <title>Sliding Sidebar Menu</title>
     </head>
     <body>
-<!----------------------------------------------------------------------------
-        Sidebar
-  ------------------------------------------------------------------------------>
+<!---------------------------------------------------------------------------- Sidebar ----------------------------------------------------------------------------->
         <div class="sidebar">
             <ul>
                 <li>
@@ -38,7 +37,7 @@
                         <span class="icon"><i class="fa-solid fa-file-medical"></i></span>
                         <span class="text">Add New Specification</span>
                     </a>
-                </li class="protected">
+                </li>
                 <li class="child-element protected">
                     <a href="#">
                         <span class="icon"><i class="fa-solid fa-info"></i></span>
@@ -79,9 +78,7 @@
             </ul>
         </div>
 
-<!----------------------------------------------------------------------------
-        The Table
-  ------------------------------------------------------------------------------>
+<!---------------------------------------------------------------------------- Table & Filters ----------------------------------------------------------------------------->
         <div class="page-Content">
             <h1>eInvoicing Registry</h1>
             <br/>
@@ -142,18 +139,103 @@
 
             <div id="pagination-controls">
                 <label for="rowsPerPage">Show</label>
-
                 <select id="rowsPerPage">
                     <option value="10">10</option>
                     <option value="15">15</option>
                     <option value="20">20</option>
                 </select>
-                
                 <span>rows</span>
                 <button id="prevPage">«</button>
                 <span id="currentPage">1</span>
                 <button id="nextPage">»</button>
             </div>
         </div>
+
+        <script>
+        // ======== POPULATE TABLE WITH REAL BACKEND DATA ========
+
+        // TODO: Replace this with your real JWT token from Swagger
+        const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIzIiwidW5pcXVlX25hbWUiOiJqb2huZG9lIiwicm9sZSI6IlVzZXIiLCJVc2VyR3JvdXBJZCI6IjEiLCJuYmYiOjE3NDg0MzUwNzksImV4cCI6MTc0ODQzODY3OSwiaWF0IjoxNzQ4NDM1MDc5LCJpc3MiOiJSZWdpc3RyeUFwaS1TdGFnaW5nIiwiYXVkIjoiUmVnaXN0cnlBcGlDbGllbnQtU3RhZ2luZyAifQ.OlNuw53Ff7pgEhuEjNXRmWgYK72ewHh06BBXJwGprT0";
+
+        // Helper: Render one page of table rows
+        function renderTable(specs) {
+            const table = document.getElementById("myTable");
+            // Table header
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Spec ID</th>
+                        <th>Name</th>
+                        <th>Sector</th>
+                        <th>Version</th>
+                        <th>Country</th>
+                        <th>View</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${specs.map(row => `
+                        <tr>
+                            <td>${row.specificationIdentifier ?? ""}</td>
+                            <td>${row.specificationName ?? ""}</td>
+                            <td>${row.sector ?? ""}</td>
+                            <td>${row.specificationVersion ?? ""}</td>
+                            <td>${row.country ?? ""}</td>
+                            <td><button disabled>View</button></td>
+                        </tr>
+                    `).join("")}
+                </tbody>
+            `;
+        }
+
+        // Pagination logic
+        let currentPage = 1;
+        let rowsPerPage = 10;
+        let totalCount = 0;
+
+        function fetchPage(page = 1, pageSize = 10) {
+            fetch(`https://registryservices-staging.azurewebsites.net/api/specifications?page=${page}&pageSize=${pageSize}`, {
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Accept': 'application/json'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                // If the response has { items: [...], totalCount: N }
+                let specs = Array.isArray(data) ? data : (data.items || data);
+                totalCount = data.totalCount || specs.length || 0;
+                renderTable(specs);
+
+                // Update pagination controls
+                document.getElementById("currentPage").textContent = page;
+            })
+            .catch(err => {
+                document.getElementById("myTable").innerHTML = `<tbody><tr><td colspan="6">Error loading data.</td></tr></tbody>`;
+                console.error("Fetch error", err);
+            });
+        }
+
+        // Event listeners for pagination controls
+        document.getElementById("prevPage").onclick = () => {
+            if (currentPage > 1) {
+                currentPage--;
+                fetchPage(currentPage, rowsPerPage);
+            }
+        };
+        document.getElementById("nextPage").onclick = () => {
+            if (currentPage * rowsPerPage < totalCount) {
+                currentPage++;
+                fetchPage(currentPage, rowsPerPage);
+            }
+        };
+        document.getElementById("rowsPerPage").onchange = e => {
+            rowsPerPage = parseInt(e.target.value, 10);
+            currentPage = 1;
+            fetchPage(currentPage, rowsPerPage);
+        };
+
+        // Initial load
+        fetchPage(currentPage, rowsPerPage);
+        </script>
     </body>
 </html>

@@ -1,7 +1,7 @@
 /******************************************************************************
     Log in/out functionality
     General
- ******************************************************************************/
+******************************************************************************/
 let loggedInStatus = true;
 
 function toggleLogin() 
@@ -22,7 +22,7 @@ function updateVisibility()
 /******************************************************************************
     Log in/out functionality 
     For the Core Invoice Model & Extension Component Data Model specifically
- ******************************************************************************/
+******************************************************************************/
     // Select the two and ensure their 'child-element' class is removed when logged out and restored when logged in
     const coreInvoiceModel = document.querySelector("li:nth-of-type(6)");
     const extensionComponent = document.querySelector("li:nth-of-type(7)");
@@ -44,26 +44,15 @@ function updateVisibility()
 
 /******************************************************************************
     For the List
- ******************************************************************************/
+******************************************************************************/
 let currentPage = 1;
 let rowsPerPage = 10;
+let originalData = [];
+let filteredData = [];
 
 document.addEventListener("DOMContentLoaded", function () 
 {
-    let originalData = 
-    [{
-            "Name": "RetailConnect Billing Rules",
-            "Purpose": "Groups invoice lines and adds settlement plans",
-            "Type": "Extension",
-            "Sector": "Other Service Activities",
-            "Country": "NL",
-            "Implementation Date": "2024-11-18",
-            "Preferred Syntax": "UBL",
-            "Governing Entity": "Retail Invoice Group",
-            "Extension Component": "Grouping Invoice Lines by Sublines & Settlement Plans",
-            "Conformance Level": "Party Core Conformant",
-            "View": "View"
-    }];
+    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIzIiwidW5pcXVlX25hbWUiOiJqb2huZG9lIiwicm9sZSI6IlVzZXIiLCJVc2VyR3JvdXBJZCI6IjEiLCJuYmYiOjE3NDg0MzUwNzksImV4cCI6MTc0ODQzODY3OSwiaWF0IjoxNzQ4NDM1MDc5LCJpc3MiOiJSZWdpc3RyeUFwaS1TdGFnaW5nIiwiYXVkIjoiUmVnaXN0cnlBcGlDbGllbnQtU3RhZ2luZyAifQ.OlNuw53Ff7pgEhuEjNXRmWgYK72ewHh06BBXJwGprT0"; // <-- PUT YOUR JWT TOKEN HERE
 
     const rowsPerPageSelect = document.getElementById("rowsPerPage");
     const prevPageButton = document.getElementById("prevPage");
@@ -99,15 +88,37 @@ document.addEventListener("DOMContentLoaded", function ()
         }
     });
 
-    // Fetch the data and populate the table
-    fetch("mockData.json")
-        .then(response => response.json())
-        .then(data => 
-        {
-            originalData = data;
-            populateTable(data);
-        })
-        .catch(error => console.error("Error loading JSON:", error));
+    // Fetch data from backend API
+    fetch("https://registryservices-staging.azurewebsites.net/api/specifications?page=1&pageSize=100", {
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) throw new Error("Failed to fetch backend data!");
+        return response.json();
+    })
+    .then(data => {
+        // Adapt API fields to table format
+        originalData = data.map(spec => ({
+            "Name": spec.specificationName,
+            "Purpose": spec.purpose,
+            "Type": spec.specificationType,
+            "Sector": spec.sector,
+            "Country": spec.country,
+            "Implementation Date": (spec.dateOfImplementation || "").slice(0, 10),
+            "Preferred Syntax": spec.preferredSyntax,
+            "Registry Status": spec.registrationStatus,
+            "Governing Entity": spec.governingEntity,
+            "Extension Component": spec.coreVersion || spec.extensionComponent || "",
+            "Conformance Level": spec.conformanceLevel,
+            "View": "View"
+        }));
+        filteredData = originalData;
+        populateTable(filteredData);
+    })
+    .catch(error => console.error("Error loading backend data:", error));
 
     // Add event listeners for the filters
     document.getElementById("searchInput").addEventListener("input", applyFilters);
@@ -145,10 +156,7 @@ document.addEventListener("DOMContentLoaded", function ()
                         const button = document.createElement("button");
                         button.textContent = "View";
                         button.className = "view-button";
-                        button.addEventListener("click", () => {
-                            const queryParams = new URLSearchParams(entry).toString();
-                            window.location.href = `viewSpecification.html?${queryParams}`;
-                        });
+                        button.disabled = true; // stays non-functional
                         cell.appendChild(button);
                     } else {
                         cell.textContent = entry[header];
