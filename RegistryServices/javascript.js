@@ -109,12 +109,18 @@ document.addEventListener("DOMContentLoaded", function ()
         })
         .catch(error => console.error("Error loading JSON:", error));
 
-    // Add event listeners for the filters
-    document.getElementById("searchInput").addEventListener("input", applyFilters);
-    document.getElementById("typeFilter").addEventListener("change", applyFilters);
-    document.getElementById("sectorFilter").addEventListener("change", applyFilters);
-    document.getElementById("countryFilter").addEventListener("change", applyFilters);
-    document.getElementById("extensionComponentFilter").addEventListener("change", applyFilters);
+
+    // Event listener to the Search button
+    document.getElementById("searchButton").addEventListener("click", function() {
+        applyFilters();
+    });
+
+    // Optionally, you can also allow pressing Enter in the search input to trigger search:
+    document.getElementById("searchInput").addEventListener("keydown", function(e) {
+        if (e.key === "Enter") {
+            applyFilters();
+        }
+    });
 
     // Populating the table
     function populateTable(data) {

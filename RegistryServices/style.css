@@ -178,29 +178,23 @@ body {
 .filter-container {
     display: flex;
     align-items: center;
-    gap: 15px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 10px;
 }
 
-.filter-container input[type="text"],
+.filter-container input,
 .filter-container select {
-    flex: 1;
-    min-width: 200px;
-    padding: 10px;
-    font-size: 14px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    height: 40px;
-    box-sizing: border-box;
-    background-color: #fff;
+    min-width: 160px;
+    height: 32px;
 }
 
-.filter-container input[type="text"] {
-    background-image: url('/css/searchicon.png');
-    background-position: 10px center;
-    background-repeat: no-repeat;
-    padding-left: 40px;
+#searchButton {
+    height: 32px;
+    min-width: 80px;
+}
+
+#advancedSearchLink {
+    white-space: nowrap;
 }
 
 #pagination-controls {
@@ -363,3 +357,4 @@ body {
 .info-table tr:hover {
     background-color: #f1f1f1;
 }
+

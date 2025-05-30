@@ -86,16 +86,14 @@
             <h1>eInvoicing Registry</h1>
             <br/>
             <div class="filter-container">
-                <input type="text" id="searchInput" placeholder="Search..." />
-
+                <input type="text" id="searchInput" placeholder="Specification Name" />
                 <select id="typeFilter">
-                    <option value="">All Types</option>
+                    <option value="">Type</option>
                     <option value="CIUS">CIUS</option>
                     <option value="Extension">Extension</option>
                 </select>
-            
                 <select id="sectorFilter">
-                    <option value="">All Sectors</option>
+                    <option value="">Sector</option>
                     <option value="Agriculture, Forestry & Fishing">Agriculture, Forestry & Fishing</option>
                     <option value="Mining & Quarrying">Mining & Quarrying</option>
                     <option value="Manufacturing">Manufacturing</option>
@@ -117,18 +115,16 @@
                     <option value="Other Service Activities">Other Service Activities</option>
                     <option value="Activities of Households as Employers">Activities of Households as Employers</option>
                 </select>
-            
                 <select id="countryFilter">
-                    <option value="">All Countries</option>
+                    <option value="">Country</option>
                     <option value="DE">Germany (DE)</option>
                     <option value="NL">Netherlands (NL)</option>
                     <option value="BE">Belgium (BE)</option>
                     <option value="IE">Ireland (IE)</option>
                     <option value="FR">France (FR)</option>
                 </select>
-            
                 <select id="extensionComponentFilter">
-                    <option value="">All Components</option>
+                    <option value="">Extension Component</option>
                     <option value="Received and Accepted Quantity Delivery Information">Received and Accepted Quantity Delivery Information</option>
                     <option value="Delivery Information">Delivery Information</option>
                     <option value="Grouping Invoice Lines by Sublines & Settlement Plans">Grouping Invoice Lines by Sublines & Settlement Plans</option>
@@ -136,7 +132,9 @@
                     <option value="Split Payments & Ad-Specific Metadata">Split Payments & Ad-Specific Metadata</option>
                     <option value="Line-level VAT and Energy Usage Breakdown">Line-level VAT and Energy Usage Breakdown</option>
                 </select>
-            </div>
+                <button id="searchButton" class="view-button">Search</button>
+                <a href="#" id="advancedSearchLink" style="margin-left: 10px; color: #007bff; text-decoration: underline;">Advanced Search</a>
+            </div>     
 
             <table id="myTable"></table>
 
