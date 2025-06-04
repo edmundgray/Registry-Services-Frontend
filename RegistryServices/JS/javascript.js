@@ -50,6 +50,9 @@ let filteredData = [];
 
 document.addEventListener("DOMContentLoaded", function () 
 {
+    const isAdminPage = window.location.pathname.includes("adminDashboard.html");
+    console.log("Is Admin Page:", isAdminPage); 
+
     let originalData = 
     [{
             "Name": "RetailConnect Billing Rules",
@@ -142,6 +145,14 @@ document.addEventListener("DOMContentLoaded", function ()
             {
                 const entry = data[i];
                 const row = table.insertRow(-1);
+
+                console.log("Processing entry:", entry.Name, "Status:", entry["Registry Status"]); // Check data
+
+
+                if (isAdminPage && entry["Registry Status"] === "Submitted") {
+                    row.classList.add("submitter-row");
+                    console.log("Added submitted-row class to:", entry.Name);
+                }
 
                 headers.forEach(header => 
                 {
