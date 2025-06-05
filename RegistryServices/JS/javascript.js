@@ -150,7 +150,7 @@ document.addEventListener("DOMContentLoaded", function ()
 
 
                 if (isAdminPage && entry["Registry Status"] === "Submitted") {
-                    row.classList.add("submitter-row");
+                    row.classList.add("submitted-row");
                     console.log("Added submitted-row class to:", entry.Name);
                 }
 
