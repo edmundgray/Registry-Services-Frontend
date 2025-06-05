@@ -8,7 +8,7 @@
         
         <script src="../JS/javascript.js"></script>
         
-        <title>Registry Services</title>
+        <title>Specification Preview</title>
     </head>
     <body>
 <!----------------------------------------------------------------------------
@@ -67,7 +67,7 @@
                     </a>
                 </li>
                 <li class="child-element protected">
-                    <a href="SpecificationPreview.html">
+                    <a href="specificationPreview.html">
                         <span class="icon"><i class="fa-solid fa-square-check"></i></span>
                         <span class="text">Specification Preview</span>
                     </a>
@@ -83,70 +83,75 @@
         </div>
 
 <!----------------------------------------------------------------------------
-        The Table
+        The main content area
   ------------------------------------------------------------------------------>
         <div class="page-Content">
-            <h1><i class="fa-solid fa-trailer"></i> Extension Component Data Model</h1>
+            <h1><i class="fa-solid fa-square-check"></i> Specification Preview</h1>
             <br/>
-            <span><b>Select the required Extension Component and view its required elements</b></span>
-            <br/><br/>
-            <select id="extensionComponentSelect" onchange="updateExtensionTable()">
-                <option value="" selected>Select an Extension Component</option>
-                <option>Invoice Reminder</option>
-                <option>Proforma Invoice</option>
-                <option>Calculate VAT at line level</option>
-                <option>More than 2 decimals on amounts at line level</option>
-                <option>Grouping invoice lines by using sublines</option>
-                <option>Split Payments</option>
-                <option>Generic Trading Party</option>
-                <option>Using multiple languages</option>
-                <option>Received and Accepted Quantity</option>
-                <option>Delivery Information</option>
-                <option>Payment Terms Extension Component</option>
-                <option>Tax and Payment Currency</option>
-            </select>
-            
-            <br/>
-            
-            <table class="data-table" id="extensionComponentTable">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Level</th>
-                        <th>Cardinality</th>
-                        <th>Business Term</th>
-                        <th>Usage Note</th>
-                        <th>Justification</th>
-                        <th>Data Type</th>
-                        <th>Type of Extension</th>
-                    </tr>
-                </thead>
-                <tbody id="extensionTableBody">
-                    <tr>
-                        <td colspan="8" class="centered-cell">None selected</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
 
-<!----------------------------------------------------------------------------
-        Javascript for the table
-  ------------------------------------------------------------------------------>
-        <script>
-        function updateExtensionTable() 
-        {
-            const select = document.getElementById('extensionComponentSelect');
-            const tbody = document.getElementById('extensionTableBody');
-            
-            if (select.value === "") 
-            {
-                tbody.innerHTML = `<tr><td colspan="8" class="centered-cell">None selected</td></tr>`;
-            } 
-            else 
-            {
-                tbody.innerHTML = `<tr><td colspan="8" class="centered-cell">Under development</td></tr>`;
-            }
-        }
-        </script>
+            <!-- Scrollable container for tables -->
+            <div style="overflow-x: auto; max-width: 100%;">
+                <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+                    <!-- First Table -->
+                    <table class="styled-table" style="flex: 1 1 calc(33.33% - 20px); min-width: 300px;">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Business Term</th>
+                                <th>Type of Change</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td></td>
+                                <td>Under Development</td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Second Table -->
+                    <table class="styled-table" style="flex: 1 1 calc(33.33% - 20px); min-width: 300px;">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Business Term</th>
+                                <th>Extension Component</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td></td>
+                                <td>Under Development</td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Third Table -->
+                    <table class="styled-table" style="flex: 1 1 calc(33.33% - 20px); min-width: 300px;">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Business Term</th>
+                                <th>Type of Change</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td></td>
+                                <td>Under Development</td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- Buttons row underneath the tables, left aligned -->
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="button" style="padding: 8px 24px;">Submit</button>
+                <button type="button" style="padding: 8px 24px;">Cancel</button>
+            </div>
+        </div>
     </body>
 </html>

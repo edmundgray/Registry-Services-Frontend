@@ -507,3 +507,83 @@ select option:checked {
     background: #22336b;
     color: #fff;
 }
+
+/******************************************************************************
+    Button Styling
+ ******************************************************************************/
+button {
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #fff;
+    background-color: #007BFF;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+button:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+}
+
+button:active {
+    background-color: #004085;
+    transform: translateY(0);
+}
+
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+button[onclick*="deleteRow"] {
+    background-color: #dc3545;
+}
+
+button[onclick*="deleteRow"]:hover {
+    background-color: #c82333;
+}
+
+button[onclick*="deleteRow"]:active {
+    background-color: #a71d2a;
+}
+
+.button-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    gap: 10px;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+}
+
+/******************************************************************************
+    Styling for the Additional Requirements Page
+ ******************************************************************************/
+.spec-preview-btn {
+    margin-left: auto;
+}
+
+#additionalRequirementsTable input,
+#additionalRequirementsTable select,
+#additionalRequirementsTable textarea {
+    font-size: 90%;
+}
+
+#additionalRequirementsTable {
+    table-layout: fixed;
+}
+#additionalRequirementsTable th,
+#additionalRequirementsTable td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
