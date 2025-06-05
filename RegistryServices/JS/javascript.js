@@ -50,8 +50,7 @@ let filteredData = [];
 
 document.addEventListener("DOMContentLoaded", function () 
 {
-    const isAdminPage = window.location.pathname.includes("adminDashboard.html");
-    console.log("Is Admin Page:", isAdminPage); 
+    
 
     let originalData = 
     [{
@@ -108,8 +107,7 @@ document.addEventListener("DOMContentLoaded", function ()
         .then(data => 
         {
             originalData = data;
-            filteredData = data;
-            populateTable(filteredData);
+            applyFilters(); // Initial population of the table
         })
         .catch(error => console.error("Error loading JSON:", error));
 
@@ -129,7 +127,7 @@ document.addEventListener("DOMContentLoaded", function ()
         if (data.length > 0) 
         {
             const headerRow = table.insertRow(0);
-            const headers = Object.keys(data[0]).filter(header => header !== "IDs");
+            const headers = Object.keys(originalData.length > 0 ? originalData[0] : (data.length > 0 ? data[0] : {})).filter(header => header !== "IDs");
 
             headers.forEach(header => 
             {
@@ -146,13 +144,11 @@ document.addEventListener("DOMContentLoaded", function ()
                 const entry = data[i];
                 const row = table.insertRow(-1);
 
-                console.log("Processing entry:", entry.Name, "Status:", entry["Registry Status"]); // Check data
+                
 
-
-                if (isAdminPage && entry["Registry Status"] === "Submitted") {
-                    row.classList.add("submitted-row");
-                    console.log("Added submitted-row class to:", entry.Name);
-                }
+                if (loggedInStatus && entry["Registry Status"] === "Submitted") {
+                row.classList.add("submitted-row");
+            }
 
                 headers.forEach(header => 
                 {
@@ -199,6 +195,9 @@ document.addEventListener("DOMContentLoaded", function ()
         // Filter the data
         filteredData = originalData.filter(entry => 
         {
+            if (!loggedInStatus && entry["Registry Status"] === "Submitted") {
+            return false;
+        }
             const matchesSearch = Object.values(entry).some
             (
                 value =>
