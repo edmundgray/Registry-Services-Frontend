@@ -587,3 +587,11 @@ button[onclick*="deleteRow"]:active {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+#myTable tr.submitted-row {
+    background-color: #fffacd; /* Light yellow, similar to mockup */
+    font-weight: bold !important; /* Optional: makes text bolder */
+}
+
+#myTable tr.submitted-row:hover {
+    background-color: #fff0b3 !important; /* Slightly darker yellow on hover */
+}
