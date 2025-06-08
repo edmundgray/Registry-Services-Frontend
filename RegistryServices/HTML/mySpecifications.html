@@ -6,7 +6,7 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
         <link rel="stylesheet" href="../CSS/style.css">
         
-        
+        <script src="../JS/javascript.js"></script>
         
         <title>Registry Services</title>
 
@@ -52,16 +52,16 @@
                         <span class="text">Registry Services</span>
                     </a>
                 </li>
-                <li class="protected"> {/* Or a new class like admin-only if needed */}
-                    <a href="adminDashboard.html">
-                        <span class="icon"><i class="fa-solid fa-tachometer-alt"></i></span>
-                        <span class="text">Admin Dashboard</span>
-                    </a>
-                </li>
                 <li>
                     <a href="eInvoicingSpecificationRegistry.html">
                         <span class="icon"><i class="fa-solid fa-house"></i></span>
                         <span class="text">eInvoicing Specification Registry</span>
+                    </a>
+                </li>
+                <li class="protected">
+                    <a href="governingEntityList.html">
+                        <span class="icon"><i class="fa-solid fa-building"></i></span>
+                        <span class="text">Governing Entities</span>
                     </a>
                 </li>
                 <li class="protected">
@@ -123,16 +123,14 @@
             <h1><i class="fa-solid fa-folder"></i> My Specifications</h1>
             <br/>
 
-            <div>
-                <button type="button" onclick="window.location.href='IdentifyingInformation.html'" class="view-button" style="background:#217a36;">Add New Specification</button>
-            </div>
+            <div><button onclick="window.location.href='IdentifyingInformation.html';">Add New Specification</button></div>
 
             <br/>
 <!----------------------------------------------------------------------------
         1/2 In Progress Specifications
   ------------------------------------------------------------------------------>
             <h2>In Progress</h2>
-            <table id="inProgressSpecificationsTable"> <thead>
+            <table>
                 <!-- 1st row is for the column names -->
                 <tr>
                     <th>Name</th>
@@ -147,9 +145,38 @@
                     <th>Conformance Level</th>
                     <th>Actions</th>
                 </tr>
-            </thead>
-            <tbody id="inProgressTableBody">
-            </tbody>
+                <!-- 2nd row is mock data -->
+                <tr>
+                    <td>a mock specification</td>
+                    <td>probably something important</td>
+                    <td>XML</td>
+                    <td>Finance</td>
+                    <td>Ireland</td>
+                    <td>2025-07-01</td>
+                    <td>UBL</td>
+                    <td>National Revenue Office</td>
+                    <td>Yes</td>
+                    <td>High</td>
+                    <td>
+                    <button type="button" onclick="autofillSpecification('a mock specification')" class="view-button">Edit</button>
+                    </td>
+                </tr>
+                <!-- more mock data -->
+                <tr>
+                    <td>Mr.InProgress</td>
+                    <td>Life changing</td>
+                    <td>JSON</td>
+                    <td>Taxation</td>
+                    <td>UK</td>
+                    <td>2026-01-15</td>
+                    <td>JSON-Schema</td>
+                    <td>HMRC</td>
+                    <td>No</td>
+                    <td>Medium</td>
+                    <td>
+                        <button type="button" onclick="autofillSpecification('Mr.InProgress')" class="view-button">Edit</button>
+                    </td>
+                </tr>
             </table>
 
             <br/><br/>
@@ -157,24 +184,54 @@
         2/2 Submitted Specifications
   ------------------------------------------------------------------------------>
             <h2>Submitted</h2>
-<table id="submittedSpecificationsTable"> <thead>
-        <tr>
-            <th>Name</th>
-            <th>Purpose</th>
-            <th>Type</th>
-            <th>Sector</th>
-            <th>Country</th>
-            <th>Implementation Date</th>
-            <th>Preferred Syntax</th>
-            <th>Governing Entity</th>
-            <th>Extension Component</th>
-            <th>Conformance Level</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody id="submittedTableBody">
-        </tbody>
-</table>
+            <table>
+                <!-- 1st row is for the column names -->
+                <tr>
+                    <th>Name</th>
+                    <th>Purpose</th>
+                    <th>Type</th>
+                    <th>Sector</th>
+                    <th>Country</th>
+                    <th>Implementation Date</th>
+                    <th>Preferred Syntax</th>
+                    <th>Governing Entity</th>
+                    <th>Extension Component</th>
+                    <th>Conformance Level</th>
+                    <th>Actions</th>
+                </tr>
+                <!-- 2nd row is mock data -->
+                <tr>
+                    <td>Super Finished Specification</td>
+                    <td>Standardized invoicing format</td>
+                    <td>XML</td>
+                    <td>Finance</td>
+                    <td>Ireland</td>
+                    <td>2025-07-01</td>
+                    <td>UBL</td>
+                    <td>National Revenue Office</td>
+                    <td>Yes</td>
+                    <td>High</td>
+                    <td>
+                        <button type="button" onclick="window.location.href='#'" class="view-button">View</button>
+                    </td>
+                </tr>
+                <!-- more mock data -->
+                <tr>
+                    <td>Digital Tax Report</td>
+                    <td>Automated tax filing</td>
+                    <td>JSON</td>
+                    <td>Taxation</td>
+                    <td>UK</td>
+                    <td>2026-01-15</td>
+                    <td>JSON-Schema</td>
+                    <td>HMRC</td>
+                    <td>No</td>
+                    <td>Medium</td>
+                    <td>
+                        <button type="button" onclick="window.location.href='#'" class="view-button">View</button>
+                    </td>
+                </tr>
+            </table>
         </div>
         </div>
         
@@ -182,124 +239,11 @@
         Javascript for Autofilling the identifying Information page
   ------------------------------------------------------------------------------>
         <script>
-    function autofillSpecification(specName) { // This function is here, but editSpecification is used by dynamic buttons
-        localStorage.setItem("selectedSpecification", specName);
-        window.location.href = "IdentifyingInformation.html";
-    }
-
-    function loadMySpecifications() {
-    console.log("DEBUG: loadMySpecifications() called.");
-    const specifications = JSON.parse(localStorage.getItem('mySpecifications')) || [];
-    console.log("DEBUG: Specifications from localStorage:", specifications);
-
-    const inProgressTableBody = document.getElementById("inProgressTableBody"); // Recommended way
-    const submittedTableBody = document.getElementById("submittedTableBody");   // Recommended way
-
-    console.log("DEBUG: inProgressTableBody found:", inProgressTableBody);
-    console.log("DEBUG: submittedTableBody found:", submittedTableBody);
-
-    if (inProgressTableBody) {
-        inProgressTableBody.innerHTML = '';
-    } else {
-        console.error("ERROR: Could not find tbody with id 'inProgressTableBody'");
-    }
-
-    if (submittedTableBody) {
-        submittedTableBody.innerHTML = '';
-    } else {
-        console.error("ERROR: Could not find tbody with id 'submittedTableBody'");
-    }
-
-    if (!inProgressTableBody && !submittedTableBody) {
-        console.error("CRITICAL ERROR: Neither tbody element could be found. Cannot display specifications.");
-        return;
-    }
-
-    if (specifications.length === 0) {
-        console.log("DEBUG: No specifications to display.");
-        if (inProgressTableBody) {
-            inProgressTableBody.innerHTML = '<tr><td colspan="11">No specifications in progress.</td></tr>';
-        }
-        if (submittedTableBody) {
-            submittedTableBody.innerHTML = '<tr><td colspan="11">No specifications submitted.</td></tr>';
-        }
-        return;
-    }
-
-    specifications.forEach(spec => {
-        console.log("DEBUG: Processing spec:", spec);
-
-        // --- MODIFIED CHECK ---
-        // Check for "Specification name" OR "id" if "Name" might not always be there.
-        // Let's use "Specification name" as it's what you seem to have consistently from the save.
-        // Or, if "id" is always the name, spec.id can be used.
-        if (!spec || typeof spec["Specification name"] === 'undefined') {
-            console.warn("DEBUG: Skipping object because 'Specification name' is undefined:", spec);
-            return; // Skip this iteration
-        }
-        // --- END OF MODIFIED CHECK ---
-
-        const row = document.createElement('tr');
-        // --- MODIFIED row.innerHTML to use "Specification name" or "id" ---
-        // Using spec["Specification name"] for display name.
-        // For buttons, passing spec.id is good if ID is the unique key.
-        // Since your ID and "Specification name" are the same in the sample, this will work.
-        // If you introduce separate unique IDs later, you'd pass spec.uniqueAppId to edit/view.
-        row.innerHTML = `
-            <td>${spec["Specification name"] || 'N/A'}</td>
-            <td>${spec.Purpose || 'N/A'}</td>
-            <td>${spec.Type || 'N/A'}</td>
-            <td>${spec.Sector || 'N/A'}</td>
-            <td>${spec.Country || 'N/A'}</td>
-            <td>${spec["Implementation Date"] || 'N/A'}</td>
-            <td>${spec["Preferred Syntax"] || 'N/A'}</td>
-            <td>${spec["Governing Entity"] || 'N/A'}</td>
-            <td>${spec["Extension Component"] || 'N/A'}</td>
-            <td>${spec["Conformance Level"] || 'N/A'}</td>
-            <td>
-                ${spec["Registry Status"] === "In Progress"
-                    ? `<button type="button" onclick="editSpecification('${spec.id}')" class="view-button">Edit</button>` // Pass spec.id
-                    : `<button type="button" onclick="viewSpecification('${spec.id}')" class="view-button">View</button>`  // Pass spec.id
-                }
-            </td>
-        `;
-        // --- END OF MODIFIED row.innerHTML ---
-
-        console.log("DEBUG: Generated row HTML for " + spec["Specification name"] + ":", row.outerHTML);
-
-        if (spec["Registry Status"] === "In Progress" && inProgressTableBody) {
-            inProgressTableBody.appendChild(row);
-            console.log("DEBUG: Appended row for '" + spec["Specification name"] + "' to In Progress table.");
-        } else if (spec["Registry Status"] === "Submitted" && submittedTableBody) {
-            submittedTableBody.appendChild(row);
-            console.log("DEBUG: Appended row for '" + spec["Specification name"] + "' to Submitted table.");
-        } else {
-            console.warn("DEBUG: Row for '" + spec["Specification name"] + "' not appended. Status: '" + spec["Registry Status"] + "'. Or target tbody missing.");
-        }
-    });
-}
-
-// Ensure your editSpecification and viewSpecification functions expect the ID (which is currently the name)
-function editSpecification(specId) { // Changed parameter name for clarity
-    localStorage.setItem("selectedSpecification", specId); // This key is used by IdentifyingInformation.html
-    window.location.href = "IdentifyingInformation.html";
-}
-
-function viewSpecification(specId) { // Changed parameter name for clarity
-    localStorage.setItem("selectedSpecification", specId); // Using the same key as edit
-    window.location.href = "SpecificationPreview.html";
-}
-
-// Your DOMContentLoaded listener (ensure your tbody selectors are updated inside loadMySpecifications as above)
-document.addEventListener('DOMContentLoaded', function() {
-    console.log("DEBUG: DOMContentLoaded for mySpecifications.html SCRIPT IS FIRING.");
-    if (document.getElementById("inProgressTableBody") || document.getElementById("submittedTableBody")) {
-        console.log("DEBUG: DOM for mySpecifications.html loaded. Relevant TBODY ID found. Calling loadMySpecifications().");
-        loadMySpecifications();
-    } else {
-        console.error("ERROR: NEITHER #inProgressTableBody NOR #submittedTableBody found. loadMySpecifications() will NOT be called.");
-    }
-});
-</script>
+            function autofillSpecification(specName) 
+            {
+                localStorage.setItem("selectedSpecification", specName);
+                window.location.href = "IdentifyingInformation.html";
+            }  
+        </script>
     </body>
 </html>

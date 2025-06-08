@@ -8,11 +8,11 @@
         
         <script src="../JS/javascript.js"></script>
         
-        <title>Specification Preview</title>
+        <title>Governing Entities</title>
     </head>
     <body>
 <!----------------------------------------------------------------------------
-        Sidebar
+            Sidebar
   ------------------------------------------------------------------------------>
         <div class="sidebar">
             <ul>
@@ -47,7 +47,7 @@
                         <span class="icon"><i class="fa-solid fa-file-medical"></i></span>
                         <span class="text">Add New Specification</span>
                     </a>
-                </li class="protected">
+                </li>
                 <li class="child-element protected">
                     <a href="IdentifyingInformation.html">
                         <span class="icon"><i class="fa-solid fa-info"></i></span>
@@ -78,7 +78,6 @@
                         <span class="text">Specification Preview</span>
                     </a>
                 </li>
-                <!-- Logging in/out-->
                 <li id="loginLogoutItem">
                     <a href="#" onclick="toggleLogin()">
                         <span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span>
@@ -89,75 +88,111 @@
         </div>
 
 <!----------------------------------------------------------------------------
-        The main content area
+            Governing Entities Table
   ------------------------------------------------------------------------------>
         <div class="page-Content">
-            <h1><i class="fa-solid fa-square-check"></i> Specification Preview</h1>
+            <h1 id="entityTitle"><i class="fa-solid fa-building"></i> Viewing Governing Entity</h1>
             <br/>
+            <button onclick="window.location.href='governingEntityList.html';">Return to Governing Entity List</button>
 
-            <!-- Scrollable container for tables -->
-            <div style="overflow-x: auto; max-width: 100%;">
-                <div style="display: flex; flex-wrap: wrap; gap: 20px;">
-                    <!-- First Table -->
-                    <table class="styled-table" style="flex: 1 1 calc(33.33% - 20px); min-width: 300px;">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Business Term</th>
-                                <th>Type of Change</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td></td>
-                                <td>Under Development</td>
-                                <td></td>
-                            </tr>
-                        </tbody>
-                    </table>
-
-                    <!-- Second Table -->
-                    <table class="styled-table" style="flex: 1 1 calc(33.33% - 20px); min-width: 300px;">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Business Term</th>
-                                <th>Extension Component</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td></td>
-                                <td>Under Development</td>
-                                <td></td>
-                            </tr>
-                        </tbody>
-                    </table>
-
-                    <!-- Third Table -->
-                    <table class="styled-table" style="flex: 1 1 calc(33.33% - 20px); min-width: 300px;">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Business Term</th>
-                                <th>Type of Change</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td></td>
-                                <td>Under Development</td>
-                                <td></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <!-- Buttons row underneath the tables, left aligned -->
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button type="button" style="padding: 8px 24px;">Submit</button>
-                <button type="button" style="padding: 8px 24px;">Cancel</button>
-            </div>
+            <div id="entityDetails"></div>
+            <div id="specificationsSection"></div>
+            <div id="usersSection"></div>
         </div>
+
+<!----------------------------------------------------------------------------
+            JavaScript to handle the Governing Entity details
+  ------------------------------------------------------------------------------>
+        <script>
+            document.addEventListener("DOMContentLoaded", function () 
+            {
+                // Parse the URL parameters to get the Governing Entity details
+                const params = new URLSearchParams(window.location.search);
+                const entity = {
+                    Created: params.get("Created") || "",
+                    GoverningEntity: params.get("GoverningEntity") || "",
+                    NoOfUsers: params.get("NoOfUsers") || "",
+                    NoOfSpecifications: params.get("NoOfSpecifications") || "",
+                    InProgress: params.get("InProgress") || ""
+                };
+
+                // Set the title
+                document.getElementById("entityTitle").innerHTML =
+                    `<i class="fa-solid fa-building"></i> Viewing ${entity.GoverningEntity} Governing Entity`;
+
+                // Main entity info table (matching mockup columns)
+                const entityTable = `
+                    <table class="styled-table" style="max-width:900px;">
+                        <thead>
+                            <tr>
+                                <th>Created</th>
+                                <th>Sector</th>
+                                <th>Country</th>
+                                <th>Primary Contact Name</th>
+                                <th>Primary Contact Information</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>${entity.Created}</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
+                document.getElementById("entityDetails").innerHTML = entityTable;
+
+                // Specifications table with columns (matching mockup)
+                const specificationsTable = `
+                    <h2 style="margin:24px 0 8px 0;font-size:20px;">Specifications</h2>
+                    <table class="styled-table" style="font-size:13px;">
+                        <thead>
+                            <tr>
+                                <th>Created/Modified</th>
+                                <th>Name</th>
+                                <th>Purpose</th>
+                                <th>Implementation Date</th>
+                                <th>Type</th>
+                                <th>Sector</th>
+                                <th>Country</th>
+                                <th>Preferred Syntax</th>
+                                <th>Conformance level</th>
+                                <th>Registry Status</th>
+                                <th>Last Modified by</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data rows go here -->
+                        </tbody>
+                    </table>
+                `;
+                document.getElementById("specificationsSection").innerHTML = specificationsTable;
+
+                // Users table with columns (matching mockup)
+                const usersTable = `
+                    <h2 style="margin:24px 0 8px 0;font-size:20px;">Users</h2>
+                    <table class="styled-table" style="font-size:13px;max-width:900px;">
+                        <thead>
+                            <tr>
+                                <th>Joined</th>
+                                <th>Name</th>
+                                <th>Specifications submitted</th>
+                                <th>In Progress</th>
+                                <th>Contact Information</th>
+                                <th>Contributor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data rows go here -->
+                        </tbody>
+                    </table>
+                `;
+                document.getElementById("usersSection").innerHTML = usersTable;
+            });
+        </script>
     </body>
 </html>
