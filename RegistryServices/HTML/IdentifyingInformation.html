@@ -347,7 +347,7 @@
                 <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 30px;">
                     <div>
                         <button type="button" onclick="handleSave()" class="view-button">Save</button>
-                        <button type="button" onclick="window.location.href='eInvoicingSpecificationRegistry.html'" class="view-button" style="background:#ccc; color:#333;">Cancel</button>
+                        <button type="button" onclick="handleCancel()" class="view-button" style="background:#ccc; color:#333;">Cancel Specification</button>
                     </div>
                     
                     <div>
@@ -461,6 +461,40 @@
                 window.location.href = 'coreInvoiceModel.html'; // Redirect to the Core Invoice Model page
                 
             }
+
+             function handleCancel() {
+        // Display a confirmation dialog to the user.
+        const userConfirmed = confirm("Warning! This Specification will be deleted, do you want to proceed?");
+
+        // Proceed only if the user clicks "OK".
+        if (userConfirmed) {
+
+            
+
+            // Check if we are in "Edit" mode by seeing if a specification was selected.
+            const editingSpecId = localStorage.getItem("selectedSpecification");
+
+            if (editingSpecId) {
+                // If editing, find and remove the specification from the stored array.
+                let specifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
+                
+                // Create a new array excluding the specification being deleted.
+                const updatedSpecifications = specifications.filter(spec => spec.id !== editingSpecId);
+                
+                // Save the updated array back to localStorage.
+                localStorage.setItem('mySpecifications', JSON.stringify(updatedSpecifications));
+                
+                // Clean up the edit flag.
+                localStorage.removeItem("selectedSpecification");
+            }
+            // Note: If not in "Edit" mode (i.e., creating a new spec that hasn't been saved),
+            // there is nothing to delete from localStorage, so we can just redirect.
+
+            // Redirect the user back to their specifications page.
+            window.location.href = 'mySpecifications.html';
+        }
+        // If the user clicks "Cancel" on the confirmation, do nothing.
+    }
 
 
             document.addEventListener('DOMContentLoaded', () => 
