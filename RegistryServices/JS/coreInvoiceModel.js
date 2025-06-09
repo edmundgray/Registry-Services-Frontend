@@ -54,7 +54,16 @@ document.addEventListener("DOMContentLoaded", function ()
                     <td>${item['Usage Note']}</td>
                     <td>${item['Business Rules']}</td>
                     <td>${item['Data Type']}</td>
-                    <td></td> <!-- New cell for Show more button -->
+                    <td class="centered-cell"><input type="checkbox"></td>
+                    <td>
+                        <select>
+                            <option>Type of Change</option>
+                            <option>Add</option>
+                            <option>Remove</option>
+                            <option>Modify</option>
+                            <option>No Change</option>
+                        </select>
+                    </td>
                 `;
 
                 // If this item has children, add the Show more button to the last cell
