@@ -90,7 +90,25 @@
             <br/>
             <span><b>Select the required Extension Component and view its required elements</b></span>
             <br/><br/>
-            <select id="extensionComponentSelect" onchange="updateExtensionTable()">
+
+            <div id="components-container"></div>
+
+            <button type="button" onclick="addNewComponentSection()" class="view-button" style="margin-top: 15px;">Add Another Extension Component</button>
+
+            <hr style="margin: 30px 0;">
+
+            <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 10px;">
+                <div>
+                    <button type="button" onclick="handleSave()" class="view-button">Save</button>
+                    <button type="button" onclick="handleCancel()" class="view-button" style="background-color: #F4A261; color: #fff;">Cancel New Specification</button>
+                </div>
+                <div>
+                    <button type="button" onclick="saveAndGoToNextStep()" class="view-button" style="background:#217a36;">Additional Requirements</button>
+                </div>
+            </div>
+
+
+            <!-- <select id="extensionComponentSelect" onchange="updateExtensionTable()">
                 <option value="" selected>Select an Extension Component</option>
                 <option>Invoice Reminder</option>
                 <option>Proforma Invoice</option>
@@ -104,11 +122,11 @@
                 <option>Delivery Information</option>
                 <option>Payment Terms Extension Component</option>
                 <option>Tax and Payment Currency</option>
-            </select>
+            </select> -->
             
             <br/>
             
-            <table class="data-table" id="extensionComponentTable">
+            <!-- <table class="data-table" id="extensionComponentTable">
                 <thead>
                     <tr>
                         <th>ID</th>
@@ -126,7 +144,7 @@
                         <td colspan="8" class="centered-cell">None selected</td>
                     </tr>
                 </tbody>
-            </table>
+            </table> -->
         </div>
 
 <!----------------------------------------------------------------------------
@@ -148,5 +166,177 @@
             }
         }
         </script>
+        <script>
+    // This object will be populated with data from your new JSON file.
+    let extensionComponentData = {};
+    const componentsContainer = document.getElementById('components-container');
+
+    // --- NEW: Function to load and process your JSON data ---
+    async function loadExtensionData() {
+        try {
+            // Fetch the JSON file content
+            const response = await fetch('../JSON/extensionComponentModelElements.json');
+            const data = await response.json(); // This is now a direct JSON array
+
+            // Process the flat JSON array into a grouped object
+            const processedData = {};
+            data.forEach(item => {
+                const componentName = item.Component;
+                if (componentName) {
+                    if (!processedData[componentName]) {
+                        processedData[componentName] = { elements: [] };
+                    }
+                    processedData[componentName].elements.push({
+                        id: item.ID,
+                        level: item.Level,
+                        cardinality: item.Cardinality,
+                        term: item['Business Term'],
+                        note: item['Usage Note']
+                    });
+                }
+            });
+            
+            extensionComponentData = processedData;
+            // Now that data is loaded, add the first component section
+            addNewComponentSection();
+
+        } catch (error) {
+            console.error("Error loading or parsing extension component data:", error);
+            componentsContainer.innerHTML = `<p style="color: red;">Error: Could not load extension component data. Please check the file path and format.</p>`;
+        }
+    }
+
+    // Function to create a new component selection block
+    function addNewComponentSection() {
+        const sectionId = `section-${Date.now()}`;
+        const section = document.createElement('div');
+        section.id = sectionId;
+        section.style.border = "1px solid #ddd";
+        section.style.padding = "15px";
+        section.style.marginBottom = "20px";
+        section.style.backgroundColor = "#fff";
+
+        let options = '<option value="">Select an Extension Component</option>';
+        for (const key in extensionComponentData) {
+            options += `<option value="${key}">${key}</option>`;
+        }
+
+        section.innerHTML = `
+            <select class="component-select" onchange="populateComponentTable(this)">${options}</select>
+            <button onclick="document.getElementById('${sectionId}').remove()" class="view-button" style="float: right; background: #ccc; color: #333;">Clear Selection</button>
+            <br/><br/>
+            <table class="styled-table" style="width:100%;">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Level</th>
+                        <th>Cardinality</th>
+                        <th>Business Term</th>
+                        <th>Usage Note</th>
+                        <th>Included</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="6" style="text-align:center;">Please select a component from the dropdown.</td></tr>
+                </tbody>
+            </table>
+        `;
+        componentsContainer.appendChild(section);
+    }
+
+    // Function to populate the table (no changes needed)
+    function populateComponentTable(selectElement) {
+        const selectedValue = selectElement.value;
+        const tableBody = selectElement.closest('div').querySelector('tbody');
+
+        if (!selectedValue) {
+            tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Please select a component from the dropdown.</td></tr>';
+            return;
+        }
+
+        const component = extensionComponentData[selectedValue];
+        tableBody.innerHTML = ''; // Clear the table
+
+        component.elements.forEach(el => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${el.id}</td>
+                <td>${el.level}</td>
+                <td>${el.cardinality}</td>
+                <td>${el.term}</td>
+                <td>${el.note}</td>
+                <td style="text-align:center;"><input type="checkbox" class="element-selector" data-id="${el.id}"></td>
+            `;
+            tableBody.appendChild(row);
+        });
+    }
+
+    // Main button functions (no changes needed)
+    function handleSave(showAlert = true) {
+        const selectedExtensions = [];
+        document.querySelectorAll('#components-container > div').forEach(section => {
+            const select = section.querySelector('.component-select');
+            const componentName = select.value;
+
+            if (componentName) {
+                const selectedElements = [];
+                section.querySelectorAll('.element-selector:checked').forEach(checkbox => {
+                    selectedElements.push(checkbox.getAttribute('data-id'));
+                });
+
+                if (selectedElements.length > 0) {
+                     selectedExtensions.push({
+                        componentName: componentName,
+                        selectedElements: selectedElements
+                    });
+                }
+            }
+        });
+
+        const editingSpecId = localStorage.getItem("selectedSpecification");
+        if (!editingSpecId) {
+            alert("Error: No specification selected.");
+            return;
+        }
+
+        let specifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
+        const specIndex = specifications.findIndex(spec => spec.id === editingSpecId);
+
+        if (specIndex > -1) {
+            specifications[specIndex].extensionComponents = selectedExtensions;
+            localStorage.setItem('mySpecifications', JSON.stringify(specifications));
+            if (showAlert) {
+                alert("Extension components saved!");
+            }
+        } else {
+            alert("Error: Could not find the specification to save to.");
+        }
+    }
+
+    function handleCancel() {
+        if (confirm("Warning! This Specification will be deleted, do you want to proceed?")) {
+            const specIdToDelete = localStorage.getItem("selectedSpecification");
+            if (specIdToDelete) {
+                let specifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
+                const updatedSpecifications = specifications.filter(spec => spec.id !== specIdToDelete);
+                localStorage.setItem('mySpecifications', JSON.stringify(updatedSpecifications));
+                localStorage.removeItem("selectedSpecification");
+            }
+            window.location.href = 'mySpecifications.html';
+        }
+    }
+
+    function saveAndGoToNextStep() {
+        handleSave(false);
+        // This should redirect to the page for "Additional Requirements"
+        window.location.href = '#'; // Update this when the page exists
+        alert("This would go to the 'Additional Requirements' page.");
+    }
+
+    // Start loading the data when the page opens
+    document.addEventListener('DOMContentLoaded', () => {
+        loadExtensionData();
+    });
+</script>
     </body>
 </html>

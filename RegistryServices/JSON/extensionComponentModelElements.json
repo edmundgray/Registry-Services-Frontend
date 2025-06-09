@@ -1,0 +1,74 @@
+[
+  {
+    "Component": "Received and Accepted Quantity",
+    "ID": "XT-40",
+    "Level": "1.1",
+    "Cardinality": "1..1",
+    "Business Term": "Received quantity",
+    "Usage Note": "The quantity officially received by the Buyer is required"
+  },
+  {
+    "Component": "Received and Accepted Quantity",
+    "ID": "XT-41",
+    "Level": "1.1",
+    "Cardinality": "1..1",
+    "Business Term": "Accepted quantity",
+    "Usage Note": "Following inspection the quantity accepted by the Buyer is required"
+  },
+  {
+    "Component": "Received and Accepted Quantity",
+    "ID": "BT-129",
+    "Level": "1.1",
+    "Cardinality": "1..1",
+    "Business Term": "Invoiced quantity",
+    "Usage Note": "N/A"
+  },
+  {
+    "Component": "Delivery Information",
+    "ID": "BG-15",
+    "Level": "1.1",
+    "Cardinality": "0..1",
+    "Business Term": "DELIVERY INFORMATION",
+    "Usage Note": "A group of business terms providing information about the delivery of the goods being invoiced"
+  },
+  {
+    "Component": "Delivery Information",
+    "ID": "BT-70",
+    "Level": "1.1",
+    "Cardinality": "0..1",
+    "Business Term": "Deliver to party name",
+    "Usage Note": "The name of the party to which the goods are delivered"
+  },
+  {
+    "Component": "Delivery Information",
+    "ID": "BT-71",
+    "Level": "1.1",
+    "Cardinality": "0..1",
+    "Business Term": "Deliver to address",
+    "Usage Note": "The address to which the goods are delivered"
+  },
+  {
+    "Component": "Payment Terms Extension",
+    "ID": "BT-20",
+    "Level": "1.1",
+    "Cardinality": "0..n",
+    "Business Term": "Payment terms",
+    "Usage Note": "A textual description of the payment terms that apply to the amount due for payment"
+  },
+  {
+    "Component": "Payment Terms Extension",
+    "ID": "BG-19",
+    "Level": "1.1",
+    "Cardinality": "0..n",
+    "Business Term": "PAYMENT INSTRUCTIONS",
+    "Usage Note": "A group of business terms providing instructions on how to pay the invoice"
+  },
+  {
+    "Component": "Payment Terms Extension",
+    "ID": "BT-84",
+    "Level": "1.1",
+    "Cardinality": "0..1",
+    "Business Term": "Remittance information",
+    "Usage Note": "Information that enables the Seller to unambiguously reconcile the payment with the invoice"
+  }
+]
