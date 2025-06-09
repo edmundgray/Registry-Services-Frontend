@@ -65,9 +65,10 @@ document.addEventListener("DOMContentLoaded", function ()
                     <td>
                         <select class="type-of-change-select">
                             <option>Type of Change</option>
-                            <option>Make Semantic definition narrower</option>
-                            <option>Decrease number of repetitions (x..n to</option>
-                            <option>Restrict values in an existing list</option>
+                            <option>Add</option>
+                            <option>Remove</option>
+                            <option>Modify</option>
+                            <option>No Change</option>
                         </select>
                     </td>
                     <td></td> <!-- New cell for Show more button -->

@@ -107,6 +107,12 @@
                     </a>
                 </li>
                 <li class="protected">
+                    <a href="governingEntityList.html">
+                        <span class="icon"><i class="fa-solid fa-building"></i></span>
+                        <span class="text">Governing Entities</span>
+                    </a>
+                </li>
+                <li class="protected">
                     <a href="mySpecifications.html">
                         <span class="icon"><i class="fa-solid fa-folder"></i></span>
                         <span class="text">My Specifications</span>
@@ -137,13 +143,13 @@
                     </a>
                 </li>
                 <li class="child-element protected">
-                    <a href="#">
+                    <a href="additionalRequirements.html">
                         <span class="icon"><i class="fa-solid fa-circle-plus"></i></span>
                         <span class="text">Additional Requirements</span>
                     </a>
                 </li>
                 <li class="child-element protected">
-                    <a href="#">
+                    <a href="specificationPreview.html">
                         <span class="icon"><i class="fa-solid fa-square-check"></i></span>
                         <span class="text">Specification Preview</span>
                     </a>
@@ -351,7 +357,7 @@
                     </div>
                     
                     <div>
-                        <button type="button" onclick="saveAndGoToCoreModel()" class="view-button" style="background:#217a36;">Core Invoice Model</button>
+                        <button type="button" onclick="window.location.href='coreInvoiceModel.html'" class="view-button" style="background:#217a36;">Core Invoice Model</button>
                     </div>
                 </div>
             </form>
@@ -365,15 +371,11 @@
 
             function handleSave() 
             {
-                 alert("handleSave function was called!"); // For quick check
-                console.log("handleSave function was called!");
-
                 const form = document.getElementById('identifyingForm');
                 if (!form.reportValidity()) return;
 
-                const newSpecification = 
+                const data = 
                 {
-                    "id": form.specName.value,
                     "Specification name": form.specName.value,
                     "Governing Entity": form.governingEntity.value,
                     "Contact Information": form.contactInfo.value,
@@ -387,39 +389,11 @@
                     "Core Version": form.coreVersion.value,
                     "Underlying Specification": form.underlyingSpec.value,
                     "Specification Source Link": form.sourceLink.value,
-                    "Preferred Syntax": form.preferredSyntax.value,
-                    "Registry Status": "In Progress",
-                    "Type": "CIUS",
-                    "Conformance Level": "N/A",
+                    "Preferred Syntax": form.preferredSyntax.value
                 };
 
-                let specifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
-
-                const editingSpecName = localStorage.getItem("selectedSpecification");
-                if (editingSpecName) 
-                {
-                    const existingIndex = specifications.findIndex(spec => spec.id === editingSpecName);
-                    if (existingIndex > -1) 
-                    {
-                        specifications[existingIndex] = { ...specifications[existingIndex], ...newSpecification };
-                        //localStorage.removeItem("selectedSpecification");
-                    } 
-                    else 
-                    {
-                        specification.push(newSpecification);
-                    }
-                    localStorage.removeItem("selectedSpecification");
-                } 
-                else 
-                {
-                    specifications.push(newSpecification);
-                }
-
-                localStorage.setItem('mySpecifications', JSON.stringify(specifications));
-
-                alert("Specification data saved!"); 
-                isFormDirty = false; 
-                window.location.href = 'mySpecifications.html'; // Redirect to the main page
+                alert("Saved Information:\n\n" + Object.entries(data).map(([k,v]) => `${k}: ${v}`).join('\n'));
+                isFormDirty = false;
             }
 
 
@@ -527,46 +501,6 @@
         if (selectedSpec) {
             document.getElementById("specName").value = selectedSpec;
         }
-
-        const editingSpecId = localStorage.getItem("selectedSpecification");
-        const form = document.getElementById('identifyingForm'); // Your form's ID
-
-        if (editingSpecId && form) {
-            console.log("DEBUG: Edit mode detected. ID to edit:", editingSpecId);
-            const specifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
-            const specToEdit = specifications.find(spec => spec.id === editingSpecId);
-
-            if (specToEdit) {
-                console.log("DEBUG: Specification data found for editing:", specToEdit);
-                // Pre-fill the form fields
-                // Ensure the form input IDs match these .value assignments
-                form.specName.value = specToEdit["Specification name"] || ''; // Or specToEdit.id if that's the display name field
-                form.governingEntity.value = specToEdit["Governing Entity"] || '';
-                form.contactInfo.value = specToEdit["Contact Information"] || ''; // Assuming your textarea has id="contactInfo"
-                form.sector.value = specToEdit.Sector || '';
-                form.subSector.value = specToEdit["Sub Sector"] || '';
-                form.country.value = specToEdit.Country || '';
-                form.purpose.value = specToEdit.Purpose || ''; // Assuming your textarea has id="purpose"
-                form.specId.value = specToEdit["Specification Identifier"] || '';
-                form.specVersion.value = specToEdit["Specification Version"] || '';
-                form.implDate.value = specToEdit["Date of Implementation"] || '';
-                form.coreVersion.value = specToEdit["Core Version"] || '';
-                form.underlyingSpec.value = specToEdit["Underlying Specification"] || '';
-                form.sourceLink.value = specToEdit["Specification Source Link"] || '';
-                form.preferredSyntax.value = specToEdit["Preferred Syntax"] || '';
-
-                // Note: You might not want to set isFormDirty = true here,
-                // let actual user changes trigger that if you use it.
-
-            } else {
-                console.warn("DEBUG: Spec ID found in localStorage, but no matching spec in 'mySpecifications' array.");
-                // Clear the edit flag if the spec wasn't found, to avoid issues
-                localStorage.removeItem("selectedSpecification");
-            }
-        } else {
-            console.log("DEBUG: Not in edit mode, or form not found.");
-        }
-    
     });
         </script>
     </body>

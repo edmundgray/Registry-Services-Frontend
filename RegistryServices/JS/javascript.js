@@ -50,8 +50,6 @@ let filteredData = [];
 
 document.addEventListener("DOMContentLoaded", function () 
 {
-    
-
     let originalData = 
     [{
             "Name": "RetailConnect Billing Rules",

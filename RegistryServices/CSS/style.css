@@ -208,23 +208,74 @@ body {
     align-items: center;
     justify-content: flex-end;
     margin-top: 10px;
-    gap: 10px;
+    gap: 12px;
     font-size: 14px;
 }
 
-#pagination-controls select,
-#pagination-controls button {
-    padding: 5px;
-    font-size: 14px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+#pagination-controls select {
+    padding: 6px 28px 6px 12px;
+    font-size: 16px;
+    border: 1.5px solid #F4A261;
+    border-radius: 6px;
     background-color: #fff;
+    color: #333;
+    font-weight: 600;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg fill='none' height='16' viewBox='0 0 20 20' width='16' xmlns='http://www.w3.org/2000/svg'><path d='M5 8l5 5 5-5' stroke='%23F4A261' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 18px 18px;
+    height: 40px;
+    box-sizing: border-box;
+    margin: 0;
+    vertical-align: middle;
+    line-height: 1.2;
+}
+
+#pagination-controls select:focus {
+    border-color: #E68A3F;
+    outline: none;
+    box-shadow: 0 0 0 2px #F4A26133;
+}
+
+#pagination-controls select option {
+    background: #fff;
+    color: #333;
+    font-weight: 500;
+}
+
+#pagination-controls select::-ms-expand {
+    display: none;
+}
+
+#pagination-controls button {
+    padding: 5px 12px;
+    font-size: 18px;
+    border: 1px solid #F4A261;
+    border-radius: 4px;
+    background-color: #F4A261;
+    color: #fff;
     cursor: pointer;
+    transition: background-color 0.3s, color 0.3s, border 0.3s;
+    font-weight: bold;
+    outline: none;
+    height: 40px;
+    min-width: 40px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
 }
 
 #pagination-controls button:disabled {
     background-color: #f1f1f1;
+    color: #ccc;
+    border: 1px solid #ccc;
     cursor: not-allowed;
+    opacity: 1;
 }
 
 .details-container {
@@ -508,11 +559,140 @@ select option:checked {
     color: #fff;
 }
 
-#myTable tr.submitted-row {
-    background-color: #fffacd; /* Light yellow, similar to mockup */
-    font-weight: bold !important; /* Optional: makes text bolder */
+/******************************************************************************
+    Button Styling
+ ******************************************************************************/
+button {
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #fff;
+    background-color: #007BFF;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-#myTable tr.submitted-row:hover {
-    background-color: #fff0b3 !important; /* Slightly darker yellow on hover */
+button:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+}
+
+button:active {
+    background-color: #004085;
+    transform: translateY(0);
+}
+
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+button[onclick*="deleteRow"] {
+    background-color: #dc3545;
+}
+
+button[onclick*="deleteRow"]:hover {
+    background-color: #c82333;
+}
+
+button[onclick*="deleteRow"]:active {
+    background-color: #a71d2a;
+}
+
+.button-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    gap: 10px;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+}
+
+/******************************************************************************
+    Styling for the Additional Requirements Page
+ ******************************************************************************/
+.spec-preview-btn {
+    margin-left: auto;
+}
+
+#additionalRequirementsTable input,
+#additionalRequirementsTable select,
+#additionalRequirementsTable textarea {
+    font-size: 90%;
+}
+
+#additionalRequirementsTable {
+    table-layout: fixed;
+}
+#additionalRequirementsTable th,
+#additionalRequirementsTable td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* --- Improve pagination dropdown appearance --- */
+#pagination-controls select {
+    padding: 6px 28px 6px 12px;
+    font-size: 16px;
+    border: 1.5px solid #F4A261;
+    border-radius: 6px;
+    background-color: #fff;
+    color: #333;
+    font-weight: 600;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image:
+        linear-gradient(45deg, #F4A261 50%, transparent 50%),
+        linear-gradient(135deg, #F4A261 50%, transparent 50%);
+    background-position:
+        calc(100% - 20px) calc(50% - 5px),
+        calc(100% - 15px) calc(50% - 5px);
+    background-size: 6px 6px, 6px 6px;
+    background-repeat: no-repeat;
+    transition: border 0.2s, box-shadow 0.2s;
+    box-shadow: 0 1px 4px rgba(244,162,97,0.08);
+}
+
+#pagination-controls select:focus {
+    border-color: #E68A3F;
+    outline: none;
+    box-shadow: 0 0 0 2px #F4A26133;
+}
+
+#pagination-controls select option {
+    background: #fff;
+    color: #333;
+    font-weight: 500;
+}
+
+/* Custom dropdown arrow for select */
+#pagination-controls select::-ms-expand {
+    display: none;
+}
+
+#pagination-controls select {
+    /* ...other styles... */
+    background-image: url("data:image/svg+xml;utf8,<svg fill='none' height='16' viewBox='0 0 20 20' width='16' xmlns='http://www.w3.org/2000/svg'><path d='M5 8l5 5 5-5' stroke='%23F4A261' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 18px 18px;
+}
+
+.tab-button {
+    color: #000; /* make tab text fully legible */
+}
+.tab-button.active {
+    color: #007BFF; /* active tab text color */
+    background-color: #fff; /* active tab background */
+    border-bottom: 2px solid #007BFF; /* active tab underline */
 }
