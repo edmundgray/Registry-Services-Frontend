@@ -119,11 +119,13 @@
                         <th>Justification</th>
                         <th>Data Type</th>
                         <th>Type of Extension</th>
+                        <th>Core Conformance/Rules broken</th>
+                        <th>Included in Spec</th>
                     </tr>
                 </thead>
                 <tbody id="extensionTableBody">
                     <tr>
-                        <td colspan="8" class="centered-cell">None selected</td>
+                        <td colspan="10" class="centered-cell">None selected</td>
                     </tr>
                 </tbody>
             </table>
@@ -133,20 +135,83 @@
         Javascript for the table
   ------------------------------------------------------------------------------>
         <script>
-        function updateExtensionTable() 
-        {
+        // Data for "Received and Accepted Quantity"
+        const receivedAcceptedQuantityRows = [
+            {
+                id: "XT-40",
+                level: "1.1",
+                cardinality: "1..1",
+                businessTerm: "Received quantity",
+                usageNote: "The quantity officially received by the Buyer is required",
+                justification: "",
+                dataType: "Quantity",
+                typeOfExtension: "Add new information element",
+                coreConformance: "Core Conformant",
+            },
+            {
+                id: "XT-41",
+                level: "1.1",
+                cardinality: "1..1",
+                businessTerm: "Accepted quantity",
+                usageNote: "Following inspection the quantity accepted by the Buyer is required",
+                justification: "",
+                dataType: "Quantity",
+                typeOfExtension: "Add new information element",
+                coreConformance: "Core Conformant",
+            },
+            {
+                id: "BT-129",
+                level: "1.1",
+                cardinality: "1..1",
+                businessTerm: "Invoiced quantity",
+                usageNote: "",
+                justification: "",
+                dataType: "Quantity",
+                typeOfExtension: "N/A",
+                coreConformance: "Core Conformant",
+            }
+        ];
+
+        function updateExtensionTable() {
             const select = document.getElementById('extensionComponentSelect');
             const tbody = document.getElementById('extensionTableBody');
-            
-            if (select.value === "") 
-            {
-                tbody.innerHTML = `<tr><td colspan="8" class="centered-cell">None selected</td></tr>`;
-            } 
-            else 
-            {
-                tbody.innerHTML = `<tr><td colspan="8" class="centered-cell">Under development</td></tr>`;
+
+            if (select.value === "Received and Accepted Quantity") {
+                tbody.innerHTML = receivedAcceptedQuantityRows.map((row, idx) => `
+                    <tr onclick="toggleRowSelection(this, ${idx})">
+                        <td>${row.id}</td>
+                        <td>${row.level}</td>
+                        <td>${row.cardinality}</td>
+                        <td>${row.businessTerm}</td>
+                        <td>${row.usageNote}</td>
+                        <td>${row.justification}</td>
+                        <td>${row.dataType}</td>
+                        <td>${row.typeOfExtension}</td>
+                        <td>${row.coreConformance}</td>
+                        <td class="centered-cell">
+                            <input type="checkbox" onclick="event.stopPropagation();" />
+                        </td>
+                    </tr>
+                `).join('');
+            } else if (select.value === "") {
+                tbody.innerHTML = `<tr><td colspan="10" class="centered-cell">None selected</td></tr>`;
+            } else {
+                tbody.innerHTML = `<tr><td colspan="10" class="centered-cell">Under development</td></tr>`;
             }
         }
+
+        // Highlight row and toggle checkbox
+        function toggleRowSelection(row, idx) {
+            const checkbox = row.querySelector('input[type="checkbox"]');
+            checkbox.checked = !checkbox.checked;
+            row.classList.toggle('selected-row', checkbox.checked);
+        }
         </script>
+        <style>
+        /* Add this style for row highlighting */
+        .selected-row {
+            background-color: #d0e7ff !important;
+        }
+        </style>
     </body>
 </html>
