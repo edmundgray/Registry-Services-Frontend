@@ -1,0 +1,244 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../CSS/style.css">
+    <script src="../JS/javascript.js"></script>
+    <title>Specification Preview</title>
+    <style>
+        .preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-start; /* Aligns tables to the top */
+        }
+
+        .preview-table-wrapper {
+            flex: 1 1 calc(33.333% - 20px); /* Flex properties for 3 columns */
+            min-width: 300px; /* Minimum width before wrapping */
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            overflow: hidden; /* Important for keeping header inside rounded corners */
+            background-color: #fff;
+        }
+
+        .preview-table-wrapper h3 {
+            text-align: center;
+            color: #c0392b;
+            padding: 10px;
+            margin: 0;
+            font-weight: normal;
+        }
+
+        .preview-table-wrapper table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .preview-table-wrapper th,
+        .preview-table-wrapper td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+         .preview-table-wrapper tr:last-child td {
+            border-bottom: none;
+        }
+
+        .preview-table-wrapper th {
+            background-color: #F4A261;
+            color: white;
+            border-right: 1px solid #E68A3F; /* Darker line for header */
+        }
+
+        /* --- ADDED THIS RULE FOR DATA CELLS --- */
+        .preview-table-wrapper td {
+            border-right: 1px solid #eee; /* Light grey line for data cells */
+        }
+
+        /* Remove the right border from the last cell in BOTH header and data rows */
+        .preview-table-wrapper th:last-child,
+        .preview-table-wrapper td:last-child {
+            border-right: none;
+        }
+    </style>
+</head>
+<body>
+    <!----------------------------------------------------------------------------
+            Sidebar
+      ------------------------------------------------------------------------------>
+    <div class="sidebar">
+        <!-- Your sidebar HTML -->
+        <ul>
+            <li>
+                <a class="logo">
+                    <span class="icon"><img src="../Images/genericLogo.png" alt="Sidebar Logo" style="width: 40px; height: 40px;"></span>
+                    <span class="text">Registry Services</span>
+                </a>
+            </li>
+            <li><a href="eInvoicingSpecificationRegistry.html"><span class="icon"><i class="fa-solid fa-house"></i></span><span class="text">eInvoicing Specification Registry</span></a></li>
+            <li class="protected"><a href="mySpecifications.html"><span class="icon"><i class="fa-solid fa-folder"></i></span><span class="text">My Specifications</span></a></li>
+            <li class="protected"><a href="#"><span class="icon"><i class="fa-solid fa-file-medical"></i></span><span class="text">Add New Specification</span></a></li>
+            <li class="child-element protected"><a href="IdentifyingInformation.html"><span class="icon"><i class="fa-solid fa-info"></i></span><span class="text">Identifying Information</span></a></li>
+            <li class="child-element"><a href="coreInvoiceModel.html"><span class="icon"><i class="fa-solid fa-car"></i></span><span class="text">Core Invoice Model</span></a></li>
+            <li class="child-element"><a href="ExtensionComponentDataModel.html"><span class="icon"><i class="fa-solid fa-trailer"></i></span><span class="text">Extension Component Data Model</span></a></li>
+            <li class="child-element protected"><a href="additionalRequirements.html"><span class="icon"><i class="fa-solid fa-circle-plus"></i></span><span class="text">Additional Requirements</span></a></li>
+            <li class="child-element protected"><a href="SpecificationPreview.html"><span class="icon"><i class="fa-solid fa-square-check"></i></span><span class="text">Specification Preview</span></a></li>
+            <li id="loginLogoutItem"><a href="#" onclick="toggleLogin()"><span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span><span class="text" id="loginLogoutButton">Logout</span></a></li>
+        </ul>
+    </div>
+
+    <!----------------------------------------------------------------------------
+            Main Content
+      ------------------------------------------------------------------------------>
+    <div class="page-Content">
+        <h1><i class="fa-solid fa-square-check"></i> Specification Preview</h1>
+        <br/>
+
+        <div class="preview-container">
+            <!-- Core Invoice Elements Table -->
+            <div class="preview-table-wrapper">
+                <h3>Core Invoice Elements</h3>
+                <table id="coreTable">
+                    <thead><tr><th>ID</th><th>Business Term</th><th>Type of Change</th></tr></thead>
+                    <tbody id="coreTableBody"></tbody>
+                </table>
+            </div>
+
+            <!-- Extension Component Elements Table -->
+            <div class="preview-table-wrapper">
+                <h3>Extension Component elements</h3>
+                <table id="extensionsTable">
+                     <thead><tr><th>ID</th><th>Business Term</th><th>Extension Component</th></tr></thead>
+                     <tbody id="extensionsTableBody"></tbody>
+                </table>
+            </div>
+
+            <!-- Additional Requirements Table -->
+            <div class="preview-table-wrapper">
+                <h3>Additional Requirements</h3>
+                <table id="requirementsTable">
+                    <thead><tr><th>ID</th><th>Business Term</th><th>Type of Change</th></tr></thead>
+                    <tbody id="requirementsTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <hr style="margin: 30px 0;">
+
+        <!-- Buttons -->
+        <div style="text-align: left;">
+            <button type="button" onclick="handleSubmit()" class="view-button">Submit</button>
+            <button type="button" onclick="handleCancel()" class="view-button" style="background-color: #F4A261; color: #fff;">Cancel New Specification</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loadPreviewData = async () => {
+                const specId = localStorage.getItem("selectedSpecification");
+                if (!specId) {
+                    alert("No specification selected for preview.");
+                    return;
+                }
+
+                const specifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
+                const currentSpec = specifications.find(s => s.id === specId);
+                if (!currentSpec) {
+                    alert("Could not find the selected specification data.");
+                    return;
+                }
+
+                await populateCoreTable();
+                populateExtensionsTable(currentSpec.extensionComponents);
+                populateRequirementsTable(currentSpec.additionalRequirements);
+            };
+
+            const populateCoreTable = async () => {
+                const tableBody = document.getElementById('coreTableBody');
+                try {
+                    const response = await fetch('../JSON/mandatoryCoreElements.json');
+                    const data = await response.json();
+                    
+                    if (data.length === 0) {
+                        tableBody.innerHTML = '<tr><td colspan="3">No mandatory elements found.</td></tr>';
+                        return;
+                    }
+
+                    data.forEach(item => {
+                        const row = tableBody.insertRow();
+                        row.innerHTML = `<td>${item.ID}</td><td>${item["Business Term"]}</td><td>${item["Type of Change"]}</td>`;
+                    });
+
+                } catch (error) {
+                    console.error("Failed to load mandatory core elements:", error);
+                    tableBody.innerHTML = '<tr><td colspan="3">Error loading data.</td></tr>';
+                }
+            };
+
+            const populateExtensionsTable = (data) => {
+                const tableBody = document.getElementById('extensionsTableBody');
+                tableBody.innerHTML = '';
+                if (!data || data.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="3">No extension components selected.</td></tr>';
+                    return;
+                }
+
+                data.forEach(component => {
+                    component.selectedElements.forEach(elementId => {
+                         const row = tableBody.insertRow();
+                         row.innerHTML = `<td>${elementId}</td><td>${elementId}</td><td>${component.componentName}</td>`;
+                    });
+                });
+            };
+            
+            const populateRequirementsTable = (data) => {
+                const tableBody = document.getElementById('requirementsTableBody');
+                tableBody.innerHTML = '';
+                if (!data || data.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="3">No additional requirements added.</td></tr>';
+                    return;
+                }
+                data.forEach(req => {
+                    const row = tableBody.insertRow();
+                    row.innerHTML = `<td>${req.id}</td><td>${req.term}</td><td>${req.change}</td>`;
+                });
+            };
+
+            loadPreviewData();
+        });
+        
+        function handleSubmit() {
+            if (confirm("Are you sure you want to submit this specification? This action cannot be undone.")) {
+                const specId = localStorage.getItem("selectedSpecification");
+                let specifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
+                const specIndex = specifications.findIndex(s => s.id === specId);
+
+                if (specIndex > -1) {
+                    specifications[specIndex]["Registry Status"] = "Submitted";
+                    localStorage.setItem("mySpecifications", JSON.stringify(specifications));
+                    localStorage.removeItem("selectedSpecification");
+                    alert("Specification submitted successfully!");
+                    window.location.href = "mySpecifications.html";
+                } else {
+                    alert("Error: Could not find the specification to submit.");
+                }
+            }
+        }
+
+        function handleCancel() {
+            if (confirm("Warning! This Specification will be deleted, do you want to proceed?")) {
+                const specIdToDelete = localStorage.getItem("selectedSpecification");
+                if (specIdToDelete) {
+                    let specifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
+                    const updatedSpecifications = specifications.filter(spec => spec.id !== specIdToDelete);
+                    localStorage.setItem('mySpecifications', JSON.stringify(updatedSpecifications));
+                    localStorage.removeItem("selectedSpecification");
+                }
+                window.location.href = 'mySpecifications.html';
+            }
+        }
+    </script>
+</body>
+</html>
