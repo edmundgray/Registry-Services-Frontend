@@ -1,224 +1,146 @@
 <html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="../CSS/style.css">
-    <script src="../JS/javascript.js"></script>
-    <title>Registry Services - Additional Requirements</title>
-    <style>
-        /* Custom styles for this page's table */
-        #requirementsTable input,
-        #requirementsTable select {
-            width: 100%;
-            padding: 8px;
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        #requirementsTable .delete-btn {
-            background: none;
-            border: none;
-            color: #d9534f;
-            cursor: pointer;
-            font-size: 1.2em;
-        }
-        #requirementsTable .delete-btn:hover {
-            color: #c9302c;
-        }
-    </style>
-</head>
-<body>
-    <!----------------------------------------------------------------------------
-            Sidebar
-      ------------------------------------------------------------------------------>
-    <div class="sidebar">
-        <!-- Your sidebar HTML remains the same -->
-        <ul>
-            <li>
-                <a class="logo">
-                    <span class="icon"><img src="../Images/genericLogo.png" alt="Sidebar Logo" style="width: 40px; height: 40px;"></span>
-                    <span class="text">Registry Services</span>
-                </a>
-            </li>
-            <li>
-                <a href="eInvoicingSpecificationRegistry.html"><span class="icon"><i class="fa-solid fa-house"></i></span><span class="text">eInvoicing Specification Registry</span></a>
-            </li>
-            <li class="protected">
-                <a href="mySpecifications.html"><span class="icon"><i class="fa-solid fa-folder"></i></span><span class="text">My Specifications</span></a>
-            </li>
-            <li class="protected">
-                <a href="#"><span class="icon"><i class="fa-solid fa-file-medical"></i></span><span class="text">Add New Specification</span></a>
-            </li>
-            <li class="child-element protected">
-                <a href="IdentifyingInformation.html"><span class="icon"><i class="fa-solid fa-info"></i></span><span class="text">Identifying Information</span></a>
-            </li>
-            <li class="child-element">
-                <a href="coreInvoiceModel.html"><span class="icon"><i class="fa-solid fa-car"></i></span><span class="text">Core Invoice Model</span></a>
-            </li>
-            <li class="child-element">
-                <a href="ExtensionComponentDataModel.html"><span class="icon"><i class="fa-solid fa-trailer"></i></span><span class="text">Extension Component Data Model</span></a>
-            </li>
-            <li class="child-element protected">
-                <a href="additionalRequirements.html"><span class="icon"><i class="fa-solid fa-circle-plus"></i></span><span class="text">Additional Requirements</span></a>
-            </li>
-            <li class="child-element protected">
-                <a href="#"><span class="icon"><i class="fa-solid fa-square-check"></i></span><span class="text">Specification Preview</span></a>
-            </li>
-            <li id="loginLogoutItem">
-                <a href="#" onclick="toggleLogin()"><span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span><span class="text" id="loginLogoutButton">Logout</span></a>
-            </li>
-        </ul>
-    </div>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        <link rel="stylesheet" href="../CSS/style.css">
+        
+        <script src="../JS/javascript.js"></script>
+        <script src="../JS/additionalRequirements.js"></script>
+        
+        <title>Registry Services</title>
+    </head>
+    <body>
+<!----------------------------------------------------------------------------
+        Sidebar
+  ------------------------------------------------------------------------------>
+        <div class="sidebar">
+            <ul>
+                <li>
+                    <a class="logo">
+                        <span class="icon">
+                            <img src="../Images/genericLogo.png" alt="Sidebar Logo" style="width: 40px; height: 40px;">
+                        </span>
+                        <span class="text">Registry Services</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="eInvoicingSpecificationRegistry.html">
+                        <span class="icon"><i class="fa-solid fa-house"></i></span>
+                        <span class="text">eInvoicing Specification Registry</span>
+                    </a>
+                </li>
+                <li class="protected">
+                    <a href="governingEntityList.html">
+                        <span class="icon"><i class="fa-solid fa-building"></i></span>
+                        <span class="text">Governing Entities</span>
+                    </a>
+                </li>
+                <li class="protected">
+                    <a href="mySpecifications.html">
+                        <span class="icon"><i class="fa-solid fa-folder"></i></span>
+                        <span class="text">My Specifications</span>
+                    </a>
+                </li>
+                <li class="protected">
+                    <a href="#">
+                        <span class="icon"><i class="fa-solid fa-file-medical"></i></span>
+                        <span class="text">Add New Specification</span>
+                    </a>
+                </li>
+                <li class="child-element protected">
+                    <a href="IdentifyingInformation.html">
+                        <span class="icon"><i class="fa-solid fa-info"></i></span>
+                        <span class="text">Identifying Information</span>
+                    </a>
+                </li>
+                <li class="child-element">
+                    <a href="coreInvoiceModel.html">
+                        <span class="icon"><i class="fa-solid fa-car"></i></span>
+                        <span class="text">Core Invoice Model</span>
+                    </a>
+                </li>
+                <li class="child-element">
+                    <a href="ExtensionComponentDataModel.html">
+                        <span class="icon"><i class="fa-solid fa-trailer"></i></span>
+                        <span class="text">Extension Component Data Model</span>
+                    </a>
+                </li>
+                <li class="child-element protected">
+                    <a href="additionalRequirements.html">
+                        <span class="icon"><i class="fa-solid fa-circle-plus"></i></span>
+                        <span class="text">Additional Requirements</span>
+                    </a>
+                </li>
+                <li class="child-element protected">
+                    <a href="specificationPreview.html">
+                        <span class="icon"><i class="fa-solid fa-square-check"></i></span>
+                        <span class="text">Specification Preview</span>
+                    </a>
+                </li>
+                <li id="loginLogoutItem">
+                    <a href="#" onclick="toggleLogin()">
+                        <span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span>
+                        <span class="text" id="loginLogoutButton">Logout</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
 
-    <!----------------------------------------------------------------------------
-            Main Content
-      ------------------------------------------------------------------------------>
-    <div class="page-Content">
-        <h1><i class="fa-solid fa-circle-plus"></i> Additional Requirements</h1>
-        <p style="margin: 10px 0 20px 0;">
-            Add any additional business rules, data requirements, or validation rules that are not covered by the Core or Extension models.
-        </p>
+<!----------------------------------------------------------------------------
+        Main Content
+  ------------------------------------------------------------------------------>
+        <div class="page-Content">
+            <h1><i class="fa-solid fa-circle-plus"></i> Additional Requirements</h1>
+            <br/>
+            <p>Please enter any additional elements you require in your Specification that fall outside the Core Invoice Model and the Extension Component Data Model</p>
+            <table id="additionalRequirementsTable" class="styled-table" style="table-layout: fixed;">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;">ID</th>
+                        <th style="width: 60px;">Level</th>
+                        <th style="width: 80px;">Cardinality</th>
+                        <th style="width: 220px;">Business Term</th>
+                        <th style="width: 320px;">Description</th>
+                        <th style="width: 220px;">Type of Change</th>
+                        <th style="width: 70px;">Action</th>
+                    </tr>
+                </thead>
 
-        <table id="requirementsTable" class="styled-table">
-            <thead>
-                <tr>
-                    <th>Requirement ID</th>
-                    <th>Business Term / Description</th>
-                    <th>Type of Change</th>
-                    <th style="width: 50px;">Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Rows will be added here dynamically -->
-            </tbody>
-        </table>
+                <tbody>
+                    <tr>
+                        <td><input type="text" style="width: 100%;" placeholder="BT-1" /></td>
+                        <td><input type="text" style="width: 100%;" placeholder="+" /></td>
+                        <td><input type="text" style="width: 100%;" placeholder="1..1" /></td>
+                        <td><input type="text" style="width: 100%;" placeholder="Invoice Number" /></td>
+                        <td><textarea style="width: 100%; resize: vertical; min-height: 32px;" placeholder="A unique identification for the invoice"></textarea></td>
+                        <td>
+                            <select style="width: 100%; min-width: 220px;">
+                                <option value="Add new information element">Add new information element</option>
+                                <option value="Remove an optional element">Remove an optional element</option>
+                                <option value="Make Semantic definition narrower">Make Semantic definition narrower</option>
+                                <option value="Increase number of repetitions">Increase number of repetitions (e.g. x..1 to x..n)</option>
+                                <option value="Decrease number of repetitions">Decrease number of repetitions (e.g. x..n to x..1)</option>
+                                <option value="Restrict values in an existing list">Restrict values in an existing list</option>
+                            </select>
+                        </td>
+                        <td><button onclick="deleteRow(this)">Delete</button></td>
+                    </tr>
+                </tbody>
+            </table>
 
-        <button type="button" onclick="addNewRequirementRow()" class="view-button" style="margin-top: 15px;">Add Another Row</button>
+            <br/>
+            
+            <div class="button-row">
+                <div class="button-group">
+                    <button onclick="addRow()">Add another row</button>
+                    <button onclick="saveTable()">Save</button>
+                    <button onclick="cancelAction()">Cancel</button>
+                </div>
 
-        <hr style="margin: 30px 0;">
-
-        <!-- Main navigation buttons -->
-        <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 10px;">
-            <div>
-                <button type="button" onclick="handleSave()" class="view-button" style="background:#ccc; color:#333;">Save</button>
-                <button type="button" onclick="handleCancel()" class="view-button" style="background-color: #F4A261; color: #fff;">Cancel New Specification</button>
-            </div>
-            <div>
-                <button type="button" onclick="saveAndGoToPreview()" class="view-button" style="background:#217a36;">Specification Preview</button>
+                <button class="spec-preview-btn" onclick="goToSpecificationPreview()">Specification Preview</button>
             </div>
         </div>
-    </div>
-
-    <!----------------------------------------------------------------------------
-            JavaScript for this page's functionality
-      ------------------------------------------------------------------------------>
-    <script>
-        const tableBody = document.querySelector('#requirementsTable tbody');
-
-        // Function to add a new editable row to the table
-        function addNewRequirementRow(data = {}) {
-            const row = tableBody.insertRow();
-            row.innerHTML = `
-                <td><input type="text" class="req-id" value="${data.id || ''}"></td>
-                <td><input type="text" class="req-term" value="${data.term || ''}"></td>
-                <td>
-                    <select class="req-change">
-                        <option ${data.change === 'Extension' ? 'selected' : ''}>Extension</option>
-                        <option ${data.change === 'Restriction' ? 'selected' : ''}>Restriction</option>
-                        <option ${data.change === 'Information' ? 'selected' : ''}>Information</option>
-                    </select>
-                </td>
-                <td style="text-align: center;">
-                    <button class="delete-btn" onclick="deleteRow(this)"><i class="fas fa-trash-alt"></i></button>
-                </td>
-            `;
-        }
-
-        // Function to delete a row
-        function deleteRow(button) {
-            const row = button.closest('tr');
-            row.remove();
-        }
-
-        // --- Main button functions ---
-        function handleSave(showAlert = true) {
-            const requirementsData = [];
-            const rows = tableBody.querySelectorAll('tr');
-
-            rows.forEach(row => {
-                const idInput = row.querySelector('.req-id');
-                const termInput = row.querySelector('.req-term');
-                const changeSelect = row.querySelector('.req-change');
-
-                // Only save if the row has some data
-                if (idInput.value.trim() || termInput.value.trim()) {
-                    requirementsData.push({
-                        id: idInput.value,
-                        term: termInput.value,
-                        change: changeSelect.value
-                    });
-                }
-            });
-
-            const editingSpecId = localStorage.getItem("selectedSpecification");
-            if (!editingSpecId) {
-                alert("Error: No specification selected.");
-                return;
-            }
-
-            let specifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
-            const specIndex = specifications.findIndex(spec => spec.id === editingSpecId);
-
-            if (specIndex > -1) {
-                specifications[specIndex].additionalRequirements = requirementsData;
-                localStorage.setItem('mySpecifications', JSON.stringify(specifications));
-                if (showAlert) {
-                    alert("Additional requirements saved!");
-                }
-            } else {
-                alert("Error: Could not find the specification to save to.");
-            }
-        }
-
-        function handleCancel() {
-            if (confirm("Warning! This Specification will be deleted, do you want to proceed?")) {
-                const specIdToDelete = localStorage.getItem("selectedSpecification");
-                if (specIdToDelete) {
-                    let specifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
-                    const updatedSpecifications = specifications.filter(spec => spec.id !== specIdToDelete);
-                    localStorage.setItem('mySpecifications', JSON.stringify(updatedSpecifications));
-                    localStorage.removeItem("selectedSpecification");
-                }
-                window.location.href = 'mySpecifications.html';
-            }
-        }
-
-        function saveAndGoToPreview() {
-            handleSave(false); // Save without alert
-            // Update this when the preview page exists
-            window.location.href = 'specificationPreview.html'; 
-        }
-
-        // --- Function to load existing data when the page opens ---
-        function loadRequirements() {
-            const editingSpecId = localStorage.getItem("selectedSpecification");
-            if (!editingSpecId) return;
-
-            const specifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
-            const spec = specifications.find(s => s.id === editingSpecId);
-
-            if (spec && spec.additionalRequirements) {
-                spec.additionalRequirements.forEach(req => {
-                    addNewRequirementRow(req);
-                });
-            } else {
-                // If no data exists, add one empty row to start with
-                addNewRequirementRow();
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', loadRequirements);
-    </script>
-</body>
+    </body>
 </html>
