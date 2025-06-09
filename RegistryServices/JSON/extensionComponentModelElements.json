@@ -5,7 +5,11 @@
     "Level": "1.1",
     "Cardinality": "1..1",
     "Business Term": "Received quantity",
-    "Usage Note": "The quantity officially received by the Buyer is required"
+    "Usage Note": "The quantity officially received by the Buyer is required",
+    "Justification": "The quantity officially received by the Buyer is required",
+    "Data Type": "Quantity",
+    "Type of Extension": "Add new information element",
+    "Core Conformant/Rules broken": "Core Conformant"
   },
   {
     "Component": "Received and Accepted Quantity",
@@ -13,7 +17,11 @@
     "Level": "1.1",
     "Cardinality": "1..1",
     "Business Term": "Accepted quantity",
-    "Usage Note": "Following inspection the quantity accepted by the Buyer is required"
+    "Usage Note": "Following inspection the quantity accepted by the Buyer is required",
+    "Justification": "Following inspection the quantity accepted by the Buyer is required",
+    "Data Type": "Quantity",
+    "Type of Extension": "Add new information element",
+    "Core Conformant/Rules broken": "Core Conformant"
   },
   {
     "Component": "Received and Accepted Quantity",
@@ -21,7 +29,11 @@
     "Level": "1.1",
     "Cardinality": "1..1",
     "Business Term": "Invoiced quantity",
-    "Usage Note": "N/A"
+    "Usage Note": "N/A",
+    "Justification": "N/A",
+    "Data Type": "Quantity",
+    "Type of Extension": "N/A",
+    "Core Conformant/Rules broken": "Core Conformant"
   },
   {
     "Component": "Delivery Information",
@@ -29,7 +41,11 @@
     "Level": "1.1",
     "Cardinality": "0..1",
     "Business Term": "DELIVERY INFORMATION",
-    "Usage Note": "A group of business terms providing information about the delivery of the goods being invoiced"
+    "Usage Note": "A group of business terms providing information about the delivery of the goods being invoiced",
+    "Justification": "Required for logistics coordination.",
+    "Data Type": "Group",
+    "Type of Extension": "Add new information element",
+    "Core Conformant/Rules broken": "Core Conformant"
   },
   {
     "Component": "Delivery Information",
@@ -37,7 +53,11 @@
     "Level": "1.1",
     "Cardinality": "0..1",
     "Business Term": "Deliver to party name",
-    "Usage Note": "The name of the party to which the goods are delivered"
+    "Usage Note": "The name of the party to which the goods are delivered",
+    "Justification": "Identifies the recipient.",
+    "Data Type": "Text",
+    "Type of Extension": "Add new information element",
+    "Core Conformant/Rules broken": "Core Conformant"
   },
   {
     "Component": "Delivery Information",
@@ -45,7 +65,11 @@
     "Level": "1.1",
     "Cardinality": "0..1",
     "Business Term": "Deliver to address",
-    "Usage Note": "The address to which the goods are delivered"
+    "Usage Note": "The address to which the goods are delivered",
+    "Justification": "Specifies delivery location.",
+    "Data Type": "Text",
+    "Type of Extension": "Add new information element",
+    "Core Conformant/Rules broken": "Core Conformant"
   },
   {
     "Component": "Payment Terms Extension",
@@ -53,7 +77,11 @@
     "Level": "1.1",
     "Cardinality": "0..n",
     "Business Term": "Payment terms",
-    "Usage Note": "A textual description of the payment terms that apply to the amount due for payment"
+    "Usage Note": "A textual description of the payment terms that apply to the amount due for payment",
+    "Justification": "Clarifies payment expectations.",
+    "Data Type": "Text",
+    "Type of Extension": "Add new information element",
+    "Core Conformant/Rules broken": "Core Conformant"
   },
   {
     "Component": "Payment Terms Extension",
@@ -61,7 +89,11 @@
     "Level": "1.1",
     "Cardinality": "0..n",
     "Business Term": "PAYMENT INSTRUCTIONS",
-    "Usage Note": "A group of business terms providing instructions on how to pay the invoice"
+    "Usage Note": "A group of business terms providing instructions on how to pay the invoice",
+    "Justification": "Provides clear payment details.",
+    "Data Type": "Group",
+    "Type of Extension": "Add new information element",
+    "Core Conformant/Rules broken": "Core Conformant"
   },
   {
     "Component": "Payment Terms Extension",
@@ -69,6 +101,10 @@
     "Level": "1.1",
     "Cardinality": "0..1",
     "Business Term": "Remittance information",
-    "Usage Note": "Information that enables the Seller to unambiguously reconcile the payment with the invoice"
+    "Usage Note": "Information that enables the Seller to unambiguously reconcile the payment with the invoice",
+    "Justification": "Aids in payment reconciliation.",
+    "Data Type": "Text",
+    "Type of Extension": "Add new information element",
+    "Core Conformant/Rules broken": "Core Conformant"
   }
 ]
