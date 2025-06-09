@@ -7,38 +7,9 @@
         <link rel="stylesheet" href="../CSS/style.css">
         
         <script src="../JS/javascript.js"></script>
+        <script src="../JS/additionalRequirements.js"></script>
         
         <title>Registry Services</title>
-        
-        <style>
-            .page-Content 
-            {
-                font-size: 0.9em;
-            }
-            .styled-table th,
-            .styled-table td 
-            {
-                padding: 10.8px 13.5px;
-                font-size: 0.9em;
-            }
-            .styled-table thead tr 
-            {
-                font-size: 1.2em;
-            }
-            .fa-solid 
-            {
-                font-size: 1.2em;
-            }
-            .show-more-btn 
-            {
-                font-size: 0.95em !important;
-                padding: 4px 12px !important;
-            }
-            .table-container 
-            {
-                font-size: 0.9em;
-            }
-        </style>
     </head>
     <body>
 <!----------------------------------------------------------------------------
@@ -77,7 +48,7 @@
                         <span class="icon"><i class="fa-solid fa-file-medical"></i></span>
                         <span class="text">Add New Specification</span>
                     </a>
-                </li class="protected">
+                </li>
                 <li class="child-element protected">
                     <a href="IdentifyingInformation.html">
                         <span class="icon"><i class="fa-solid fa-info"></i></span>
@@ -108,7 +79,6 @@
                         <span class="text">Specification Preview</span>
                     </a>
                 </li>
-                <!-- Logging in/out-->
                 <li id="loginLogoutItem">
                     <a href="#" onclick="toggleLogin()">
                         <span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span>
@@ -122,29 +92,55 @@
         Main Content
   ------------------------------------------------------------------------------>
         <div class="page-Content">
-            <h1><i class="fa-solid fa-car"></i> Core Invoice Model</h1>
+            <h1><i class="fa-solid fa-circle-plus"></i> Additional Requirements</h1>
+            <br/>
+            <p>Please enter any additional elements you require in your Specification that fall outside the Core Invoice Model and the Extension Component Data Model</p>
+            <table id="additionalRequirementsTable" class="styled-table" style="table-layout: fixed;">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;">ID</th>
+                        <th style="width: 60px;">Level</th>
+                        <th style="width: 80px;">Cardinality</th>
+                        <th style="width: 220px;">Business Term</th>
+                        <th style="width: 320px;">Description</th>
+                        <th style="width: 220px;">Type of Change</th>
+                        <th style="width: 70px;">Action</th>
+                    </tr>
+                </thead>
 
-            <div class="table-container">
-                <table id="coreInvoiceTable" class="styled-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Level</th>
-                            <th>Cardinality</th>
-                            <th>Business Term</th>
-                            <th>Usage Note</th>
-                            <th>Business Rules</th>
-                            <th>Data Type</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Rows will be populated by JavaScript in coreInvoiceModel.js -->
-                    </tbody>
-                </table>
+                <tbody>
+                    <tr>
+                        <td><input type="text" style="width: 100%;" placeholder="BT-1" /></td>
+                        <td><input type="text" style="width: 100%;" placeholder="+" /></td>
+                        <td><input type="text" style="width: 100%;" placeholder="1..1" /></td>
+                        <td><input type="text" style="width: 100%;" placeholder="Invoice Number" /></td>
+                        <td><textarea style="width: 100%; resize: vertical; min-height: 32px;" placeholder="A unique identification for the invoice"></textarea></td>
+                        <td>
+                            <select style="width: 100%; min-width: 220px;">
+                                <option value="Add new information element">Add new information element</option>
+                                <option value="Remove an optional element">Remove an optional element</option>
+                                <option value="Make Semantic definition narrower">Make Semantic definition narrower</option>
+                                <option value="Increase number of repetitions">Increase number of repetitions (e.g. x..1 to x..n)</option>
+                                <option value="Decrease number of repetitions">Decrease number of repetitions (e.g. x..n to x..1)</option>
+                                <option value="Restrict values in an existing list">Restrict values in an existing list</option>
+                            </select>
+                        </td>
+                        <td><button onclick="deleteRow(this)">Delete</button></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <br/>
+            
+            <div class="button-row">
+                <div class="button-group">
+                    <button onclick="addRow()">Add another row</button>
+                    <button onclick="saveTable()">Save</button>
+                    <button onclick="cancelAction()">Cancel</button>
+                </div>
+
+                <button class="spec-preview-btn" onclick="goToSpecificationPreview()">Specification Preview</button>
             </div>
         </div>
-        <script src="../JS/coreInvoiceModel.js"></script>
-        
     </body>
 </html>

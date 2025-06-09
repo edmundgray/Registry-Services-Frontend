@@ -1,0 +1,366 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        <link rel="stylesheet" href="../CSS/style.css">
+        
+        <script src="../JS/javascript.js"></script>
+        
+        <title>Governing Entities</title>
+    </head>
+    <body>
+        <!----------------------------------------------------------------------------
+            Sidebar
+        ------------------------------------------------------------------------------>
+        <div class="sidebar">
+            <ul>
+                <li>
+                    <a class="logo">
+                        <span class="icon">
+                            <img src="../Images/genericLogo.png" alt="Sidebar Logo" style="width: 40px; height: 40px;">
+                        </span>
+                        <span class="text">Registry Services</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="eInvoicingSpecificationRegistry.html">
+                        <span class="icon"><i class="fa-solid fa-house"></i></span>
+                        <span class="text">eInvoicing Specification Registry</span>
+                    </a>
+                </li>
+                <li class="protected">
+                    <a href="governingEntityList.html">
+                        <span class="icon"><i class="fa-solid fa-building"></i></span>
+                        <span class="text">Governing Entities</span>
+                    </a>
+                </li>
+                <li class="protected">
+                    <a href="mySpecifications.html">
+                        <span class="icon"><i class="fa-solid fa-folder"></i></span>
+                        <span class="text">My Specifications</span>
+                    </a>
+                </li>
+                <li class="protected">
+                    <a href="#">
+                        <span class="icon"><i class="fa-solid fa-file-medical"></i></span>
+                        <span class="text">Add New Specification</span>
+                    </a>
+                </li>
+                <li class="child-element protected">
+                    <a href="IdentifyingInformation.html">
+                        <span class="icon"><i class="fa-solid fa-info"></i></span>
+                        <span class="text">Identifying Information</span>
+                    </a>
+                </li>
+                <li class="child-element">
+                    <a href="coreInvoiceModel.html">
+                        <span class="icon"><i class="fa-solid fa-car"></i></span>
+                        <span class="text">Core Invoice Model</span>
+                    </a>
+                </li>
+                <li class="child-element">
+                    <a href="ExtensionComponentDataModel.html">
+                        <span class="icon"><i class="fa-solid fa-trailer"></i></span>
+                        <span class="text">Extension Component Data Model</span>
+                    </a>
+                </li>
+                <li class="child-element protected">
+                    <a href="additionalRequirements.html">
+                        <span class="icon"><i class="fa-solid fa-circle-plus"></i></span>
+                        <span class="text">Additional Requirements</span>
+                    </a>
+                </li>
+                <li class="child-element protected">
+                    <a href="specificationPreview.html">
+                        <span class="icon"><i class="fa-solid fa-square-check"></i></span>
+                        <span class="text">Specification Preview</span>
+                    </a>
+                </li>
+                <li id="loginLogoutItem">
+                    <a href="#" onclick="toggleLogin()">
+                        <span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span>
+                        <span class="text" id="loginLogoutButton">Logout</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+<!----------------------------------------------------------------------------
+            Governing Entities Table
+  ------------------------------------------------------------------------------>
+        <div class="page-Content">
+            <h1><i class="fa-solid fa-building"></i> Governing Entities</h1>
+            <br/>
+            <button id="addEntityBtn" type="button" style="padding: 10px 20px; font-size: 14px; margin-bottom: 0px;">Add New Governing Entity</button>
+            
+            <table id="governingEntitiesTable" class="styled-table">
+                <thead>
+                    <tr>
+                        <th>Created</th>
+                        <th>Governing Entity</th>
+                        <th>No. of Users</th>
+                        <th>No. of Specifications</th>
+                        <th>In Progress</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="6" style="text-align: center; font-style: italic;">Under development</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Waiting for Approval Table -->
+            <h2 style="margin-top:32px;font-size:20px;">Waiting for Approval</h2>
+            <table id="waitingApprovalTable" class="styled-table">
+                <thead>
+                    <tr>
+                        <th>Created</th>
+                        <th>Governing Entity</th>
+                        <th>No. of Users</th>
+                        <th>No. of Specifications</th>
+                        <th>In Progress</th>
+                        <th>Action</th>
+                        <th>Deny</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="7" style="text-align: center; font-style: italic;">No pending entities</td>
+                    </tr>
+                </tbody>
+            </table>
+
+    <div id="pagination-controls">
+        <label for="rowsPerPage">Show</label>
+        <select id="rowsPerPage">
+            <option value="10">10</option>
+            <option value="15">15</option>
+            <option value="20">20</option>
+        </select>
+        <span>rows</span>
+        <button id="prevPage" disabled>«</button>
+        <span id="currentPage">1</span>
+        <button id="nextPage" disabled>»</button>
+    </div>
+</div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () 
+        {
+            // Initialize variables for pagination and data storage
+            let originalData = [];
+            let filteredData = [];
+            let currentPage = 1;
+            let rowsPerPage = parseInt(document.getElementById("rowsPerPage").value, 10);
+
+            // Get references to the table body and pagination controls
+            const tableBody = document.querySelector("#governingEntitiesTable tbody");
+            const rowsPerPageSelect = document.getElementById("rowsPerPage");
+            const prevPageButton = document.getElementById("prevPage");
+            const nextPageButton = document.getElementById("nextPage");
+            const currentPageSpan = document.getElementById("currentPage");
+
+            // Populating the table with data
+            function populateTable(data) 
+            {
+                tableBody.innerHTML = "";
+                if (data.length === 0) 
+                {
+                    const row = document.createElement("tr");
+                    const cell = document.createElement("td");
+                    cell.colSpan = 6;
+                    cell.style.textAlign = "center";
+                    cell.style.fontStyle = "italic";
+                    cell.textContent = "No governing entities found.";
+                    row.appendChild(cell);
+                    tableBody.appendChild(row);
+                    return;
+                }
+
+                // Calculating the start and end indices for the current page
+                const startIndex = (currentPage - 1) * rowsPerPage;
+                const endIndex = Math.min(startIndex + rowsPerPage, data.length);
+
+                for (let i = startIndex; i < endIndex; i++) 
+                {
+                    const entry = data[i];
+                    const row = document.createElement("tr");
+                    
+                    // Creating a URLSearchParams object to pass data to the view page
+                    const params = new URLSearchParams({
+                        Created: entry["Created"],
+                        GoverningEntity: entry["GoverningEntity"],
+                        NoOfUsers: entry["No. of Users"],
+                        NoOfSpecifications: entry["No. of Specifications"],
+                        InProgress: entry["In Progress"]
+                    }).toString();
+
+                    row.innerHTML = `
+                        <td>${entry["Created"]}</td>
+                        <td>${entry["GoverningEntity"]}</td>
+                        <td>${entry["No. of Users"]}</td>
+                        <td>${entry["No. of Specifications"]}</td>
+                        <td>${entry["In Progress"]}</td>
+                        <td>
+                            <button class="view-button" onclick="window.location.href='governingEntityView.html?${params}'">View</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                }
+
+                // Update pagination controls
+                const totalPages = Math.ceil(data.length / rowsPerPage);
+
+                currentPageSpan.textContent = currentPage;
+                prevPageButton.disabled = currentPage === 1;
+                nextPageButton.disabled = currentPage === totalPages || totalPages === 0;
+            }
+
+            // Event listeners for pagination controls
+            rowsPerPageSelect.addEventListener("change", function () 
+            {
+                rowsPerPage = parseInt(this.value, 10);
+                currentPage = 1;
+                populateTable(filteredData);
+            });
+
+            // Event listeners for previous and next page buttons
+            prevPageButton.addEventListener("click", function () 
+            {
+                if (currentPage > 1) 
+                {
+                    currentPage--;
+                    populateTable(filteredData);
+                }
+            });
+
+            // Next page button functionality
+            nextPageButton.addEventListener("click", function () 
+            {
+                const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+                
+                if (currentPage < totalPages) 
+                {
+                    currentPage++;
+                    populateTable(filteredData);
+                }
+            });
+
+            // Fetching the data from the JSON file
+            fetch("../JSON/mockGoverningEntities.json")
+                .then(response => response.json())
+                .then(data => 
+                {
+                    originalData = data;
+                    filteredData = data;
+                    populateTable(filteredData);
+                })
+                .catch(error => 
+                {
+                    tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;font-style:italic;">Failed to load data</td></tr>`;
+                });
+
+            // --- Add New Governing Entity functionality ---
+            const addEntityBtn = document.getElementById("addEntityBtn");
+            const waitingApprovalTable = document.getElementById("waitingApprovalTable").getElementsByTagName("tbody")[0];
+
+            addEntityBtn.addEventListener("click", function () 
+            {
+                // Remove the "No pending entities" row if present
+                if (waitingApprovalTable.rows.length === 1 && waitingApprovalTable.rows[0].cells[0].colSpan === 7) 
+                {
+                    waitingApprovalTable.innerHTML = "";
+                }
+
+                // Insert a new row with editable fields (except Created), Approve and Deny buttons
+                const row = waitingApprovalTable.insertRow();
+                const now = new Date();
+                const dateStr = now.toLocaleDateString('en-GB');
+
+                row.innerHTML = `
+                    <td>${dateStr}</td>
+                    <td><input type="text" value="New Governing Entity" style="width: 180px;" /></td>
+                    <td><input type="number" min="0" value="0" style="width: 50px;" /></td>
+                    <td><input type="number" min="0" value="0" style="width: 50px;" /></td>
+                    <td><input type="number" min="0" value="0" style="width: 50px;" /></td>
+                    <td>
+                        <button class="view-button approve-btn">Approve</button>
+                    </td>
+                    <td>
+                        <button class="view-button deny-btn" style="background:#dc3545;">Deny</button>
+                    </td>
+                `;
+
+                // Approve button moves the row to the main table
+                row.querySelector('.approve-btn').addEventListener('click', function () 
+                {
+                    const confirmApprove = confirm("Approve this entry? This will move it to the main table.");
+
+                    if (!confirmApprove) return;
+
+                    // Remove from waiting approval table first
+                    row.remove();
+
+                    // Get values from inputs
+                    const cells = row.querySelectorAll('input');
+                    const newEntry = {
+                        "Created": dateStr,
+                        "GoverningEntity": cells[0].value,
+                        "No. of Users": cells[1].value,
+                        "No. of Specifications": cells[2].value,
+                        "In Progress": cells[3].value
+                    };
+
+                    originalData.unshift(newEntry); // Add to the top
+                    filteredData = originalData;
+                    populateTable(filteredData);
+
+                    // If no more rows, show placeholder
+                    if (waitingApprovalTable.rows.length === 0) 
+                    {
+                        const emptyRow = waitingApprovalTable.insertRow();
+                        emptyRow.innerHTML = `<td colspan="7" style="text-align: center; font-style: italic;">No pending entities</td>`;
+                    }
+                });
+
+                // Deny button deletes the row with alert and confirmation
+                row.querySelector('.deny-btn').addEventListener('click', function () 
+                {
+                    const confirmDeny = confirm("Are you sure you want to deny and remove this entry?");
+
+                    if (!confirmDeny) return;
+                    alert("This entry has been denied and removed.");
+                    row.remove();
+
+                    if (waitingApprovalTable.rows.length === 0) 
+                    {
+                        const emptyRow = waitingApprovalTable.insertRow();
+                        emptyRow.innerHTML = `<td colspan="7" style="text-align: center; font-style: italic;">No pending entities</td>`;
+                    }
+                });
+            });
+
+            // --- Login/logout functionality ---
+            const loginLogoutItem = document.getElementById("loginLogoutItem");
+            const loginLogoutButton = document.getElementById("loginLogoutButton");
+
+            loginLogoutItem.addEventListener("click", function () 
+            {
+                if (loginLogoutButton.textContent === "Logout") 
+                {
+                    alert("Logged out successfully.");
+                    loginLogoutButton.textContent = "Login";
+                } 
+                else 
+                {
+                    window.location.href = "login.html";
+                }
+            });
+        });
+    </script>
+    </body>
+</html>

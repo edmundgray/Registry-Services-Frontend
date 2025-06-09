@@ -8,37 +8,7 @@
         
         <script src="../JS/javascript.js"></script>
         
-        <title>Registry Services</title>
-        
-        <style>
-            .page-Content 
-            {
-                font-size: 0.9em;
-            }
-            .styled-table th,
-            .styled-table td 
-            {
-                padding: 10.8px 13.5px;
-                font-size: 0.9em;
-            }
-            .styled-table thead tr 
-            {
-                font-size: 1.2em;
-            }
-            .fa-solid 
-            {
-                font-size: 1.2em;
-            }
-            .show-more-btn 
-            {
-                font-size: 0.95em !important;
-                padding: 4px 12px !important;
-            }
-            .table-container 
-            {
-                font-size: 0.9em;
-            }
-        </style>
+        <title>Specification Preview</title>
     </head>
     <body>
 <!----------------------------------------------------------------------------
@@ -119,32 +89,75 @@
         </div>
 
 <!----------------------------------------------------------------------------
-        Main Content
+        The main content area
   ------------------------------------------------------------------------------>
         <div class="page-Content">
-            <h1><i class="fa-solid fa-car"></i> Core Invoice Model</h1>
+            <h1><i class="fa-solid fa-square-check"></i> Specification Preview</h1>
+            <br/>
 
-            <div class="table-container">
-                <table id="coreInvoiceTable" class="styled-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Level</th>
-                            <th>Cardinality</th>
-                            <th>Business Term</th>
-                            <th>Usage Note</th>
-                            <th>Business Rules</th>
-                            <th>Data Type</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Rows will be populated by JavaScript in coreInvoiceModel.js -->
-                    </tbody>
-                </table>
+            <!-- Scrollable container for tables -->
+            <div style="overflow-x: auto; max-width: 100%;">
+                <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+                    <!-- First Table -->
+                    <table class="styled-table" style="flex: 1 1 calc(33.33% - 20px); min-width: 300px;">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Business Term</th>
+                                <th>Type of Change</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td></td>
+                                <td>Under Development</td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Second Table -->
+                    <table class="styled-table" style="flex: 1 1 calc(33.33% - 20px); min-width: 300px;">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Business Term</th>
+                                <th>Extension Component</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td></td>
+                                <td>Under Development</td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Third Table -->
+                    <table class="styled-table" style="flex: 1 1 calc(33.33% - 20px); min-width: 300px;">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Business Term</th>
+                                <th>Type of Change</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td></td>
+                                <td>Under Development</td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- Buttons row underneath the tables, left aligned -->
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="button" style="padding: 8px 24px;">Submit</button>
+                <button type="button" style="padding: 8px 24px;">Cancel</button>
             </div>
         </div>
-        <script src="../JS/coreInvoiceModel.js"></script>
-        
     </body>
 </html>

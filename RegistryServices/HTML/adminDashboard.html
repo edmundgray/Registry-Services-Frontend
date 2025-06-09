@@ -1,0 +1,168 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        <link rel="stylesheet" href="../CSS/style.css">
+        
+        <script src="../JS/javascript.js"></script>
+        
+        <title>Admin Dashboard - Registry Services</title>
+    </head>
+    <body>
+<!----------------------------------------------------------------------------
+        Sidebar
+  ------------------------------------------------------------------------------>
+        <div class="sidebar">
+            <ul>
+                <li>
+                    <a class="logo">
+                        <span class="icon">
+                            <img src="../Images/genericLogo.png" alt="Sidebar Logo" style="width: 40px; height: 40px;">
+                        </span>
+                        <span class="text">Registry Services</span>
+                    </a>
+                </li>
+                <li class="protected">
+                    <a href="adminDashboard.html">
+                        <span class="icon"><i class="fa-solid fa-tachometer-alt"></i></span>
+                        <span class="text">Admin Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="eInvoicingSpecificationRegistry.html">
+                        <span class="icon"><i class="fa-solid fa-house"></i></span>
+                        <span class="text">eInvoicing Specification Registry</span>
+                    </a>
+                </li>
+                <li class="protected">
+                    <a href="mySpecifications.html">
+                        <span class="icon"><i class="fa-solid fa-folder"></i></span>
+                        <span class="text">My Specifications</span>
+                    </a>
+                </li>
+                <li class="protected">
+                    <a href="#">
+                        <span class="icon"><i class="fa-solid fa-file-medical"></i></span>
+                        <span class="text">Add New Specification</span>
+                    </a>
+                </li class="protected">
+                <li class="child-element protected">
+                    <a href="IdentifyingInformation.html">
+                        <span class="icon"><i class="fa-solid fa-info"></i></span>
+                        <span class="text">Identifying Information</span>
+                    </a>
+                </li>
+                <li class="child-element">
+                    <a href="coreInvoiceModel.html">
+                        <span class="icon"><i class="fa-solid fa-car"></i></span>
+                        <span class="text">Core Invoice Model</span>
+                    </a>
+                </li>
+                <li class="child-element">
+                    <a href="ExtensionComponentDataModel.html">
+                        <span class="icon"><i class="fa-solid fa-trailer"></i></span>
+                        <span class="text">Extension Component Data Model</span>
+                    </a>
+                </li>
+                <li class="child-element protected">
+                    <a href="#">
+                        <span class="icon"><i class="fa-solid fa-circle-plus"></i></span>
+                        <span class="text">Additional Requirements</span>
+                    </a>
+                </li>
+                <li class="child-element protected">
+                    <a href="#">
+                        <span class="icon"><i class="fa-solid fa-square-check"></i></span>
+                        <span class="text">Specification Preview</span>
+                    </a>
+                </li>
+                <!-- Logging in/out-->
+                <li id="loginLogoutItem">
+                    <a href="#" onclick="toggleLogin()">
+                        <span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span>
+                        <span class="text" id="loginLogoutButton">Logout</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+<!----------------------------------------------------------------------------
+        The Table
+  ------------------------------------------------------------------------------>
+        <div class="page-Content">
+            <h1><i class="fa-solid fa-tachometer-alt"></i> Admin Dashboard</h1>
+            <br/>
+            <div class="filter-container">
+                <input type="text" id="searchInput" placeholder="Search..." />
+
+                <select id="typeFilter">
+                    <option value="">All Types</option>
+                    <option value="CIUS">CIUS</option>
+                    <option value="Extension">Extension</option>
+                </select>
+            
+                <select id="sectorFilter">
+                    <option value="">All Sectors</option>
+                    <option value="Agriculture, Forestry & Fishing">Agriculture, Forestry & Fishing</option>
+                    <option value="Mining & Quarrying">Mining & Quarrying</option>
+                    <option value="Manufacturing">Manufacturing</option>
+                    <option value="Electricity & Gas">Electricity & Gas</option>
+                    <option value="Water Supply & Waste Management">Water Supply & Waste Management</option>
+                    <option value="Construction">Construction</option>
+                    <option value="Wholesale & Retail Trade">Wholesale & Retail Trade</option>
+                    <option value="Transportation & Storage">Transportation & Storage</option>
+                    <option value="Accommodation & Food Services">Accommodation & Food Services</option>
+                    <option value="Information & Communication">Information & Communication</option>
+                    <option value="Financial & Insurance Activities">Financial & Insurance Activities</option>
+                    <option value="Real Estate Activities">Real Estate Activities</option>
+                    <option value="Professional & Technical Activities">Professional & Technical Activities</option>
+                    <option value="Administrative & Support Services">Administrative & Support Services</option>
+                    <option value="Public Administration & Defense">Public Administration & Defense</option>
+                    <option value="Education">Education</option>
+                    <option value="Human Health & Social Work Activities">Human Health & Social Work Activities</option>
+                    <option value="Arts, Entertainment & Recreation">Arts, Entertainment & Recreation</option>
+                    <option value="Other Service Activities">Other Service Activities</option>
+                    <option value="Activities of Households as Employers">Activities of Households as Employers</option>
+                </select>
+            
+                <select id="countryFilter">
+                    <option value="">All Countries</option>
+                    <option value="DE">Germany (DE)</option>
+                    <option value="NL">Netherlands (NL)</option>
+                    <option value="BE">Belgium (BE)</option>
+                    <option value="IE">Ireland (IE)</option>
+                    <option value="FR">France (FR)</option>
+                </select>
+            
+                <select id="extensionComponentFilter">
+                    <option value="">All Components</option>
+                    <option value="Received and Accepted Quantity Delivery Information">Received and Accepted Quantity Delivery Information</option>
+                    <option value="Delivery Information">Delivery Information</option>
+                    <option value="Grouping Invoice Lines by Sublines & Settlement Plans">Grouping Invoice Lines by Sublines & Settlement Plans</option>
+                    <option value="Batch Data Restrictions, Delivery Confirmation & Payment Terms">Batch Data Restrictions, Delivery Confirmation & Payment Terms</option>
+                    <option value="Split Payments & Ad-Specific Metadata">Split Payments & Ad-Specific Metadata</option>
+                    <option value="Line-level VAT and Energy Usage Breakdown">Line-level VAT and Energy Usage Breakdown</option>
+                </select>
+            </div>
+
+            <table id="myTable"></table>
+
+            <div id="pagination-controls">
+                <label for="rowsPerPage">Show</label>
+
+                <select id="rowsPerPage">
+                    <option value="10">10</option>
+                    <option value="15">15</option>
+                    <option value="20">20</option>
+                </select>
+                
+                <span>rows</span>
+                <button id="prevPage">«</button>
+                <span id="currentPage">1</span>
+                <button id="nextPage">»</button>
+            </div>
+        </div>
+    </body>
+</html>
