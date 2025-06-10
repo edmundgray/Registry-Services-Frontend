@@ -696,3 +696,12 @@ button[onclick*="deleteRow"]:active {
     background-color: #fff; /* active tab background */
     border-bottom: 2px solid #007BFF; /* active tab underline */
 }
+
+#myTable tr.submitted-row {
+    background-color: #fffacd; /* Light yellow */
+    font-weight: bold !important; 
+}
+
+#myTable tr.submitted-row:hover {
+    background-color: #fff0b3 !important; /* Slightly darker yellow on hover */
+}

@@ -47,9 +47,20 @@ function updateVisibility()
 let currentPage = 1;
 let rowsPerPage = 10;
 let filteredData = [];
+let originalData = [];
+
+
 
 document.addEventListener("DOMContentLoaded", function () 
 {
+    const registryTable = document.getElementById("myTable");
+    if (!registryTable) {
+        // If the table doesn't exist, we are not on the main registry page.
+        // We can still run logic that applies to all pages, like updateVisibility.
+        updateVisibility();
+        return; // Exit and don't run the table/filter logic.
+    }
+
     let originalData = 
     [{
             "Name": "RetailConnect Billing Rules",
@@ -69,24 +80,30 @@ document.addEventListener("DOMContentLoaded", function ()
     const prevPageButton = document.getElementById("prevPage");
     const nextPageButton = document.getElementById("nextPage");
     const currentPageSpan = document.getElementById("currentPage");
+    const searchInput = document.getElementById("searchInput");
+    const typeFilter = document.getElementById("typeFilter");
+    const sectorFilter = document.getElementById("sectorFilter");
+    const countryFilter = document.getElementById("countryFilter");
+    const extensionComponentFilter = document.getElementById("extensionComponentFilter");
 
     // Rows per page select
-    rowsPerPageSelect.addEventListener("change", function () 
-    {
-        rowsPerPage = parseInt(this.value, 10);
-        currentPage = 1;
-        applyFilters();
-    });
+    if (rowsPerPageSelect) {
+        rowsPerPageSelect.addEventListener("change", function () {
+            rowsPerPage = parseInt(this.value, 10);
+            currentPage = 1;
+            applyFilters();
+        });
+    }
 
     // Previous Button
-    prevPageButton.addEventListener("click", function () 
-    {
-        if (currentPage > 1) 
-        {
-            currentPage--;
-            applyFilters();
-        }
-    });
+    if (prevPageButton) {
+        prevPageButton.addEventListener("click", function () {
+            if (currentPage > 1) {
+                currentPage--;
+                applyFilters();
+            }
+        });
+    }
 
     // Next Button
     nextPageButton.addEventListener("click", function () 
@@ -98,6 +115,23 @@ document.addEventListener("DOMContentLoaded", function ()
             applyFilters();
         }
     });
+
+    if (nextPageButton) {
+        nextPageButton.addEventListener("click", function () {
+            const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                applyFilters();
+            }
+        });
+    }
+
+    if (searchInput) searchInput.addEventListener("input", applyFilters);
+    if (typeFilter) typeFilter.addEventListener("change", applyFilters);
+    if (sectorFilter) sectorFilter.addEventListener("change", applyFilters);
+    if (countryFilter) countryFilter.addEventListener("change", applyFilters);
+    if (extensionComponentFilter) extensionComponentFilter.addEventListener("change", applyFilters);
+
 
     // Fetch the data and populate the table
     fetch("../JSON/mockData.json")
@@ -216,4 +250,6 @@ document.addEventListener("DOMContentLoaded", function ()
         // Re-populate the table with the new filtered data
         populateTable(filteredData);
     }
+
+    updateVisibility(); // Ensure visibility is updated on page load
 });
