@@ -87,23 +87,6 @@
             </ul>
         </div>
 
-        <script>
-if (localStorage.userRole === "Admin") {
-    const sidebar = document.querySelector('.sidebar ul');
-    if (sidebar) {
-        const li = document.createElement('li');
-        li.className = "child-element protected";
-        li.innerHTML = `
-            <a href="ExtensionComponentDataModelAdmin.html">
-                <span class="icon"><i class="fa-solid fa-eye"></i></span>
-                <span class="text">VIEW EXTENSION COMPONENT DATA MODEL (ADMIN)</span>
-            </a>
-        `;
-        sidebar.appendChild(li);
-    }
-}
-</script>
-
 <!----------------------------------------------------------------------------
             Governing Entities Table
   ------------------------------------------------------------------------------>
@@ -112,6 +95,27 @@ if (localStorage.userRole === "Admin") {
             <br/>
             <button id="addEntityBtn" type="button" style="padding: 10px 20px; font-size: 14px; margin-bottom: 0px;">Add New Governing Entity</button>
             
+            <!-- Waiting for Approval Table -->
+            <h2 style="margin-top:32px;font-size:20px;">Waiting for Approval</h2>
+            <table id="waitingApprovalTable" class="styled-table">
+                <thead>
+                    <tr>
+                        <th>Created</th>
+                        <th>Governing Entity</th>
+                        <th>Primary User</th>
+                        <!-- <th>No. of Specifications</th>
+                        <th>In Progress</th> -->
+                        <th>Action</th>
+                        <th>Deny</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="7" style="text-align: center; font-style: italic;">No pending entities</td>
+                    </tr>
+                </tbody>
+            </table>
+
             <table id="governingEntitiesTable" class="styled-table">
                 <thead>
                     <tr>
@@ -130,26 +134,7 @@ if (localStorage.userRole === "Admin") {
                 </tbody>
             </table>
 
-            <!-- Waiting for Approval Table -->
-            <h2 style="margin-top:32px;font-size:20px;">Waiting for Approval</h2>
-            <table id="waitingApprovalTable" class="styled-table">
-                <thead>
-                    <tr>
-                        <th>Created</th>
-                        <th>Governing Entity</th>
-                        <th>No. of Users</th>
-                        <th>No. of Specifications</th>
-                        <th>In Progress</th>
-                        <th>Action</th>
-                        <th>Deny</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td colspan="7" style="text-align: center; font-style: italic;">No pending entities</td>
-                    </tr>
-                </tbody>
-            </table>
+            
 
     <div id="pagination-controls">
         <label for="rowsPerPage">Show</label>
@@ -293,7 +278,7 @@ if (localStorage.userRole === "Admin") {
                     waitingApprovalTable.innerHTML = "";
                 }
 
-                // Insert a new row with editable fields (except Created), Approve and Deny buttons
+                // Insert a new row with editable fields (only for Governing Entity and Primary User), Approve and Deny buttons
                 const row = waitingApprovalTable.insertRow();
                 const now = new Date();
                 const dateStr = now.toLocaleDateString('en-GB');
@@ -301,9 +286,7 @@ if (localStorage.userRole === "Admin") {
                 row.innerHTML = `
                     <td>${dateStr}</td>
                     <td><input type="text" value="New Governing Entity" style="width: 180px;" /></td>
-                    <td><input type="number" min="0" value="0" style="width: 50px;" /></td>
-                    <td><input type="number" min="0" value="0" style="width: 50px;" /></td>
-                    <td><input type="number" min="0" value="0" style="width: 50px;" /></td>
+                    <td><input type="text" value="" style="width: 120px;" /></td>
                     <td>
                         <button class="view-button approve-btn">Approve</button>
                     </td>
@@ -316,7 +299,6 @@ if (localStorage.userRole === "Admin") {
                 row.querySelector('.approve-btn').addEventListener('click', function () 
                 {
                     const confirmApprove = confirm("Approve this entry? This will move it to the main table.");
-
                     if (!confirmApprove) return;
 
                     // Remove from waiting approval table first
@@ -328,8 +310,8 @@ if (localStorage.userRole === "Admin") {
                         "Created": dateStr,
                         "GoverningEntity": cells[0].value,
                         "No. of Users": cells[1].value,
-                        "No. of Specifications": cells[2].value,
-                        "In Progress": cells[3].value
+                        "No. of Specifications": "0",
+                        "In Progress": "0"
                     };
 
                     originalData.unshift(newEntry); // Add to the top
@@ -348,7 +330,6 @@ if (localStorage.userRole === "Admin") {
                 row.querySelector('.deny-btn').addEventListener('click', function () 
                 {
                     const confirmDeny = confirm("Are you sure you want to deny and remove this entry?");
-
                     if (!confirmDeny) return;
                     alert("This entry has been denied and removed.");
                     row.remove();

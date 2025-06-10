@@ -54,7 +54,6 @@
                         <span class="text">Registry Services</span>
                     </a>
                 </li>
-                
                 <li>
                     <a href="eInvoicingSpecificationRegistry.html">
                         <span class="icon"><i class="fa-solid fa-house"></i></span>
@@ -118,22 +117,6 @@
                 </li>
             </ul>
         </div>
-        <script>
-if (localStorage.userRole === "Admin") {
-    const sidebar = document.querySelector('.sidebar ul');
-    if (sidebar) {
-        const li = document.createElement('li');
-        li.className = "child-element protected";
-        li.innerHTML = `
-            <a href="ExtensionComponentDataModelAdmin.html">
-                <span class="icon"><i class="fa-solid fa-eye"></i></span>
-                <span class="text">VIEW EXTENSION COMPONENT DATA MODEL (ADMIN)</span>
-            </a>
-        `;
-        sidebar.appendChild(li);
-    }
-}
-</script>
 
 <!----------------------------------------------------------------------------
         Main Content
@@ -152,8 +135,6 @@ if (localStorage.userRole === "Admin") {
                             <th>Usage Note</th>
                             <th>Business Rules</th>
                             <th>Data Type</th>
-                            <th>Included in Spec</th>
-                            <th>Type of Change</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -162,90 +143,8 @@ if (localStorage.userRole === "Admin") {
                     </tbody>
                 </table>
             </div>
-            <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 30px;">
-                <div>
-                    <button type="button" onclick="handleCoreInvoiceSave()" class="view-button" style="background:#ccc; color:#333;">Save</button>
-                    
-                    <button type="button" onclick="handleCancel()" class="view-button" style="background-color: #F4A261; color: #fff;">Cancel New Specification</button>
-                </div>
-                <div>
-                    <button type="button" onclick="saveAndGoToExtensionModel()" class="view-button" style="background:#217a36;">Extension Component Data Model</button>
-                </div>
-            </div>
         </div>
-        
         <script src="../JS/coreInvoiceModel.js"></script>
-        <script>
-            let isFormDirty = false;
-
-        document.addEventListener('DOMContentLoaded', () => {
-            // Listen for changes on any checkbox that is not disabled
-            document.querySelector('#coreInvoiceTable').addEventListener('change', (event) => {
-                if (event.target.matches('.row-selector:not(:disabled)')) {
-                    isFormDirty = true;
-                }
-            });
-        });
-
-        window.addEventListener('beforeunload', (e) => {
-            if (isFormDirty) {
-                e.preventDefault();
-                e.returnValue = '';
-            }
-        });
-
-        function handleCoreInvoiceSave(showAlert = true) {
-            const selectedIds = [];
-            // Find all checked checkboxes and get their 'data-id' attribute
-            document.querySelectorAll('.row-selector:checked').forEach(checkbox => {
-                selectedIds.push(checkbox.getAttribute('data-id'));
-            });
-
-            // Get the current specification from localStorage
-            const editingSpecId = localStorage.getItem("selectedSpecification");
-            if (!editingSpecId) {
-                // This should not happen in this step, but as a safeguard:
-                alert("Error: No specification selected. Please go back to the Identifying Information page.");
-                return;
-            }
-
-            let specifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
-            const specIndex = specifications.findIndex(spec => spec.id === editingSpecId);
-
-            if (specIndex > -1) {
-                // Add the selected IDs to the specification object
-                specifications[specIndex].coreInvoiceModelIds = selectedIds;
-                localStorage.setItem('mySpecifications', JSON.stringify(specifications));
-                if (showAlert) {
-                    alert("Selections saved!");
-                }
-                isFormDirty = false; // Reset the flag after saving
-            } else {
-                alert("Error: Could not find the specification to save to.");
-            }
-        }
-
-
-
-        function saveAndGoToExtensionModel() {
-            handleCoreInvoiceSave(false); // Save the data without showing an alert
-            window.location.href = 'ExtensionComponentDataModel.html';
-        }
-
-        function handleCancel() {
-            if (confirm("Warning! This Specification will be deleted, do you want to proceed?")) {
-                isFormDirty = false; // Prevent "Leave site?" popup
-
-                const specIdToDelete = localStorage.getItem("selectedSpecification");
-                if (specIdToDelete) {
-                    let specifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
-                    const updatedSpecifications = specifications.filter(spec => spec.id !== specIdToDelete);
-                    localStorage.setItem('mySpecifications', JSON.stringify(updatedSpecifications));
-                    localStorage.removeItem("selectedSpecification");
-                }
-                window.location.href = 'mySpecifications.html';
-            }
-        }
-        </script>
+        
     </body>
 </html>

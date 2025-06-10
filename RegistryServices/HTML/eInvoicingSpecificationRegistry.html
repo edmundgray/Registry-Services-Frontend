@@ -87,22 +87,6 @@
                 </li>
             </ul>
         </div>
-        <script>
-if (localStorage.userRole === "Admin") {
-    const sidebar = document.querySelector('.sidebar ul');
-    if (sidebar) {
-        const li = document.createElement('li');
-        li.className = "child-element protected";
-        li.innerHTML = `
-            <a href="ExtensionComponentDataModelAdmin.html">
-                <span class="icon"><i class="fa-solid fa-eye"></i></span>
-                <span class="text">VIEW EXTENSION COMPONENT DATA MODEL (ADMIN)</span>
-            </a>
-        `;
-        sidebar.appendChild(li);
-    }
-}
-</script>
 
 <!----------------------------------------------------------------------------
         The Table
@@ -110,8 +94,6 @@ if (localStorage.userRole === "Admin") {
         <div class="page-Content">
             <h1><i class="fa-solid fa-house"></i> eInvoicing Registry</h1>
             <br/>
-            <!-- Place this above your Registry table -->
-            <div id="adminNewSpecContainer"></div>
             <div class="filter-container">
                 <input type="text" id="searchInput" placeholder="Search..." />
 
@@ -182,37 +164,5 @@ if (localStorage.userRole === "Admin") {
                 <button id="nextPage">»</button>
             </div>
         </div>
-        <script>
-    document.addEventListener("DOMContentLoaded", function () {
-    const userRole = localStorage.getItem("userRole") || "EndUser";
-    if (userRole === "Admin") {
-        document.getElementById("adminNewSpecContainer").innerHTML = `
-            <button class="view-button" id="newSpecBtn">New Specification</button>
-        `;
-        document.getElementById("newSpecBtn").onclick = function() {
-            localStorage.removeItem("newSpecGoverningEntity");
-            window.location.href = "IdentifyingInformation.html";
-        };
-    }
-});
-
-    document.addEventListener("DOMContentLoaded", function () {
-const specs = JSON.parse(localStorage.getItem("specifications") || "[]");
-const submittedSpecs = specs.filter(s => s.registryStatus === "Submitted");
-const tbody = document.querySelector('#registryTable tbody');
-tbody.innerHTML = "";
-submittedSpecs.forEach(spec => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-        <td>${spec.specName}</td>
-        <td>${spec.governingEntity}</td>
-        <td>${spec.country}</td>
-        <td>${spec.registryStatus}</td>
-        <!-- Add more columns as needed -->
-    `;
-    tbody.appendChild(tr);
-});
-});
-        </script>
     </body>
 </html>

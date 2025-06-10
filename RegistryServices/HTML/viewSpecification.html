@@ -9,28 +9,6 @@
         <script src="../JS/javascript.js"></script>
         
         <title>Registry Services</title>
-        <style>
-            /* Style for the Edit button container */
-            .header-with-edit {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 10px; /* Adjust as needed */
-            }
-            .edit-button-top-right { /* You can reuse .view-button or define new styles */
-                padding: 5px 10px;
-                font-size: 12px;
-                color: #fff;
-                background-color: #28a745; /* Green color for Edit */
-                border: none;
-                border-radius: 4px;
-                cursor: pointer;
-                transition: background-color 0.3s ease;
-            }
-            .edit-button-top-right:hover {
-                background-color: #218838;
-            }
-        </style>
     </head>
     <body>
 <!----------------------------------------------------------------------------
@@ -109,31 +87,12 @@
                 </li>
             </ul>
         </div>
-        <script>
-if (localStorage.userRole === "Admin") {
-    const sidebar = document.querySelector('.sidebar ul');
-    if (sidebar) {
-        const li = document.createElement('li');
-        li.className = "child-element protected";
-        li.innerHTML = `
-            <a href="ExtensionComponentDataModelAdmin.html">
-                <span class="icon"><i class="fa-solid fa-eye"></i></span>
-                <span class="text">VIEW EXTENSION COMPONENT DATA MODEL (ADMIN)</span>
-            </a>
-        `;
-        sidebar.appendChild(li);
-    }
-}
-</script>
 
 <!----------------------------------------------------------------------------
         This is where the selected entry from the table in index.html will be displayed
 ------------------------------------------------------------------------------>
         <div class="page-Content">
-            <div class="header-with-edit">
-                <h1><i class="fa-solid fa-house"></i> View Specification</h1>
-                <button id="editSpecificationButton" class="edit-button-top-right">Edit</button>
-            </div>
+            <h1><i class="fa-solid fa-house"></i> View Specification</h1>
             <br/>
             <div id="detailsTableContainer"></div>
 <!----------------------------------------------------------------------------
@@ -326,9 +285,6 @@ if (localStorage.userRole === "Admin") {
         Some exclusive JavaScript for this page
 ------------------------------------------------------------------------------>
         <script>
-
-            let viewParams = null; 
-
             document.addEventListener("DOMContentLoaded", function () 
             {
                 const params = new URLSearchParams(window.location.search);
@@ -355,7 +311,7 @@ if (localStorage.userRole === "Admin") {
                 params.forEach((value, key) => 
                 {
                     if (key !== "View" && key !== "IDs") 
-                    { 
+                    { // Exclude "View" and "IDs"
                         const td = dataRow.insertCell();
                         td.textContent = value;
                     }
@@ -379,25 +335,35 @@ if (localStorage.userRole === "Admin") {
                 document.getElementById("underlyingSpecification").textContent = params.get("Underlying Specification") || "N/A";
                 document.getElementById("specificationSourceLink").textContent = params.get("Specification Source Link") || "N/A";
                 document.getElementById("preferredSyntax").textContent = params.get("Preferred Syntax") || "N/A";
+            });
 
-                const editButton = document.getElementById("editSpecificationButton");
-                if (editButton) {
-                    editButton.addEventListener("click", function() {
-                        
-                        const specName = params.get("Name");
-                        if (specName) {
-                            localStorage.setItem("selectedSpecification", specName);
-                            localStorage.setItem("editSpecData", params.toString());
-                            window.location.href = "IdentifyingInformation.html";
-                        } else {
-                            alert("Cannot edit: Specification name not found.");
-                        }
-                    });
-                }
+            // JavaScript to handle tab switching
+            function showTab(tabId) {
+                // Hide all tab content
+                document.querySelectorAll('.tab-content').forEach(content =>
+                {
+                    content.classList.remove('active');
+                });
 
-                if (!viewParams) {
-                     viewParams = new URLSearchParams(window.location.search);
-                }
+                // Remove active class from all buttons
+                document.querySelectorAll('.tab-button').forEach(button => 
+                {
+                    button.classList.remove('active');
+                });
+
+                // Show the selected tab content
+                document.getElementById(tabId).classList.add('active');
+
+                // Add active class to the clicked button
+                event.target.classList.add('active');
+            }
+
+/******************************************************************************
+        Load coreInvoiceModelElements.json and populate the table
+ ******************************************************************************/
+            document.addEventListener("DOMContentLoaded", function () 
+            {
+                const params = new URLSearchParams(window.location.search);
                 let ids = [];
                 try 
                 {
@@ -456,31 +422,6 @@ if (localStorage.userRole === "Admin") {
                     })
                     .catch(error => console.error("Error loading coreInvoiceModelElements.json:", error));
             });
-
-            // JavaScript to handle tab switching
-            function showTab(tabId) {
-                // Hide all tab content
-                document.querySelectorAll('.tab-content').forEach(content =>
-                {
-                    content.classList.remove('active');
-                });
-
-                // Remove active class from all buttons
-                document.querySelectorAll('.tab-button').forEach(button => 
-                {
-                    button.classList.remove('active');
-                });
-
-                // Show the selected tab content
-                document.getElementById(tabId).classList.add('active');
-
-                // Add active class to the clicked button
-                event.target.classList.add('active');
-            }
-
-        
-            
-                
         </script>
     </body>
 </html>
