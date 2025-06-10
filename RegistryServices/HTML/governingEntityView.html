@@ -94,105 +94,185 @@
             <h1 id="entityTitle"><i class="fa-solid fa-building"></i> Viewing Governing Entity</h1>
             <br/>
             <button onclick="window.location.href='governingEntityList.html';">Return to Governing Entity List</button>
-
+            <div id="adminNewSpecContainer"></div>
             <div id="entityDetails"></div>
             <div id="specificationsSection"></div>
             <div id="usersSection"></div>
         </div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Parse the URL parameters to get the Governing Entity details
+        const params = new URLSearchParams(window.location.search);
+        const entity = {
+            Created: params.get("Created") || "",
+            GoverningEntity: params.get("GoverningEntity") || "",
+            NoOfUsers: params.get("NoOfUsers") || "",
+            NoOfSpecifications: params.get("NoOfSpecifications") || "",
+            InProgress: params.get("InProgress") || ""
+        };
 
-<!----------------------------------------------------------------------------
-            JavaScript to handle the Governing Entity details
-  ------------------------------------------------------------------------------>
-        <script>
-            document.addEventListener("DOMContentLoaded", function () 
-            {
-                // Parse the URL parameters to get the Governing Entity details
-                const params = new URLSearchParams(window.location.search);
-                const entity = {
-                    Created: params.get("Created") || "",
-                    GoverningEntity: params.get("GoverningEntity") || "",
-                    NoOfUsers: params.get("NoOfUsers") || "",
-                    NoOfSpecifications: params.get("NoOfSpecifications") || "",
-                    InProgress: params.get("InProgress") || ""
-                };
+        // Set the title
+        document.getElementById("entityTitle").innerHTML =
+            `<i class="fa-solid fa-building"></i> Viewing ${entity.GoverningEntity} Governing Entity`;
 
-                // Set the title
-                document.getElementById("entityTitle").innerHTML =
-                    `<i class="fa-solid fa-building"></i> Viewing ${entity.GoverningEntity} Governing Entity`;
+        // Main entity info table (matching mockup columns)
+        const entityTable = `
+            <table class="styled-table" style="max-width:900px;">
+                <thead>
+                    <tr>
+                        <th>Created</th>
+                        <th>Sector</th>
+                        <th>Country</th>
+                        <th>Primary Contact Name</th>
+                        <th>Primary Contact Information</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>${entity.Created}</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        `;
+        document.getElementById("entityDetails").innerHTML = entityTable;
 
-                // Main entity info table (matching mockup columns)
-                const entityTable = `
-                    <table class="styled-table" style="max-width:900px;">
-                        <thead>
-                            <tr>
-                                <th>Created</th>
-                                <th>Sector</th>
-                                <th>Country</th>
-                                <th>Primary Contact Name</th>
-                                <th>Primary Contact Information</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>${entity.Created}</td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                `;
-                document.getElementById("entityDetails").innerHTML = entityTable;
+        // Specifications table with columns (matching mockup)
+        const specificationsTable = `
+            <h2 style="margin:24px 0 8px 0;font-size:20px;">Specifications</h2>
+            <table class="styled-table" id="specificationsTable" style="font-size:13px;">
+                <thead>
+                    <tr>
+                        <th>Created/Modified</th>
+                        <th>Name</th>
+                        <th>Purpose</th>
+                        <th>Implementation Date</th>
+                        <th>Type</th>
+                        <th>Sector</th>
+                        <th>Country</th>
+                        <th>Preferred Syntax</th>
+                        <th>Conformance level</th>
+                        <th>Registry Status</th>
+                        <th>Last Modified by</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data rows go here -->
+                </tbody>
+            </table>
+        `;
+        document.getElementById("specificationsSection").innerHTML = specificationsTable;
 
-                // Specifications table with columns (matching mockup)
-                const specificationsTable = `
-                    <h2 style="margin:24px 0 8px 0;font-size:20px;">Specifications</h2>
-                    <table class="styled-table" style="font-size:13px;">
-                        <thead>
-                            <tr>
-                                <th>Created/Modified</th>
-                                <th>Name</th>
-                                <th>Purpose</th>
-                                <th>Implementation Date</th>
-                                <th>Type</th>
-                                <th>Sector</th>
-                                <th>Country</th>
-                                <th>Preferred Syntax</th>
-                                <th>Conformance level</th>
-                                <th>Registry Status</th>
-                                <th>Last Modified by</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Data rows go here -->
-                        </tbody>
-                    </table>
-                `;
-                document.getElementById("specificationsSection").innerHTML = specificationsTable;
+        // Users table with columns (matching mockup)
+        const usersTable = `
+            <h2 style="margin:24px 0 8px 0;font-size:20px;">Users</h2>
+            <table class="styled-table" style="font-size:13px;max-width:900px;">
+                <thead>
+                    <tr>
+                        <th>Joined</th>
+                        <th>Name</th>
+                        <th>Specifications submitted</th>
+                        <th>In Progress</th>
+                        <th>Contact Information</th>
+                        <th>Contributor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data rows go here -->
+                </tbody>
+            </table>
+        `;
+        document.getElementById("usersSection").innerHTML = usersTable;
 
-                // Users table with columns (matching mockup)
-                const usersTable = `
-                    <h2 style="margin:24px 0 8px 0;font-size:20px;">Users</h2>
-                    <table class="styled-table" style="font-size:13px;max-width:900px;">
-                        <thead>
-                            <tr>
-                                <th>Joined</th>
-                                <th>Name</th>
-                                <th>Specifications submitted</th>
-                                <th>In Progress</th>
-                                <th>Contact Information</th>
-                                <th>Contributor</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Data rows go here -->
-                        </tbody>
-                    </table>
-                `;
-                document.getElementById("usersSection").innerHTML = usersTable;
-            });
-        </script>
+        // New JavaScript code for Admin functionality
+        const entityName = params.get("GoverningEntity") || "";
+        // Only show for Admin
+        const userRole = localStorage.getItem("userRole") || "EndUser";
+        if (userRole === "Admin") {
+            document.getElementById("adminNewSpecContainer").innerHTML = `
+                <button class="view-button" id="newSpecBtn">New Specification</button>
+            `;
+            document.getElementById("newSpecBtn").onclick = function() {
+                // Save Governing Entity context for prefill
+                localStorage.setItem("newSpecGoverningEntity", entityName);
+                window.location.href = "IdentifyingInformation.html";
+            };
+        }
+
+        // Specifications table population based on localStorage data
+        const tbody = document.querySelector('#specificationsTable tbody');
+        let specs = JSON.parse(localStorage.getItem("specifications") || "[]");
+        let entitySpecs = specs.filter(s =>
+            s.governingEntity === entityName &&
+            (s.registryStatus === "Submitted" || s.registryStatus === "In Progress")
+        );
+        console.log("entityName:", entityName);
+        console.log("All specs:", specs);
+        console.log("Filtered specs:", entitySpecs);
+        tbody.innerHTML = '';
+        entitySpecs.forEach(spec => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${new Date().toLocaleDateString()}</td>
+                <td>${spec.specName || ""}</td>
+                <td>${spec.purpose || ""}</td>
+                <td>${spec.implDate || ""}</td>
+                <td>CIUS</td>
+                <td>${spec.sector || ""}</td>
+                <td>${spec.country || ""}</td>
+                <td>${spec.preferredSyntax || ""}</td>
+                <td></td>
+                <td>${spec.registryStatus || ""}</td>
+                <td>Admin</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.addEventListener("DOMContentLoaded", function() {
+            // Get Governing Entity name from URL param
+            const params = new URLSearchParams(window.location.search);
+            const currentEntity = params.get("GoverningEntity") || "";
+
+            // Load specifications from localStorage
+            const allSpecs = JSON.parse(localStorage.getItem("specifications") || "[]");
+
+            // Filter for this Governing Entity (case/whitespace-insensitive)
+            const matchingSpecs = allSpecs.filter(s =>
+                s.governingEntity &&
+                s.governingEntity.trim().toLowerCase() === currentEntity.trim().toLowerCase()
+            );
+
+            // Get the table body
+            const specsTableBody = document.querySelector("#specificationsTable tbody");
+            specsTableBody.innerHTML = "";
+
+            if (matchingSpecs.length === 0) {
+                const row = specsTableBody.insertRow();
+                const cell = row.insertCell();
+                cell.colSpan = 11;
+                cell.textContent = "No specifications found.";
+            } else {
+                matchingSpecs.forEach(spec => {
+                    const row = specsTableBody.insertRow();
+                    row.insertCell().textContent = new Date().toLocaleDateString(); // Created/Modified
+                    row.insertCell().textContent = spec.specName || "";
+                    row.insertCell().textContent = spec.purpose || "";
+                    row.insertCell().textContent = spec.implDate || "";
+                    row.insertCell().textContent = "CIUS"; // Type (hardcoded)
+                    row.insertCell().textContent = spec.sector || "";
+                    row.insertCell().textContent = spec.country || "";
+                    row.insertCell().textContent = spec.preferredSyntax || "";
+                    row.insertCell().textContent = spec.conformanceLevel || ""; // Conformance level (empty for now)
+                    row.insertCell().textContent = spec.registryStatus || "";
+                    row.insertCell().textContent = "Admin"; // Last Modified by (hardcoded)
+                });
+            }
+        });
+    });
+</script>
     </body>
 </html>

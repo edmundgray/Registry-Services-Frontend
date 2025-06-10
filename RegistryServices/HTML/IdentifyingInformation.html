@@ -353,6 +353,7 @@
                 <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 30px;">
                     <div>
                         <button type="button" onclick="handleSave()" class="view-button">Save</button>
+                        <button type="button" onclick="handleSubmit()" class="view-button" style="background:#217a36;color:#fff;">Submit</button>
                         <button type="button" onclick="window.location.href='eInvoicingSpecificationRegistry.html'" class="view-button" style="background:#ccc; color:#333;">Cancel</button>
                     </div>
                     
@@ -374,27 +375,65 @@
                 const form = document.getElementById('identifyingForm');
                 if (!form.reportValidity()) return;
 
-                const data = 
-                {
-                    "Specification name": form.specName.value,
-                    "Governing Entity": form.governingEntity.value,
-                    "Contact Information": form.contactInfo.value,
-                    "Sector": form.sector.value,
-                    "Sub Sector": form.subSector.value,
-                    "Country": form.country.value,
-                    "Purpose": form.purpose.value,
-                    "Specification Identifier": form.specId.value,
-                    "Specification Version": form.specVersion.value,
-                    "Date of Implementation": form.implDate.value,
-                    "Core Version": form.coreVersion.value,
-                    "Underlying Specification": form.underlyingSpec.value,
-                    "Specification Source Link": form.sourceLink.value,
-                    "Preferred Syntax": form.preferredSyntax.value
+                // Gather form data
+                const data = {
+                    "specName": form.specName.value,
+                    "governingEntity": form.governingEntity.value,
+                    "contactInfo": form.contactInfo.value,
+                    "sector": form.sector.value,
+                    "subSector": form.subSector.value,
+                    "country": form.country.value,
+                    "purpose": form.purpose.value,
+                    "specId": form.specId.value,
+                    "specVersion": form.specVersion.value,
+                    "implDate": form.implDate.value,
+                    "coreVersion": form.coreVersion.value,
+                    "underlyingSpec": form.underlyingSpec.value,
+                    "sourceLink": form.sourceLink.value,
+                    "preferredSyntax": form.preferredSyntax.value,
+                    "registryStatus": "In Progress" // Always "In Progress" on Save
                 };
 
-                alert("Saved Information:\n\n" + Object.entries(data).map(([k,v]) => `${k}: ${v}`).join('\n'));
+                // Get existing specs or create new array
+                let specs = JSON.parse(localStorage.getItem("specifications") || "[]");
+                specs.push(data);
+                localStorage.setItem("specifications", JSON.stringify(specs));
+
+                alert("Specification saved as In Progress.");
                 isFormDirty = false;
             }
+
+            function handleSubmit() {
+    const form = document.getElementById('identifyingForm');
+    if (!form.reportValidity()) return;
+
+    // Gather form data
+    const data = {
+        "specName": form.specName.value,
+        "governingEntity": form.governingEntity.value,
+        "contactInfo": form.contactInfo.value,
+        "sector": form.sector.value,
+        "subSector": form.subSector.value,
+        "country": form.country.value,
+        "purpose": form.purpose.value,
+        "specId": form.specId.value,
+        "specVersion": form.specVersion.value,
+        "implDate": form.implDate.value,
+        "coreVersion": form.coreVersion.value,
+        "underlyingSpec": form.underlyingSpec.value,
+        "sourceLink": form.sourceLink.value,
+        "preferredSyntax": form.preferredSyntax.value,
+        "registryStatus": "Submitted"
+    };
+
+    // Get existing specs or create new array
+    let specs = JSON.parse(localStorage.getItem("specifications") || "[]");
+    specs.push(data);
+    localStorage.setItem("specifications", JSON.stringify(specs));
+
+    alert("Specification submitted.");
+    isFormDirty = false;
+}
 
             document.addEventListener('DOMContentLoaded', () => 
             {
@@ -425,6 +464,14 @@
 
         if (selectedSpec) {
             document.getElementById("specName").value = selectedSpec;
+        }
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const governingEntityPrefill = localStorage.getItem("newSpecGoverningEntity");
+        if (governingEntityPrefill) {
+            document.getElementById("governingEntity").value = governingEntityPrefill;
+            localStorage.removeItem("newSpecGoverningEntity");
         }
     });
         </script>
