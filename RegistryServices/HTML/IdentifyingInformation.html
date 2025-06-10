@@ -462,6 +462,30 @@
             document.addEventListener('DOMContentLoaded', () => 
             {
                 const form = document.getElementById('identifyingForm');
+
+                const editingSpecId = localStorage.getItem("selectedSpecification");
+                const specDataString = localStorage.getItem("editSpecData");
+
+                if (editingSpecId && specDataString) {
+                    const params = new URLSearchParams(specDataString);
+
+                    // Populate form fields with data from localStorage
+                    form.specName.value = params.get('Name') || '';
+                    form.governingEntity.value = params.get('Governing Entity') || '';
+                    form.contactInfo.value = params.get('Contact Information') || 'N/A';
+                    form.sector.value = params.get('Sector') || '';
+                    form.subSector.value = params.get('Sub Sector') || '';
+                    form.country.value = params.get('Country') || '';
+                    form.purpose.value = params.get('Purpose') || '';
+                    form.specId.value = params.get('Specification Identifier') || '';
+                    form.specVersion.value = params.get('Specification Version') || '';
+                    form.implDate.value = params.get('Implementation Date') || '';
+                    form.coreVersion.value = params.get('Core Version') || '';
+                    form.underlyingSpec.value = params.get('Underlying Specification') || '';
+                    form.sourceLink.value = params.get('Specification Source Link') || '';
+                    form.preferredSyntax.value = params.get('Preferred Syntax') || '';
+                }
+
                 const elements = form.querySelectorAll('input, textarea, select');
                 elements.forEach(element => 
                 {
@@ -481,20 +505,13 @@
                 }
             });
 
-            document.addEventListener("DOMContentLoaded", function () {
-                let selectedSpec = localStorage.getItem("selectedSpecification");
-                if (selectedSpec) {
-                    document.getElementById("specName").value = selectedSpec;
-                }
-            });
+    // document.addEventListener("DOMContentLoaded", function () {
+    //     let selectedSpec = localStorage.getItem("selectedSpecification");
 
-            document.addEventListener("DOMContentLoaded", function () {
-                const governingEntityPrefill = localStorage.getItem("newSpecGoverningEntity");
-                if (governingEntityPrefill) {
-                    document.getElementById("governingEntity").value = governingEntityPrefill;
-                    localStorage.removeItem("newSpecGoverningEntity");
-                }
-            });
+    //     if (selectedSpec) {
+    //         document.getElementById("specName").value = selectedSpec;
+    //     }
+    // });
         </script>
     </body>
 </html>
