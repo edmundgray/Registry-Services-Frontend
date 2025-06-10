@@ -109,6 +109,22 @@
                 </li>
             </ul>
         </div>
+        <script>
+if (localStorage.userRole === "Admin") {
+    const sidebar = document.querySelector('.sidebar ul');
+    if (sidebar) {
+        const li = document.createElement('li');
+        li.className = "child-element protected";
+        li.innerHTML = `
+            <a href="ExtensionComponentDataModelAdmin.html">
+                <span class="icon"><i class="fa-solid fa-eye"></i></span>
+                <span class="text">VIEW EXTENSION COMPONENT DATA MODEL (ADMIN)</span>
+            </a>
+        `;
+        sidebar.appendChild(li);
+    }
+}
+</script>
 
 <!----------------------------------------------------------------------------
         This is where the selected entry from the table in index.html will be displayed
