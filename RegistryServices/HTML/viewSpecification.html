@@ -364,47 +364,21 @@
                 document.getElementById("specificationSourceLink").textContent = params.get("Specification Source Link") || "N/A";
                 document.getElementById("preferredSyntax").textContent = params.get("Preferred Syntax") || "N/A";
 
-                const editButton = documet.getElementById("editSpecificationButton");
+                const editButton = document.getElementById("editSpecificationButton");
                 if (editButton) {
                     editButton.addEventListener("click", function() {
                         
                         const specName = params.get("Name");
                         if (specName) {
-                            localStorage.setItem("selectedSpecification, specName);")
+                            localStorage.setItem("selectedSpecification", specName);
+                            localStorage.setItem("editSpecData", params.toString());
                             window.location.href = "IdentifyingInformation.html";
                         } else {
                             alert("Cannot edit: Specification name not found.");
                         }
                     });
                 }
-            });
 
-            // JavaScript to handle tab switching
-            function showTab(tabId) {
-                // Hide all tab content
-                document.querySelectorAll('.tab-content').forEach(content =>
-                {
-                    content.classList.remove('active');
-                });
-
-                // Remove active class from all buttons
-                document.querySelectorAll('.tab-button').forEach(button => 
-                {
-                    button.classList.remove('active');
-                });
-
-                // Show the selected tab content
-                document.getElementById(tabId).classList.add('active');
-
-                // Add active class to the clicked button
-                event.target.classList.add('active');
-            }
-
-/******************************************************************************
-        Load coreInvoiceModelElements.json and populate the table
- ******************************************************************************/
-            document.addEventListener("DOMContentLoaded", function () 
-            {
                 if (!viewParams) {
                      viewParams = new URLSearchParams(window.location.search);
                 }
@@ -466,6 +440,31 @@
                     })
                     .catch(error => console.error("Error loading coreInvoiceModelElements.json:", error));
             });
+
+            // JavaScript to handle tab switching
+            function showTab(tabId) {
+                // Hide all tab content
+                document.querySelectorAll('.tab-content').forEach(content =>
+                {
+                    content.classList.remove('active');
+                });
+
+                // Remove active class from all buttons
+                document.querySelectorAll('.tab-button').forEach(button => 
+                {
+                    button.classList.remove('active');
+                });
+
+                // Show the selected tab content
+                document.getElementById(tabId).classList.add('active');
+
+                // Add active class to the clicked button
+                event.target.classList.add('active');
+            }
+
+        
+            
+                
         </script>
     </body>
 </html>
