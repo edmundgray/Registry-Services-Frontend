@@ -396,11 +396,33 @@
 
                 // Get existing specs or create new array
                 let specs = JSON.parse(localStorage.getItem("specifications") || "[]");
-                specs.push(data);
-                localStorage.setItem("specifications", JSON.stringify(specs));
+                const editingSpecId = localStorage.getItem("selectedSpecification");
 
-                alert("Specification saved as In Progress.");
-                isFormDirty = false;
+                if (editingSpecId) {
+                    // If we are editing, find the index of the old specification.
+                    const specIndex = specs.findIndex(spec => spec.specName === editingSpecId);
+                    if (specIndex > -1) {
+                        // If found, replace it with the new data.
+                        specs[specIndex] = data;
+                        alert("Specification updated and saved as In Progress.");
+                    } else {
+                        // If not found (edge case), add as a new spec.
+                        specs.push(data);
+                        alert("Specification saved as In Progress.");
+                    }
+                    } else {
+                        // If we are not editing, just add the new spec.
+                        specs.push(data);
+                        alert("Specification saved as In Progress.");
+                    }
+                
+                    localStorage.setItem("specifications", JSON.stringify(specs));
+
+                    // Clean up the editing flags from localStorage
+                    localStorage.removeItem("selectedSpecification");
+                    localStorage.removeItem("editSpecData");
+                    
+                    isFormDirty = false;
             }
 
             function handleSubmit() {
@@ -429,10 +451,30 @@
 
                 // Get existing specs or create new array
                 let specs = JSON.parse(localStorage.getItem("specifications") || "[]");
-                specs.push(data);
-                localStorage.setItem("specifications", JSON.stringify(specs));
+                const editingSpecId = localStorage.getItem("selectedSpecification");
 
-                alert("Specification submitted.");
+                if (editingSpecId) {
+                    // If we are editing, find the index of the old specification.
+                    const specIndex = specs.findIndex(spec => spec.specName === editingSpecId);
+                    if (specIndex > -1) {
+                        // If found, replace it with the new data.
+                        specs[specIndex] = data;
+                        alert("Specification updated and submitted.");
+                    } else {
+                        specs.push(data);
+                        alert("Specification submitted.");
+                    }
+                } else {
+                    specs.push(data);
+                    alert("Specification submitted.");
+                }
+
+                localStorage.setItem("specifications", JSON.stringify(specs));
+                
+                // Clean up the editing flags from localStorage
+                localStorage.removeItem("selectedSpecification");
+                localStorage.removeItem("editSpecData");
+
                 isFormDirty = false;
             }
 

@@ -44,9 +44,11 @@ document.addEventListener("DOMContentLoaded", function ()
                 if (level > 0) tr.style.display = 'none';
 
                 const isMandatory = item.Cardinality === '1..1';
-
+                 const isChecked = savedCoreIds.includes(item.ID) || isMandatory;
                 tr.innerHTML = `
-                    
+                    <td>
+                    <input type="checkbox" class="row-selector" data-id="${item.ID}" ${isChecked ? 'checked' : ''}>
+                    </td>
                     <td>${item.ID}</td>
                     <td>${item.Level}</td>
                     <td>${item.Cardinality}</td>
