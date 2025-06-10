@@ -351,16 +351,15 @@
                 
                 <!-- Save, Cancel & Core Invoice Model Buttons -->
                 <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 30px;">
-                    <div>
-                        <button type="button" onclick="handleSave()" class="view-button">Save</button>
-                        <button type="button" onclick="handleSubmit()" class="view-button" style="background:#217a36;color:#fff;">Submit</button>
-                        <button type="button" onclick="window.location.href='eInvoicingSpecificationRegistry.html'" class="view-button" style="background:#ccc; color:#333;">Cancel</button>
-                    </div>
-                    
-                    <div>
-                        <button type="button" onclick="window.location.href='coreInvoiceModel.html'" class="view-button" style="background:#217a36;">Core Invoice Model</button>
-                    </div>
-                </div>
+    <div>
+        <button type="button" onclick="handleSave()" class="view-button">Save</button>
+        <button type="button" onclick="handleSubmit()" class="view-button" style="background:#217a36;color:#fff;">Submit</button>
+        <button type="button" onclick="handleCancel()" class="view-button" style="background:#ccc; color:#333;">Cancel</button>
+    </div>
+    <div>
+        <button type="button" onclick="window.location.href='coreInvoiceModel.html'" class="view-button" style="background:#217a36;">Core Invoice Model</button>
+    </div>
+</div>
             </form>
         </div>
 
@@ -391,6 +390,7 @@
                     "underlyingSpec": form.underlyingSpec.value,
                     "sourceLink": form.sourceLink.value,
                     "preferredSyntax": form.preferredSyntax.value,
+                    "conformanceLevel": "N/A",
                     "registryStatus": "In Progress" // Always "In Progress" on Save
                 };
 
@@ -404,42 +404,65 @@
             }
 
             function handleSubmit() {
-    const form = document.getElementById('identifyingForm');
-    if (!form.reportValidity()) return;
+                const form = document.getElementById('identifyingForm');
+                if (!form.reportValidity()) return;
 
-    // Gather form data
-    const data = {
-        "specName": form.specName.value,
-        "governingEntity": form.governingEntity.value,
-        "contactInfo": form.contactInfo.value,
-        "sector": form.sector.value,
-        "subSector": form.subSector.value,
-        "country": form.country.value,
-        "purpose": form.purpose.value,
-        "specId": form.specId.value,
-        "specVersion": form.specVersion.value,
-        "implDate": form.implDate.value,
-        "coreVersion": form.coreVersion.value,
-        "underlyingSpec": form.underlyingSpec.value,
-        "sourceLink": form.sourceLink.value,
-        "preferredSyntax": form.preferredSyntax.value,
-        "registryStatus": "Submitted"
-    };
+                // Gather form data
+                const data = {
+                    "specName": form.specName.value,
+                    "governingEntity": form.governingEntity.value,
+                    "contactInfo": form.contactInfo.value,
+                    "sector": form.sector.value,
+                    "subSector": form.subSector.value,
+                    "country": form.country.value,
+                    "purpose": form.purpose.value,
+                    "specId": form.specId.value,
+                    "specVersion": form.specVersion.value,
+                    "implDate": form.implDate.value,
+                    "coreVersion": form.coreVersion.value,
+                    "underlyingSpec": form.underlyingSpec.value,
+                    "sourceLink": form.sourceLink.value,
+                    "preferredSyntax": form.preferredSyntax.value,
+                    "conformanceLevel": "N/A",
+                    "registryStatus": "Submitted"
+                };
 
-    // Get existing specs or create new array
-    let specs = JSON.parse(localStorage.getItem("specifications") || "[]");
-    specs.push(data);
-    localStorage.setItem("specifications", JSON.stringify(specs));
+                // Get existing specs or create new array
+                let specs = JSON.parse(localStorage.getItem("specifications") || "[]");
+                specs.push(data);
+                localStorage.setItem("specifications", JSON.stringify(specs));
 
-    alert("Specification submitted.");
-    isFormDirty = false;
-}
+                alert("Specification submitted.");
+                isFormDirty = false;
+            }
+
+            function handleCancel() {
+                // Display a confirmation dialog to the user.
+                const userConfirmed = confirm("Warning! This Specification will be deleted, do you want to proceed?");
+                // Proceed only if the user clicks "OK".
+                if (userConfirmed) {
+                    // Check if we are in "Edit" mode by seeing if a specification was selected.
+                    const editingSpecId = localStorage.getItem("selectedSpecification");
+                    if (editingSpecId) {
+                        // If editing, find and remove the specification from the stored array.
+                        let specifications = JSON.parse(localStorage.getItem("specifications") || "[]");
+                        // Create a new array excluding the specification being deleted.
+                        const updatedSpecifications = specifications.filter(spec => spec.id !== editingSpecId);
+                        // Save the updated array back to localStorage.
+                        localStorage.setItem('specifications', JSON.stringify(updatedSpecifications));
+                        // Clean up the edit flag.
+                        localStorage.removeItem("selectedSpecification");
+                    }
+                    // Redirect the user back to their specifications page.
+                    window.location.href = 'mySpecifications.html';
+                }
+                // If the user clicks "Cancel" on the confirmation, do nothing.
+            }
 
             document.addEventListener('DOMContentLoaded', () => 
             {
                 const form = document.getElementById('identifyingForm');
                 const elements = form.querySelectorAll('input, textarea, select');
-
                 elements.forEach(element => 
                 {
                     element.addEventListener('change', () => 
@@ -454,26 +477,24 @@
                 if (isFormDirty) 
                 {
                     e.preventDefault();
-                    // This is required because most browsers need it to trigger the confirmation dialog
                     e.returnValue = '';
                 }
             });
 
-    document.addEventListener("DOMContentLoaded", function () {
-        let selectedSpec = localStorage.getItem("selectedSpecification");
+            document.addEventListener("DOMContentLoaded", function () {
+                let selectedSpec = localStorage.getItem("selectedSpecification");
+                if (selectedSpec) {
+                    document.getElementById("specName").value = selectedSpec;
+                }
+            });
 
-        if (selectedSpec) {
-            document.getElementById("specName").value = selectedSpec;
-        }
-    });
-
-    document.addEventListener("DOMContentLoaded", function () {
-        const governingEntityPrefill = localStorage.getItem("newSpecGoverningEntity");
-        if (governingEntityPrefill) {
-            document.getElementById("governingEntity").value = governingEntityPrefill;
-            localStorage.removeItem("newSpecGoverningEntity");
-        }
-    });
+            document.addEventListener("DOMContentLoaded", function () {
+                const governingEntityPrefill = localStorage.getItem("newSpecGoverningEntity");
+                if (governingEntityPrefill) {
+                    document.getElementById("governingEntity").value = governingEntityPrefill;
+                    localStorage.removeItem("newSpecGoverningEntity");
+                }
+            });
         </script>
     </body>
 </html>

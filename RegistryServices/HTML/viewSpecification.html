@@ -9,6 +9,28 @@
         <script src="../JS/javascript.js"></script>
         
         <title>Registry Services</title>
+        <style>
+            /* Style for the Edit button container */
+            .header-with-edit {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 10px; /* Adjust as needed */
+            }
+            .edit-button-top-right { /* You can reuse .view-button or define new styles */
+                padding: 5px 10px;
+                font-size: 12px;
+                color: #fff;
+                background-color: #28a745; /* Green color for Edit */
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: background-color 0.3s ease;
+            }
+            .edit-button-top-right:hover {
+                background-color: #218838;
+            }
+        </style>
     </head>
     <body>
 <!----------------------------------------------------------------------------
@@ -92,7 +114,10 @@
         This is where the selected entry from the table in index.html will be displayed
 ------------------------------------------------------------------------------>
         <div class="page-Content">
-            <h1><i class="fa-solid fa-house"></i> View Specification</h1>
+            <div class="header-with-edit">
+                <h1><i class="fa-solid fa-house"></i> View Specification</h1>
+                <button id="editSpecificationButton" class="edit-button-top-right">Edit</button>
+            </div>
             <br/>
             <div id="detailsTableContainer"></div>
 <!----------------------------------------------------------------------------
@@ -285,6 +310,9 @@
         Some exclusive JavaScript for this page
 ------------------------------------------------------------------------------>
         <script>
+
+            let viewParams = null; 
+
             document.addEventListener("DOMContentLoaded", function () 
             {
                 const params = new URLSearchParams(window.location.search);
@@ -311,7 +339,7 @@
                 params.forEach((value, key) => 
                 {
                     if (key !== "View" && key !== "IDs") 
-                    { // Exclude "View" and "IDs"
+                    { 
                         const td = dataRow.insertCell();
                         td.textContent = value;
                     }
@@ -335,6 +363,20 @@
                 document.getElementById("underlyingSpecification").textContent = params.get("Underlying Specification") || "N/A";
                 document.getElementById("specificationSourceLink").textContent = params.get("Specification Source Link") || "N/A";
                 document.getElementById("preferredSyntax").textContent = params.get("Preferred Syntax") || "N/A";
+
+                const editButton = documet.getElementById("editSpecificationButton");
+                if (editButton) {
+                    editButton.addEventListener("click", function() {
+                        
+                        const specName = params.get("Name");
+                        if (specName) {
+                            localStorage.setItem("selectedSpecification, specName);")
+                            window.location.href = "IdentifyingInformation.html";
+                        } else {
+                            alert("Cannot edit: Specification name not found.");
+                        }
+                    });
+                }
             });
 
             // JavaScript to handle tab switching
@@ -363,7 +405,9 @@
  ******************************************************************************/
             document.addEventListener("DOMContentLoaded", function () 
             {
-                const params = new URLSearchParams(window.location.search);
+                if (!viewParams) {
+                     viewParams = new URLSearchParams(window.location.search);
+                }
                 let ids = [];
                 try 
                 {
