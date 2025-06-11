@@ -369,6 +369,7 @@
         <script>
             let isFormDirty = false;
 
+            
             function handleSave() 
             {
                 const form = document.getElementById('identifyingForm');
@@ -508,6 +509,13 @@
                 const editingSpecId = localStorage.getItem("selectedSpecification");
                 const specDataString = localStorage.getItem("editSpecData");
 
+                if (editingSpecId) {
+                    const titleElement = document.querySelector('.page-Content h1');
+                    if (titleElement) {
+                        titleElement.innerHTML += ` for: ${editingSpecId}`;
+                    }
+                }
+
                 if (editingSpecId && specDataString) {
                     const params = new URLSearchParams(specDataString);
 
@@ -547,13 +555,7 @@
                 }
             });
 
-    // document.addEventListener("DOMContentLoaded", function () {
-    //     let selectedSpec = localStorage.getItem("selectedSpecification");
-
-    //     if (selectedSpec) {
-    //         document.getElementById("specName").value = selectedSpec;
-    //     }
-    // });
+    
         </script>
     </body>
 </html>

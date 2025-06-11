@@ -350,6 +350,14 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            const editingSpecName = localStorage.getItem("selectedSpecification");
+            if (editingSpecName) {
+                const titleElement = document.querySelector('.page-Content h1');
+                if (titleElement) {
+                    titleElement.innerHTML += ` for: ${editingSpecName}`;
+                }
+            }
+            
             componentsContainer = document.getElementById('components-container');
             loadExtensionData();
         });

@@ -159,5 +159,16 @@
                 <button type="button" style="padding: 8px 24px;">Cancel</button>
             </div>
         </div>
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const editingSpecName = localStorage.getItem("selectedSpecification");
+                if (editingSpecName) {
+                    const titleElement = document.querySelector('.page-Content h1');
+                    if (titleElement) {
+                        titleElement.innerHTML += ` for: ${editingSpecName}`;
+                    }
+                }
+            });
+        </script>
     </body>
 </html>
