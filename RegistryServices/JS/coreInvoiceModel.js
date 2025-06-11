@@ -3,6 +3,20 @@
  ******************************************************************************/
 document.addEventListener("DOMContentLoaded", function () 
 {
+    const editingSpecId = localStorage.getItem("selectedSpecification");
+    let savedCoreIds = []; // This will hold the IDs of saved elements
+
+    if (editingSpecId) {
+        // We are in "edit" mode
+        const specifications = JSON.parse(localStorage.getItem("specifications")) || [];
+        const specToEdit = specifications.find(spec => spec.specName === editingSpecId);
+        
+        if (specToEdit && specToEdit.coreInvoiceModelIds) {
+            // If the spec exists and has saved IDs, store them
+            savedCoreIds = specToEdit.coreInvoiceModelIds;
+        }
+    }
+    
     fetch("../JSON/coreInvoiceModelElements.json")
         .then(response => response.json())
         .then(data =>

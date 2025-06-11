@@ -311,160 +311,110 @@
 ------------------------------------------------------------------------------>
         <script>
 
-            let viewParams = null; 
+document.addEventListener("DOMContentLoaded", function () {
+    const params = new URLSearchParams(window.location.search);
 
-            document.addEventListener("DOMContentLoaded", function () 
-            {
-                const params = new URLSearchParams(window.location.search);
-                const detailsTableContainer = document.getElementById("detailsTableContainer");
+    // --- This section populates the top summary table and Identifying Info ---
+    const detailsTableContainer = document.getElementById("detailsTableContainer");
+    const table = document.createElement("table");
+    table.id = "detailsTable";
+    const headerRow = table.insertRow();
+    params.forEach((_, key) => {
+        if (key !== "View" && key !== "IDs") {
+            const th = document.createElement("th");
+            th.textContent = key;
+            headerRow.appendChild(th);
+        }
+    });
+    const dataRow = table.insertRow();
+    params.forEach((value, key) => {
+        if (key !== "View" && key !== "IDs") {
+            const td = dataRow.insertCell();
+            td.textContent = value;
+        }
+    });
+    detailsTableContainer.appendChild(table);
+    document.getElementById("specificationName").textContent = params.get("Name") || "N/A";
+    document.getElementById("governingEntity").textContent = params.get("Governing Entity") || "N/A";
+    document.getElementById("sector").textContent = params.get("Sector") || "N/A";
+    document.getElementById("country").textContent = params.get("Country") || "N/A";
+    document.getElementById("purpose").textContent = params.get("Purpose") || "N/A";
+    document.getElementById("specificationIdentifier").textContent = params.get("Specification Identifier") || "N/A";
+    document.getElementById("specificationVersion").textContent = params.get("Specification Version") || "N/A";
+    document.getElementById("implementationDate").textContent = params.get("Implementation Date") || "N/A";
+    document.getElementById("coreVersion").textContent = params.get("Core Version") || "N/A";
+    document.getElementById("underlyingSpecification").textContent = params.get("Underlying Specification") || "N/A";
+    document.getElementById("specificationSourceLink").textContent = params.get("Specification Source Link") || "N/A";
+    document.getElementById("preferredSyntax").textContent = params.get("Preferred Syntax") || "N/A";
+    // --- End of populating section ---
 
-                // Creating a table element
-                const table = document.createElement("table");
-                table.id = "detailsTable";
-
-                // Creating the header row
-                const headerRow = table.insertRow();
-                params.forEach((_, key) => 
-                {
-                    if (key !== "View" && key !== "IDs") 
-                    { // This will exclude "View" and "IDs"
-                        const th = document.createElement("th");
-                        th.textContent = key;
-                        headerRow.appendChild(th);
-                    }
-                });
-
-                // Creating the data row
-                const dataRow = table.insertRow();
-                params.forEach((value, key) => 
-                {
-                    if (key !== "View" && key !== "IDs") 
-                    { 
-                        const td = dataRow.insertCell();
-                        td.textContent = value;
-                    }
-                });
-
-                // Append the table to the container
-                detailsTableContainer.appendChild(table);
-
-                // Populate the Identifying Information section
-                document.getElementById("specificationName").textContent = params.get("Name") || "N/A";
-                document.getElementById("governingEntity").textContent = params.get("Governing Entity") || "N/A";
-                document.getElementById("sector").textContent = params.get("Sector") || "N/A";
-                document.getElementById("country").textContent = params.get("Country") || "N/A";
-                document.getElementById("purpose").textContent = params.get("Purpose") || "N/A";
-
-                // Populate Technical Information
-                document.getElementById("specificationIdentifier").textContent = params.get("Specification Identifier") || "N/A";
-                document.getElementById("specificationVersion").textContent = params.get("Specification Version") || "N/A";
-                document.getElementById("implementationDate").textContent = params.get("Implementation Date") || "N/A";
-                document.getElementById("coreVersion").textContent = params.get("Core Version") || "N/A";
-                document.getElementById("underlyingSpecification").textContent = params.get("Underlying Specification") || "N/A";
-                document.getElementById("specificationSourceLink").textContent = params.get("Specification Source Link") || "N/A";
-                document.getElementById("preferredSyntax").textContent = params.get("Preferred Syntax") || "N/A";
-
-                const editButton = document.getElementById("editSpecificationButton");
-                if (editButton) {
-                    editButton.addEventListener("click", function() {
-                        
-                        const specName = params.get("Name");
-                        if (specName) {
-                            localStorage.setItem("selectedSpecification", specName);
-                            localStorage.setItem("editSpecData", params.toString());
-                            window.location.href = "IdentifyingInformation.html";
-                        } else {
-                            alert("Cannot edit: Specification name not found.");
-                        }
-                    });
-                }
-
-                if (!viewParams) {
-                     viewParams = new URLSearchParams(window.location.search);
-                }
-                let ids = [];
-                try 
-                {
-                    const idsParam = params.get("IDs");
-                    ids = idsParam ? (idsParam.startsWith("[") ? JSON.parse(idsParam) : idsParam.split(",")) : [];
-                } 
-                catch (error) 
-                {
-                    console.error("Error parsing IDs parameter:", error);
-                }
-
-                console.log("IDs from URL:", ids);
-
-                fetch("../JSON/coreInvoiceModelElements.json")
-                    .then(response => response.json())
-                    .then(data => 
-                    {
-                        console.log("Fetched data:", data);
-                        const coreInvoiceModelTableBody = document.querySelector("#coreInvoiceModelTable tbody");
-                        
-                        if (!coreInvoiceModelTableBody) 
-                        {
-                            console.error("Table body for coreInvoiceModelTable not found.");
-                            return;
-                        }
-
-                        ids.forEach(id => 
-                        {
-                            const element = data.find(item => item.ID === id);
-                            const row = document.createElement("tr");
-
-                            const idCell = document.createElement("td");
-                            idCell.textContent = id;
-                            row.appendChild(idCell);
-
-                            const businessTermCell = document.createElement("td");
-                            businessTermCell.textContent = element ? element["Business Term"] : "N/A";
-                            row.appendChild(businessTermCell);
-
-                            const typeOfChangeCell = document.createElement("td");
-                            typeOfChangeCell.textContent = element ? element["Type of Change"] : "N/A";
-                            row.appendChild(typeOfChangeCell);
-
-                            coreInvoiceModelTableBody.appendChild(row);
-                        });
-
-                        if (coreInvoiceModelTableBody.children.length === 0) 
-                        {
-                            const row = document.createElement("tr");
-                            const cell = document.createElement("td");
-                            cell.colSpan = 3;
-                            cell.textContent = "No matching data found.";
-                            row.appendChild(cell);
-                            coreInvoiceModelTableBody.appendChild(row);
-                        }
-                    })
-                    .catch(error => console.error("Error loading coreInvoiceModelElements.json:", error));
-            });
-
-            // JavaScript to handle tab switching
-            function showTab(tabId) {
-                // Hide all tab content
-                document.querySelectorAll('.tab-content').forEach(content =>
-                {
-                    content.classList.remove('active');
-                });
-
-                // Remove active class from all buttons
-                document.querySelectorAll('.tab-button').forEach(button => 
-                {
-                    button.classList.remove('active');
-                });
-
-                // Show the selected tab content
-                document.getElementById(tabId).classList.add('active');
-
-                // Add active class to the clicked button
-                event.target.classList.add('active');
+    const editButton = document.getElementById("editSpecificationButton");
+    if (editButton) {
+        editButton.addEventListener("click", function() {
+            const specName = params.get("Name");
+            if (specName) {
+                localStorage.setItem("selectedSpecification", specName);
+                localStorage.setItem("editSpecData", params.toString());
+                window.location.href = "IdentifyingInformation.html";
+            } else {
+                alert("Cannot edit: Specification name not found.");
             }
+        });
+    }
 
-        
-            
-                
+    let ids = [];
+    try {
+        const idsParam = params.get("IDs");
+        ids = idsParam ? (idsParam.startsWith("[") ? JSON.parse(idsParam) : idsParam.split(",")) : [];
+    } catch (error) {
+        console.error("Error parsing IDs parameter:", error);
+    }
+
+    // --- Universal Logic: Fetch BOTH files, then process the IDs ---
+    Promise.all([
+        fetch("../JSON/coreInvoiceModelElements.json").then(res => res.json()),
+        fetch("../JSON/extensionComponentModelElements.json").then(res => res.json())
+    ])
+    .then(([coreData, extensionData]) => {
+        const coreTableBody = document.querySelector("#coreInvoiceModelTable tbody");
+        const extensionTableBody = document.querySelector("#extensionComponentTable tbody");
+
+        ids.forEach(id => {
+            let coreElement = coreData.find(item => item.ID === id);
+            if (coreElement) {
+                const row = coreTableBody.insertRow();
+                row.insertCell().textContent = coreElement.ID;
+                row.insertCell().textContent = coreElement["Business Term"];
+                row.insertCell().textContent = coreElement["Type of Change"] || 'Core Element';
+            } else {
+                let extensionElement = extensionData.find(item => item.ID === id);
+                if (extensionElement) {
+                    const row = extensionTableBody.insertRow();
+                    row.insertCell().textContent = extensionElement.ID;
+                    row.insertCell().textContent = extensionElement["Business Term"];
+                    row.insertCell().textContent = extensionElement.Component || 'External Component';
+                } else {
+                    console.warn(`ID '${id}' not found in core or extension files.`);
+                }
+            }
+        });
+    })
+    .catch(error => {
+        console.error("Failed to load specification model data:", error);
+    });
+});
+
+// --- Tab switching logic ---
+function showTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active');
+    });
+    document.getElementById(tabId).classList.add('active');
+    event.target.classList.add('active');
+}   
         </script>
     </body>
 </html>
