@@ -188,21 +188,53 @@
         tbody.innerHTML = '';
         entitySpecs.forEach(spec => {
             const tr = document.createElement('tr');
+            
             const queryParams = new URLSearchParams({
-                "Name": spec.specName || "", "Governing Entity": spec.governingEntity || "", "Purpose": spec.purpose || "",
-                "Implementation Date": spec.implDate || "", "Sector": spec.sector || "", "Country": spec.country || "",
-                "Preferred Syntax": spec.preferredSyntax || ""
+                "Name": spec.specName || "",
+                "Governing Entity": spec.governingEntity || "",
+                "Purpose": spec.purpose || "",
+                "Implementation Date": spec.implDate || "",
+                "Sector": spec.sector || "",
+                "Country": spec.country || "",
+                "Preferred Syntax": spec.preferredSyntax || "",
+                "Specification Identifier": spec.specId || "",
+                "Specification Version": spec.specVersion || "",
+                "Contact Information": spec.contactInfo || "",
+                "Core Version": spec.coreVersion || "",
+                "Underlying Specification": spec.underlyingSpec || "",
+                "Specification Source Link": spec.sourceLink || "",
+                "IDs": JSON.stringify(spec.coreInvoiceModelIds || [])
             }).toString();
-            tr.innerHTML = `
-                <td>${spec.implDate || 'N/A'}</td> <td>${spec.specName || ''}</td> <td>${spec.purpose || ''}</td>
-                <td>${spec.implDate || ''}</td> <td>CIUS</td> <td>${spec.sector || ''}</td>
-                <td>${spec.country || ''}</td> <td>${spec.preferredSyntax || ''}</td> <td>${spec.conformanceLevel || ''}</td>
-                <td>${spec.registryStatus || ''}</td> <td>Admin</td>
-                <td><button class="view-button" onclick="startEdit(event)" data-spec-name="${spec.specName}" data-spec-params="${queryParams}">Edit</button></td>
+
+
+        let actionButtonHtml = '';
+
+        if (spec.registryStatus === 'In Progress') {
+            actionButtonHtml = `<button class="view-button" onclick="startEdit(event)" data-spec-name="${spec.specName}" data-spec-params='${queryParams}'>Edit</button>`;
+        } else {
+            actionButtonHtml = `<button class="view-button" onclick="window.location.href='viewSpecification.html?${queryParams}'">View</button>`;
+        }
+
+        if (spec.registryStatus === 'Submitted') {
+            tr.classList.add("submitted-row");
+        }
+
+        tr.innerHTML = `
+                <td>${spec.implDate || 'N/A'}</td>
+                <td>${spec.specName || ''}</td>
+                <td>${spec.purpose || ''}</td>
+                <td>${spec.implDate || ''}</td>
+                <td>CIUS</td>
+                <td>${spec.sector || ''}</td>
+                <td>${spec.country || ''}</td>
+                <td>${spec.preferredSyntax || ''}</td>
+                <td>${spec.conformanceLevel || ''}</td>
+                <td>${spec.registryStatus || ''}</td>
+                <td>Admin</td>
+                <td>${actionButtonHtml}</td>
             `;
             tbody.appendChild(tr);
         });
-
 
         // --- Restoring the "Users" table ---
         const usersTable = `
