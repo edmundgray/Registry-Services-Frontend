@@ -181,14 +181,6 @@
             let isFormDirty = false;
 
         document.addEventListener('DOMContentLoaded', () => {
-            const editingSpecName = localStorage.getItem("selectedSpecification");
-            if (editingSpecName) {
-                const titleElement = document.querySelector('.page-Content h1');
-                if (titleElement) {
-                    titleElement.innerHTML += ` for: ${editingSpecName}`;
-                }
-            }
-            
             // Listen for changes on any checkbox that is not disabled
             document.querySelector('#coreInvoiceTable').addEventListener('change', (event) => {
                 if (event.target.matches('.row-selector:not(:disabled)')) {
