@@ -96,105 +96,62 @@
             <br/>
             <span><b>Select the required Extension Component and view its required elements</b></span>
             <br/><br/>
-
-            <div id="components-container"></div>
-
-            <button type="button" onclick="addNewComponentSection()" class="view-button" style="margin-top: 15px;">Add Another Extension Component</button>
-
-            <hr style="margin: 30px 0;">
-
-            <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 10px;">
-                <div>
-                    <button type="button" onclick="handleSave()" class="view-button" style="background:#ccc; color:#333;">Save</button>
-                    <button type="button" onclick="handleCancel()" class="view-button" style="background-color: #F4A261; color: #fff;">Cancel New Specification</button>
-                </div>
-                <div>
-                    <button type="button" onclick="saveAndGoToNextStep()" class="view-button" style="background:#217a36;">Additional Requirements</button>
-                </div>
-            </div>
-
-
-            
+            <select id="extensionComponentSelect" onchange="updateExtensionTable()">
+                <option value="" selected>Select an Extension Component</option>
+                <option>Invoice Reminder</option>
+                <option>Proforma Invoice</option>
+                <option>Calculate VAT at line level</option>
+                <option>More than 2 decimals on amounts at line level</option>
+                <option>Grouping invoice lines by using sublines</option>
+                <option>Split Payments</option>
+                <option>Generic Trading Party</option>
+                <option>Using multiple languages</option>
+                <option>Received and Accepted Quantity</option>
+                <option>Delivery Information</option>
+                <option>Payment Terms Extension Component</option>
+                <option>Tax and Payment Currency</option>
+            </select>
             
             <br/>
             
-            
+            <table class="data-table" id="extensionComponentTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Level</th>
+                        <th>Cardinality</th>
+                        <th>Business Term</th>
+                        <th>Usage Note</th>
+                        <th>Justification</th>
+                        <th>Data Type</th>
+                        <th>Type of Extension</th>
+                    </tr>
+                </thead>
+                <tbody id="extensionTableBody">
+                    <tr>
+                        <td colspan="8" class="centered-cell">None selected</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
 
 <!----------------------------------------------------------------------------
         Javascript for the table
   ------------------------------------------------------------------------------>
         <script>
-        // Data for "Received and Accepted Quantity"
-        const receivedAcceptedQuantityRows = [
-            {
-                id: "XT-40",
-                level: "1.1",
-                cardinality: "1..1",
-                businessTerm: "Received quantity",
-                usageNote: "The quantity officially received by the Buyer is required",
-                justification: "",
-                dataType: "Quantity",
-                typeOfExtension: "Add new information element",
-                coreConformance: "Core Conformant",
-            },
-            {
-                id: "XT-41",
-                level: "1.1",
-                cardinality: "1..1",
-                businessTerm: "Accepted quantity",
-                usageNote: "Following inspection the quantity accepted by the Buyer is required",
-                justification: "",
-                dataType: "Quantity",
-                typeOfExtension: "Add new information element",
-                coreConformance: "Core Conformant",
-            },
-            {
-                id: "BT-129",
-                level: "1.1",
-                cardinality: "1..1",
-                businessTerm: "Invoiced quantity",
-                usageNote: "",
-                justification: "",
-                dataType: "Quantity",
-                typeOfExtension: "N/A",
-                coreConformance: "Core Conformant",
-            }
-        ];
-
-        function updateExtensionTable() {
+        function updateExtensionTable() 
+        {
             const select = document.getElementById('extensionComponentSelect');
             const tbody = document.getElementById('extensionTableBody');
-
-            if (select.value === "Received and Accepted Quantity") {
-                tbody.innerHTML = receivedAcceptedQuantityRows.map((row, idx) => `
-                    <tr onclick="toggleRowSelection(this, ${idx})">
-                        <td>${row.id}</td>
-                        <td>${row.level}</td>
-                        <td>${row.cardinality}</td>
-                        <td>${row.businessTerm}</td>
-                        <td>${row.usageNote}</td>
-                        <td>${row.justification}</td>
-                        <td>${row.dataType}</td>
-                        <td>${row.typeOfExtension}</td>
-                        <td>${row.coreConformance}</td>
-                        <td class="centered-cell">
-                            <input type="checkbox" onclick="event.stopPropagation();" />
-                        </td>
-                    </tr>
-                `).join('');
-            } else if (select.value === "") {
-                tbody.innerHTML = `<tr><td colspan="10" class="centered-cell">None selected</td></tr>`;
-            } else {
-                tbody.innerHTML = `<tr><td colspan="10" class="centered-cell">Under development</td></tr>`;
+            
+            if (select.value === "") 
+            {
+                tbody.innerHTML = `<tr><td colspan="8" class="centered-cell">None selected</td></tr>`;
+            } 
+            else 
+            {
+                tbody.innerHTML = `<tr><td colspan="8" class="centered-cell">Under development</td></tr>`;
             }
-        }
-
-        // Highlight row and toggle checkbox
-        function toggleRowSelection(row, idx) {
-            const checkbox = row.querySelector('input[type="checkbox"]');
-            checkbox.checked = !checkbox.checked;
-            row.classList.toggle('selected-row', checkbox.checked);
         }
         </script>
         <script>

@@ -126,7 +126,10 @@
         Main Content
   ------------------------------------------------------------------------------>
         <div class="page-Content">
-            <h1><i class="fa-solid fa-car"></i> Core Invoice Model</h1>
+            <h1>
+                <i class="fa-solid fa-car"></i> Core Invoice Model
+                <span style="color: #b22222; font-size: 0.6em; margin-left: 12px; vertical-align: middle;">ADMIN VIEW (READ-ONLY)</span>
+            </h1>
 
             <div class="table-container">
                 <table id="coreInvoiceTable" class="styled-table">
@@ -255,10 +258,11 @@ document.addEventListener("DOMContentLoaded", function() {
         const sidebar = document.querySelector(".sidebar ul");
         if (sidebar) {
             const li = document.createElement("li");
+            li.className = "child-element protected";
             li.innerHTML = `
-                <a href="coreInvoiceModelAdmin.html">
+                <a href="ExtensionComponentDataModelAdmin.html">
                     <span class="icon"><i class="fa-solid fa-eye"></i></span>
-                    <span class="text">View Core Invoice Model (Admin)</span>
+                    <span class="text">VIEW EXTENSION COMPONENT DATA MODEL (ADMIN)</span>
                 </a>
             `;
             sidebar.appendChild(li);

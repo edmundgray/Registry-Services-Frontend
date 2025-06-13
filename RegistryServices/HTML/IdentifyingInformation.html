@@ -351,15 +351,15 @@
                 
                 <!-- Save, Cancel & Core Invoice Model Buttons -->
                 <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 30px;">
-    <div>
-        <button type="button" onclick="handleSave()" class="view-button">Save</button>
-        <button type="button" onclick="handleSubmit()" class="view-button" style="background:#217a36;color:#fff;">Submit</button>
-        <button type="button" onclick="handleCancel()" class="view-button" style="background:#ccc; color:#333;">Cancel</button>
-    </div>
-    <div>
-        <button type="button" onclick="window.location.href='coreInvoiceModel.html'" class="view-button" style="background:#217a36;">Core Invoice Model</button>
-    </div>
-</div>
+                    <div>
+                        <button type="button" onclick="handleSave()" class="view-button">Save</button>
+                        <button type="button" onclick="window.location.href='eInvoicingSpecificationRegistry.html'" class="view-button" style="background:#ccc; color:#333;">Cancel</button>
+                    </div>
+                    
+                    <div>
+                        <button type="button" onclick="window.location.href='coreInvoiceModel.html'" class="view-button" style="background:#217a36;">Core Invoice Model</button>
+                    </div>
+                </div>
             </form>
         </div>
 
@@ -374,24 +374,22 @@
                 const form = document.getElementById('identifyingForm');
                 if (!form.reportValidity()) return;
 
-                // Gather form data
-                const data = {
-                    "specName": form.specName.value,
-                    "governingEntity": form.governingEntity.value,
-                    "contactInfo": form.contactInfo.value,
-                    "sector": form.sector.value,
-                    "subSector": form.subSector.value,
-                    "country": form.country.value,
-                    "purpose": form.purpose.value,
-                    "specId": form.specId.value,
-                    "specVersion": form.specVersion.value,
-                    "implDate": form.implDate.value,
-                    "coreVersion": form.coreVersion.value,
-                    "underlyingSpec": form.underlyingSpec.value,
-                    "sourceLink": form.sourceLink.value,
-                    "preferredSyntax": form.preferredSyntax.value,
-                    "conformanceLevel": "N/A",
-                    "registryStatus": "In Progress" // Always "In Progress" on Save
+                const data = 
+                {
+                    "Specification name": form.specName.value,
+                    "Governing Entity": form.governingEntity.value,
+                    "Contact Information": form.contactInfo.value,
+                    "Sector": form.sector.value,
+                    "Sub Sector": form.subSector.value,
+                    "Country": form.country.value,
+                    "Purpose": form.purpose.value,
+                    "Specification Identifier": form.specId.value,
+                    "Specification Version": form.specVersion.value,
+                    "Date of Implementation": form.implDate.value,
+                    "Core Version": form.coreVersion.value,
+                    "Underlying Specification": form.underlyingSpec.value,
+                    "Specification Source Link": form.sourceLink.value,
+                    "Preferred Syntax": form.preferredSyntax.value
                 };
 
                 // Get existing specs or create new array
@@ -504,31 +502,8 @@
             document.addEventListener('DOMContentLoaded', () => 
             {
                 const form = document.getElementById('identifyingForm');
-
-                const editingSpecId = localStorage.getItem("selectedSpecification");
-                const specDataString = localStorage.getItem("editSpecData");
-
-                if (editingSpecId && specDataString) {
-                    const params = new URLSearchParams(specDataString);
-
-                    // Populate form fields with data from localStorage
-                    form.specName.value = params.get('Name') || '';
-                    form.governingEntity.value = params.get('Governing Entity') || '';
-                    form.contactInfo.value = params.get('Contact Information') || 'N/A';
-                    form.sector.value = params.get('Sector') || '';
-                    form.subSector.value = params.get('Sub Sector') || '';
-                    form.country.value = params.get('Country') || '';
-                    form.purpose.value = params.get('Purpose') || '';
-                    form.specId.value = params.get('Specification Identifier') || '';
-                    form.specVersion.value = params.get('Specification Version') || '';
-                    form.implDate.value = params.get('Implementation Date') || '';
-                    form.coreVersion.value = params.get('Core Version') || '';
-                    form.underlyingSpec.value = params.get('Underlying Specification') || '';
-                    form.sourceLink.value = params.get('Specification Source Link') || '';
-                    form.preferredSyntax.value = params.get('Preferred Syntax') || '';
-                }
-
                 const elements = form.querySelectorAll('input, textarea, select');
+
                 elements.forEach(element => 
                 {
                     element.addEventListener('change', () => 
@@ -543,17 +518,18 @@
                 if (isFormDirty) 
                 {
                     e.preventDefault();
+                    // This is required because most browsers need it to trigger the confirmation dialog
                     e.returnValue = '';
                 }
             });
 
-    // document.addEventListener("DOMContentLoaded", function () {
-    //     let selectedSpec = localStorage.getItem("selectedSpecification");
+    document.addEventListener("DOMContentLoaded", function () {
+        let selectedSpec = localStorage.getItem("selectedSpecification");
 
-    //     if (selectedSpec) {
-    //         document.getElementById("specName").value = selectedSpec;
-    //     }
-    // });
+        if (selectedSpec) {
+            document.getElementById("specName").value = selectedSpec;
+        }
+    });
         </script>
     </body>
 </html>

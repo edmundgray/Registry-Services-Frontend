@@ -24,8 +24,6 @@ document.addEventListener("DOMContentLoaded", function ()
             const tableBody = document.querySelector('#coreInvoiceTable tbody');
             const nodeMap = {};
 
-            
-
             data.forEach(item => 
             {
                 nodeMap[item.ID] = { ...item, children: [] };
@@ -75,27 +73,8 @@ document.addEventListener("DOMContentLoaded", function ()
                     <td>${item['Usage Note']}</td>
                     <td>${item['Business Rules']}</td>
                     <td>${item['Data Type']}</td>
-                    <td>
-                        <input type="checkbox" class="row-selector" data-id="${item.ID}" ${isMandatory ? 'checked' : ''}>
-                    </td>
-                    <td>
-                        <select class="type-of-change-select">
-                            <option>Type of Change</option>
-                            <option>Add</option>
-                            <option>Remove</option>
-                            <option>Modify</option>
-                            <option>No Change</option>
-                        </select>
-                    </td>
                     <td></td> <!-- New cell for Show more button -->
                 `;
-
-                //added new column for checkbox
-                const header = document.querySelector('#coreInvoiceTable thead tr');
-                if (header && header.firstElementChild.tagName !== 'TH') {
-                     const th = document.createElement('th');
-                     header.insertBefore(th, header.firstChild);
-                }
 
                 // If this item has children, add the Show more button to the last cell
                 let showMoreBtn = null;
