@@ -1,0 +1,85 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        <link rel="stylesheet" href="style.css">
+        <script src="javascript.js"></script>
+        <title>Sliding Sidebar Menu</title>
+    </head>
+    <body>
+        <div class="sidebar">
+            <ul>
+                <li>
+                    <a class="logo">
+                        <span class="icon">
+                            <img src="genericLogo.png" alt="Sidebar Logo" style="width: 40px; height: 40px;">
+                        </span>
+                        <span class="text">Sidebar Test</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <span class="icon"><i class="fa-solid fa-house"></i></span>
+                        <span class="text">eInvoicing Specification Registry</span>
+                    </a>
+                </li>
+                <li class="protected">
+                    <a href="#">
+                        <span class="icon"><i class="fa-solid fa-folder"></i></span>
+                        <span class="text">My Specifications</span>
+                    </a>
+                </li>
+                <li class="protected">
+                    <a href="#">
+                        <span class="icon"><i class="fa-solid fa-file-medical"></i></span>
+                        <span class="text">Add New Specification</span>
+                    </a>
+                </li class="protected">
+                <li class="child-element protected">
+                    <a href="#">
+                        <span class="icon"><i class="fa-solid fa-info"></i></span>
+                        <span class="text">Identifying Information</span>
+                    </a>
+                </li>
+                <li class="child-element">
+                    <a href="#">
+                        <span class="icon"><i class="fa-solid fa-car"></i></span>
+                        <span class="text">Core Invoice Model</span>
+                    </a>
+                </li>
+                <li class="child-element">
+                    <a href="#">
+                        <span class="icon"><i class="fa-solid fa-trailer"></i></span>
+                        <span class="text">Extension Component Data Model</span>
+                    </a>
+                </li>
+                <li class="child-element protected">
+                    <a href="#">
+                        <span class="icon"><i class="fa-solid fa-circle-plus"></i></span>
+                        <span class="text">Additional Requirements</span>
+                    </a>
+                </li>
+                <li class="child-element protected">
+                    <a href="#">
+                        <span class="icon"><i class="fa-solid fa-square-check"></i></span>
+                        <span class="text">Specification Preview</span>
+                    </a>
+                </li>
+                <!-- Logging in/out-->
+                <li id="loginLogoutItem">
+                    <a href="#" onclick="toggleLogin()">
+                        <span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span>
+                        <span class="text" id="loginLogoutButton">Logout</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="page-Content">
+            <h1>Identifying Information</h1>
+            <br/>
+            <h3>This is where the page content will be:</h3>
+        </div>
+    </body>
+</html>

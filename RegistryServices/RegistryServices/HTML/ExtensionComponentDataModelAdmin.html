@@ -1,0 +1,404 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        <link rel="stylesheet" href="../CSS/style.css">
+        
+        <script src="../JS/javascript.js"></script>
+        
+        <title>Registry Services</title>
+    </head>
+    <body>
+<!----------------------------------------------------------------------------
+        Sidebar
+  ------------------------------------------------------------------------------>
+        <div class="sidebar">
+            <ul>
+                <li>
+                    <a class="logo">
+                        <span class="icon">
+                            <img src="../Images/genericLogo.png" alt="Sidebar Logo" style="width: 40px; height: 40px;">
+                        </span>
+                        <span class="text">Registry Services</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="eInvoicingSpecificationRegistry.html">
+                        <span class="icon"><i class="fa-solid fa-house"></i></span>
+                        <span class="text">eInvoicing Specification Registry</span>
+                    </a>
+                </li>
+                <li class="protected">
+                    <a href="governingEntityList.html">
+                        <span class="icon"><i class="fa-solid fa-building"></i></span>
+                        <span class="text">Governing Entities</span>
+                    </a>
+                </li>
+                <li class="protected">
+                    <a href="mySpecifications.html">
+                        <span class="icon"><i class="fa-solid fa-folder"></i></span>
+                        <span class="text">My Specifications</span>
+                    </a>
+                </li>
+                <li class="protected">
+                    <a href="#">
+                        <span class="icon"><i class="fa-solid fa-file-medical"></i></span>
+                        <span class="text">Add New Specification</span>
+                    </a>
+                </li class="protected">
+                <li class="child-element protected">
+                    <a href="IdentifyingInformation.html">
+                        <span class="icon"><i class="fa-solid fa-info"></i></span>
+                        <span class="text">Identifying Information</span>
+                    </a>
+                </li>
+                <li class="child-element">
+                    <a href="coreInvoiceModel.html">
+                        <span class="icon"><i class="fa-solid fa-car"></i></span>
+                        <span class="text">Core Invoice Model</span>
+                    </a>
+                </li>
+                <li class="child-element">
+                    <a href="ExtensionComponentDataModel.html">
+                        <span class="icon"><i class="fa-solid fa-trailer"></i></span>
+                        <span class="text">Extension Component Data Model</span>
+                    </a>
+                </li>
+                <li class="child-element protected">
+                    <a href="additionalRequirements.html">
+                        <span class="icon"><i class="fa-solid fa-circle-plus"></i></span>
+                        <span class="text">Additional Requirements</span>
+                    </a>
+                </li>
+                <li class="child-element protected">
+                    <a href="SpecificationPreview.html">
+                        <span class="icon"><i class="fa-solid fa-square-check"></i></span>
+                        <span class="text">Specification Preview</span>
+                    </a>
+                </li>
+
+                <script>
+                    if (localStorage.userRole === "Admin") 
+                    {
+                        const sidebar = document.querySelector('.sidebar ul');
+                        if (sidebar) {
+                            const li = document.createElement('li');
+                            li.className = "child-element protected";
+                            li.innerHTML = `
+                                <a href="ExtensionComponentDataModelAdmin.html">
+                                    <span class="icon"><i class="fa-solid fa-eye"></i></span>
+                                    <span class="text">VIEW EXTENSION COMPONENT DATA MODEL (ADMIN)</span>
+                                </a>
+                            `;
+                            sidebar.appendChild(li);
+                        }
+                    }
+                </script>
+                
+                <!-- Logging in/out-->
+                <li id="loginLogoutItem">
+                    <a href="#" onclick="toggleLogin()">
+                        <span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span>
+                        <span class="text" id="loginLogoutButton">Logout</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+
+
+<!----------------------------------------------------------------------------
+        The Table
+  ------------------------------------------------------------------------------>
+        <div class="page-Content">
+            <h1>
+                <i class="fa-solid fa-trailer"></i> Extension Component Data Model
+                <span style="color: #b22222; font-size: 0.6em; margin-left: 12px; vertical-align: middle;">ADMIN VIEW (READ-ONLY)</span>
+            </h1>
+            <br/>
+            <span><b>Select the required Extension Component and view its required elements</b></span>
+            <br/><br/>
+
+            <div id="components-container"></div>
+
+            <button type="button" onclick="addNewComponentSection()" class="view-button" style="margin-top: 15px;">Add Another Extension Component</button>
+
+            <hr style="margin: 30px 0;">
+
+            <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 10px;">
+                <div>
+                    <button type="button" onclick="handleSave()" class="view-button" style="background:#ccc; color:#333;">Save</button>
+                    <button type="button" onclick="handleCancel()" class="view-button" style="background-color: #F4A261; color: #fff;">Cancel New Specification</button>
+                </div>
+                <div>
+                    <button type="button" onclick="saveAndGoToNextStep()" class="view-button" style="background:#217a36;">Additional Requirements</button>
+                </div>
+            </div>
+
+
+            
+            
+            <br/>
+            
+            
+        </div>
+
+<!----------------------------------------------------------------------------
+        Javascript for the table
+  ------------------------------------------------------------------------------>
+        <script>
+        // Data for "Received and Accepted Quantity"
+        const receivedAcceptedQuantityRows = [
+            {
+                id: "XT-40",
+                level: "1.1",
+                cardinality: "1..1",
+                businessTerm: "Received quantity",
+                usageNote: "The quantity officially received by the Buyer is required",
+                justification: "",
+                dataType: "Quantity",
+                typeOfExtension: "Add new information element",
+                coreConformance: "Core Conformant",
+            },
+            {
+                id: "XT-41",
+                level: "1.1",
+                cardinality: "1..1",
+                businessTerm: "Accepted quantity",
+                usageNote: "Following inspection the quantity accepted by the Buyer is required",
+                justification: "",
+                dataType: "Quantity",
+                typeOfExtension: "Add new information element",
+                coreConformance: "Core Conformant",
+            },
+            {
+                id: "BT-129",
+                level: "1.1",
+                cardinality: "1..1",
+                businessTerm: "Invoiced quantity",
+                usageNote: "",
+                justification: "",
+                dataType: "Quantity",
+                typeOfExtension: "N/A",
+                coreConformance: "Core Conformant",
+            }
+        ];
+
+        function updateExtensionTable() {
+            const select = document.getElementById('extensionComponentSelect');
+            const tbody = document.getElementById('extensionTableBody');
+
+            if (select.value === "Received and Accepted Quantity") {
+                tbody.innerHTML = receivedAcceptedQuantityRows.map((row, idx) => `
+                    <tr onclick="toggleRowSelection(this, ${idx})">
+                        <td>${row.id}</td>
+                        <td>${row.level}</td>
+                        <td>${row.cardinality}</td>
+                        <td>${row.businessTerm}</td>
+                        <td>${row.usageNote}</td>
+                        <td>${row.justification}</td>
+                        <td>${row.dataType}</td>
+                        <td>${row.typeOfExtension}</td>
+                        <td>${row.coreConformance}</td>
+                        <td class="centered-cell">
+                            <input type="checkbox" onclick="event.stopPropagation();" />
+                        </td>
+                    </tr>
+                `).join('');
+            } else if (select.value === "") {
+                tbody.innerHTML = `<tr><td colspan="10" class="centered-cell">None selected</td></tr>`;
+            } else {
+                tbody.innerHTML = `<tr><td colspan="10" class="centered-cell">Under development</td></tr>`;
+            }
+        }
+
+        // Highlight row and toggle checkbox
+        function toggleRowSelection(row, idx) {
+            const checkbox = row.querySelector('input[type="checkbox"]');
+            checkbox.checked = !checkbox.checked;
+            row.classList.toggle('selected-row', checkbox.checked);
+        }
+        </script>
+        <script>
+    let extensionComponentData = {};
+        let componentsContainer;
+
+        async function loadExtensionData() {
+            try {
+                const response = await fetch('../JSON/extensionComponentModelElements.json');
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                const data = await response.json();
+                
+                const processedData = {};
+                data.forEach(item => {
+                    const componentName = item.Component;
+                    if (!processedData[componentName]) {
+                        processedData[componentName] = { elements: [] };
+                    }
+                    processedData[componentName].elements.push(item);
+                });
+                
+                extensionComponentData = processedData;
+                addNewComponentSection();
+
+            } catch (error) {
+                console.error("Error loading or parsing extension component data:", error);
+                if (componentsContainer) {
+                     componentsContainer.innerHTML = `<p style="color: red;">Error: Could not load extension component data.</p>`;
+                }
+            }
+        }
+
+        function addNewComponentSection() {
+            const sectionId = `section-${Date.now()}`;
+            const section = document.createElement('div');
+            section.className = 'component-section';
+            section.id = sectionId;
+            section.style.border = "1px solid #ddd";
+            section.style.padding = "15px";
+            section.style.marginBottom = "20px";
+            section.style.backgroundColor = "#fff";
+
+            let options = '<option value="">Select an Extension Component</option>';
+            for (const key in extensionComponentData) {
+                options += `<option value="${key}">${key}</option>`;
+            }
+
+            section.innerHTML = `
+    <select class="component-select" onchange="populateComponentTable(this)">${options}</select>
+    <p style="margin-top: 5px;">Select the required Extension Component and view its required elements</p>
+    <table class="styled-table" style="width:100%;">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Level</th>
+                <th>Cardinality</th>
+                <th>Business Term</th>
+                <th>Usage Note</th>
+                <th>Justification</th>
+                <th>Data Type</th>
+                <th>Type of Extension</th>
+                <th>Core Conformant /Rules broken</th>
+                <th>Included in Spec</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td colspan="10" style="text-align:center;">Please select a component from the dropdown.</td></tr>
+        </tbody>
+    </table>
+    <button class="view-button" style="margin-top: 10px; background: #ccc; color: #333;" disabled>Clear Selection</button>
+`;
+            componentsContainer.appendChild(section);
+        }
+
+        function populateComponentTable(selectElement) {
+            const selectedValue = selectElement.value;
+            const tableBody = selectElement.closest('.component-section').querySelector('tbody');
+
+            if (!selectedValue) {
+                tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Please select a component from the dropdown.</td></tr>';
+                return;
+            }
+
+            const component = extensionComponentData[selectedValue];
+            tableBody.innerHTML = '';
+
+            component.elements.forEach(el => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${el.ID}</td>
+                    <td>${el.Level}</td>
+                    <td>${el.Cardinality}</td>
+                    <td>${el['Business Term']}<i class="fa-solid fa-circle-question" title="${el['Usage Note']}"></i></td>
+                    <td>${el['Usage Note']}</td>
+                    <td>${el.Justification}</td>
+                    <td>${el['Data Type']}</td>
+                    <td>${el['Type of Extension']}</td>
+                    <td>${el['Core Conformant/Rules broken']}</td>
+                    <td style="text-align:center;">
+                        <input type="checkbox" class="element-selector" data-id="${el.ID}" disabled ${el.included ? 'checked' : ''}>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function handleSave(showAlert = true) {
+            const selectedExtensions = [];
+            document.querySelectorAll('.component-section').forEach(section => {
+                const componentName = section.querySelector('.component-select').value;
+                if (componentName) {
+                    const selectedElements = [];
+                    section.querySelectorAll('.element-selector:checked').forEach(checkbox => {
+                        selectedElements.push(checkbox.getAttribute('data-id'));
+                    });
+
+                    if (selectedElements.length > 0) {
+                         selectedExtensions.push({ componentName, selectedElements });
+                    }
+                }
+            });
+
+            const editingSpecId = localStorage.getItem("selectedSpecification");
+            if (!editingSpecId) { alert("Error: No specification selected."); return; }
+
+            let specifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
+            const specIndex = specifications.findIndex(spec => spec.id === editingSpecId);
+
+            if (specIndex > -1) {
+                specifications[specIndex].extensionComponents = selectedExtensions;
+                localStorage.setItem('mySpecifications', JSON.stringify(specifications));
+                if (showAlert) alert("Extension components saved!");
+            } else {
+                alert("Error: Could not find the specification to save to.");
+            }
+        }
+
+        function handleCancel() 
+        {
+            if (confirm("Warning! This Specification will be deleted, do you want to proceed?")) 
+            {
+                const specIdToDelete = localStorage.getItem("selectedSpecification");
+                if (specIdToDelete) {
+                    let specifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
+                    localStorage.setItem('mySpecifications', JSON.stringify(specifications.filter(spec => spec.id !== specIdToDelete)));
+                    localStorage.removeItem("selectedSpecification");
+                }
+                window.location.href = 'mySpecifications.html';
+            }
+        }
+
+        function saveAndGoToNextStep() 
+        {
+            handleSave(false);
+            window.location.href = 'additionalRequirements.html';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => 
+        {
+            componentsContainer = document.getElementById('components-container');
+            loadExtensionData();
+        });
+
+        // Redirect to the appropriate page based on login status
+        function redirectExtensionComponentDataModel(event) 
+        {
+            event.preventDefault();
+            const isLoggedIn = !!localStorage.getItem('userRole');
+            if (isLoggedIn) {
+                window.location.href = "ExtensionComponentDataModelAdmin.html";
+            } else {
+                window.location.href = "ExtensionComponentDataModel.html";
+            }
+        }
+        </script>
+        
+        <style>
+            .selected-row {
+                background-color: #d0e7ff !important;
+            }
+        </style>
+    </body>
+</html>
