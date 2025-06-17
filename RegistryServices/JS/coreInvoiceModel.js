@@ -58,9 +58,7 @@ document.addEventListener("DOMContentLoaded", function ()
                 const isMandatory = item.Cardinality === '1..1';
                  const isChecked = savedCoreIds.includes(item.ID) || isMandatory;
                 tr.innerHTML = `
-                    <td>
-                    <input type="checkbox" class="row-selector" data-id="${item.ID}" ${isChecked ? 'checked' : ''}>
-                    </td>
+                    
                     <td>${item.ID}</td>
                     <td>${item.Level}</td>
                     <td>${item.Cardinality}</td>
@@ -73,6 +71,18 @@ document.addEventListener("DOMContentLoaded", function ()
                     <td>${item['Usage Note']}</td>
                     <td>${item['Business Rules']}</td>
                     <td>${item['Data Type']}</td>
+                    <td>
+                        <input type="checkbox" class="row-selector" data-id="${item.ID}" ${isMandatory || isChecked ? 'checked' : ''} ${isMandatory ? 'disabled' : ''}>
+                    </td>
+                    <td>
+                        <select class="type-of-change-select">
+                            <option>Type of Change</option>
+                            <option>Add</option>
+                            <option>Remove</option>
+                            <option>Modify</option>
+                            <option selected>No Change</option>
+                        </select>
+                    </td>
                     <td></td> <!-- New cell for Show more button -->
                 `;
 
@@ -103,7 +113,7 @@ document.addEventListener("DOMContentLoaded", function ()
                 {
                     showMoreBtn.addEventListener('click', function () 
                     {
-                        if (!childTrs.length) return;
+                        //if (!childTrs.length) return;
 
                         const isHidden = childTrs[0].style.display === 'none';
 
