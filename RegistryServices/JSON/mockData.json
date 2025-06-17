@@ -12,7 +12,8 @@
         "Extension Component": "Received and Accepted Quantity Delivery Information",
         "Conformance Level": "Party Core Conformant",
         "View": "View",
-        "IDs": ["BT-1", "BT-2", "BT-5"]
+        "IDs": ["BT-1", "BT-2", "BT-3", "BT-5", "BG-2", "BT-24", "BG-4", "BT-27", "BG-5", "BT-55", "BG-7", "BT-44", "BG-8", "BG-22", "BT-106", "BT-109", "BT-112", "BG-23", "BT-164", "BT-116", "BT-117", "BT-118", "BG-25", "BT-126", "BT-129", "BT-130", "BT-131", "BG-29", "BT-146", "BG-30", "BT-151", "BG-31", "BT-153",
+        "XT-40", "XT-41"]
     },
     {
         "Name": "ChainPay Automotive v2.0",
@@ -22,12 +23,12 @@
         "Country": "DE",
         "Implementation Date": "2024-12-01",
         "Preferred Syntax": "EDIFACT",
-        "Registry Status": "Under Review",
+        "Registry Status": "Submitted",
         "Governing Entity": "European Automotive Supply Forum",
         "Extension Component": "Delivery Information",
         "Conformance Level": "Party Core Conformant",
         "View": "View",
-        "IDs": ["BT-3", "BT-24", "BT-27"]
+        "IDs": ["BT-3", "BT-24", "BT-27", "XT-40", "XT-41", "BT-129"]
     },
     {
         "Name": "RetailConnect Billing Rules",

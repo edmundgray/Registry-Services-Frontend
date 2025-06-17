@@ -9,11 +9,17 @@
         <script src="../JS/javascript.js"></script>
         
         <title>Registry Services</title>
+        <style>
+            .component-section {
+                border: 1px solid #ddd;
+                padding: 15px;
+                margin-bottom: 20px;
+                background-color: #fff;
+                border-radius: 5px;
+            }
+        </style>
     </head>
     <body>
-<!----------------------------------------------------------------------------
-        Sidebar
-  ------------------------------------------------------------------------------>
         <div class="sidebar">
             <ul>
                 <li>
@@ -78,7 +84,6 @@
                         <span class="text">Specification Preview</span>
                     </a>
                 </li>
-                <!-- Logging in/out-->
                 <li id="loginLogoutItem">
                     <a href="#" onclick="toggleLogin()">
                         <span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span>
@@ -88,71 +93,193 @@
             </ul>
         </div>
 
-<!----------------------------------------------------------------------------
-        The Table
-  ------------------------------------------------------------------------------>
         <div class="page-Content">
             <h1><i class="fa-solid fa-trailer"></i> Extension Component Data Model</h1>
             <br/>
-            <span><b>Select the required Extension Component and view its required elements</b></span>
-            <br/><br/>
-            <select id="extensionComponentSelect" onchange="updateExtensionTable()">
-                <option value="" selected>Select an Extension Component</option>
-                <option>Invoice Reminder</option>
-                <option>Proforma Invoice</option>
-                <option>Calculate VAT at line level</option>
-                <option>More than 2 decimals on amounts at line level</option>
-                <option>Grouping invoice lines by using sublines</option>
-                <option>Split Payments</option>
-                <option>Generic Trading Party</option>
-                <option>Using multiple languages</option>
-                <option>Received and Accepted Quantity</option>
-                <option>Delivery Information</option>
-                <option>Payment Terms Extension Component</option>
-                <option>Tax and Payment Currency</option>
-            </select>
             
-            <br/>
-            
-            <table class="data-table" id="extensionComponentTable">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Level</th>
-                        <th>Cardinality</th>
-                        <th>Business Term</th>
-                        <th>Usage Note</th>
-                        <th>Justification</th>
-                        <th>Data Type</th>
-                        <th>Type of Extension</th>
-                    </tr>
-                </thead>
-                <tbody id="extensionTableBody">
-                    <tr>
-                        <td colspan="8" class="centered-cell">None selected</td>
-                    </tr>
-                </tbody>
-            </table>
+            <div id="components-container"></div>
+
+            <button type="button" onclick="addNewComponentSection()" class="view-button" style="margin-top: 15px;">Add Another Extension Component</button>
+
+            <hr style="margin: 30px 0;">
+
+            <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 10px;">
+                <div>
+                    <button type="button" onclick="handleSave()" class="view-button" style="background:#ccc; color:#333;">Save</button>
+                    <button type="button" onclick="handleCancel()" class="view-button" style="background-color: #F4A261; color: #fff;">Cancel</button>
+                </div>
+                <div>
+                    <button type="button" onclick="saveAndGoToNextStep()" class="view-button" style="background:#217a36;">Additional Requirements</button>
+                </div>
+            </div>
         </div>
 
-<!----------------------------------------------------------------------------
-        Javascript for the table
-  ------------------------------------------------------------------------------>
         <script>
-        function updateExtensionTable() 
-        {
-            const select = document.getElementById('extensionComponentSelect');
-            const tbody = document.getElementById('extensionTableBody');
-            
-            if (select.value === "") 
-            {
-                tbody.innerHTML = `<tr><td colspan="8" class="centered-cell">None selected</td></tr>`;
-            } 
-            else 
-            {
-                tbody.innerHTML = `<tr><td colspan="8" class="centered-cell">Under development</td></tr>`;
+            let isFormDirty = false;
+            let extensionComponentData = {};
+            let componentsContainer;
+
+            async function loadExtensionData() {
+                try {
+                    const response = await fetch('../JSON/extensionComponentModelElements.json');
+                    const data = await response.json();
+                    
+                    data.forEach(item => {
+                        const componentName = item.Component;
+                        if (!extensionComponentData[componentName]) {
+                            extensionComponentData[componentName] = { elements: [] };
+                        }
+                        extensionComponentData[componentName].elements.push(item);
+                    });
+
+                    const editingSpecName = localStorage.getItem("selectedSpecification");
+                    let savedExtensions = [];
+                    if (editingSpecName) {
+                        const specifications = JSON.parse(localStorage.getItem("specifications")) || [];
+                        const specToEdit = specifications.find(spec => spec.specName === editingSpecName);
+                        if (specToEdit && specToEdit.extensionComponents) {
+                            savedExtensions = specToEdit.extensionComponents;
+                        }
+                    }
+
+                    if (savedExtensions.length > 0) {
+                        savedExtensions.forEach(savedExt => {
+                            addNewComponentSection(savedExt.componentName, savedExt.selectedElements);
+                        });
+                    } else {
+                        addNewComponentSection();
+                    }
+
+                } catch (error) {
+                    console.error("Error loading extension component data:", error);
+                }
             }
-        }
+
+            function addNewComponentSection(selectedComponent = '', selectedIds = []) {
+                const sectionId = `section-${Date.now()}`;
+                const section = document.createElement('div');
+                section.className = 'component-section';
+                section.id = sectionId;
+
+                let options = '<option value="">Select an Extension Component</option>';
+                for (const key in extensionComponentData) {
+                    options += `<option value="${key}" ${key === selectedComponent ? 'selected' : ''}>${key}</option>`;
+                }
+
+                section.innerHTML = `
+                    <select class="component-select" onchange="populateComponentTable(this, [])">${options}</select>
+                    <p style="margin-top: 5px;">Select the required Extension Component and tick the box for all required elements</p>
+                    <table class="styled-table" style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th>ID</th><th>Level</th><th>Cardinality</th><th>Business Term</th><th>Usage Note</th>
+                                <th>Justification</th><th>Data Type</th><th>Type of Extension</th>
+                                <th>Core Conformant /Rules broken</th><th>Included in Spec</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="10" style="text-align:center;">Please select a component from the dropdown.</td></tr>
+                        </tbody>
+                    </table>
+                    <button onclick="document.getElementById('${sectionId}').remove(); isFormDirty=true;" class="view-button" style="margin-top: 10px; background: #dc3545;">Remove Selection</button>
+                `;
+                componentsContainer.appendChild(section);
+
+                if (selectedComponent) {
+                    populateComponentTable(section.querySelector('.component-select'), selectedIds);
+                }
+            }
+
+            function populateComponentTable(selectElement, selectedIds = []) {
+                const selectedValue = selectElement.value;
+                const tableBody = selectElement.closest('.component-section').querySelector('tbody');
+
+                if (!selectedValue) {
+                    tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Please select a component.</td></tr>';
+                    return;
+                }
+
+                const component = extensionComponentData[selectedValue];
+                tableBody.innerHTML = '';
+                component.elements.forEach(el => {
+                    const row = document.createElement('tr');
+                    const isChecked = selectedIds.includes(el.ID);
+                    row.innerHTML = `
+                        <td>${el.ID}</td><td>${el.Level}</td><td>${el.Cardinality}</td>
+                        <td>${el['Business Term']}<i class="fa-solid fa-circle-question" title="${el['Usage Note']}"></i></td>
+                        <td>${el['Usage Note']}</td><td>${el.Justification}</td><td>${el['Data Type']}</td>
+                        <td>${el['Type of Extension']}</td><td>${el['Core Conformant/Rules broken']}</td>
+                        <td style="text-align:center;"><input type="checkbox" class="element-selector" data-id="${el.ID}" ${isChecked ? 'checked' : ''} onchange="isFormDirty=true;"></td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            }
+
+            function handleSave(showAlert = true) {
+                const selectedExtensions = [];
+                document.querySelectorAll('.component-section').forEach(section => {
+                    const componentName = section.querySelector('.component-select').value;
+                    if (componentName) {
+                        const selectedElements = [];
+                        section.querySelectorAll('.element-selector:checked').forEach(checkbox => {
+                            selectedElements.push(checkbox.getAttribute('data-id'));
+                        });
+                        if (selectedElements.length > 0) {
+                             selectedExtensions.push({ componentName, selectedElements });
+                        }
+                    }
+                });
+
+                const editingSpecName = localStorage.getItem("selectedSpecification");
+                if (!editingSpecName) { alert("Error: No specification selected."); return; }
+
+                let specifications = JSON.parse(localStorage.getItem("specifications")) || [];
+                const specIndex = specifications.findIndex(spec => spec.specName === editingSpecName);
+
+                if (specIndex > -1) {
+                    specifications[specIndex].extensionComponents = selectedExtensions;
+                    localStorage.setItem('specifications', JSON.stringify(specifications));
+                    if (showAlert) alert("Extension components saved!");
+                    isFormDirty = false;
+                } else {
+                    alert("Error: Could not find the specification to save to.");
+                }
+            }
+
+            function handleCancel() {
+                if (isFormDirty && !confirm("You have unsaved changes. Are you sure you want to cancel?")) {
+                    return;
+                }
+                isFormDirty = false;
+                window.location.href = 'mySpecifications.html';
+            }
+
+            function saveAndGoToNextStep() {
+                handleSave(false);
+                window.location.href = 'additionalRequirements.html';
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const editingSpecName = localStorage.getItem("selectedSpecification");
+                if (editingSpecName) {
+                    const titleElement = document.querySelector('.page-Content h1');
+                    if (titleElement) {
+                        titleElement.innerHTML = `<i class="fa-solid fa-trailer"></i> Extension Component Data Model for: ${editingSpecName}`;
+                    }
+                }
+                
+                componentsContainer = document.getElementById('components-container');
+                loadExtensionData();
+
+                componentsContainer.addEventListener('change', () => { isFormDirty = true; });
+            });
+
+            window.addEventListener('beforeunload', (e) => {
+                if (isFormDirty) {
+                    e.preventDefault();
+                    e.returnValue = '';
+                }
+            });
         </script>
     </body>
 </html>

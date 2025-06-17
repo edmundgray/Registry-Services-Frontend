@@ -392,8 +392,111 @@
                     "Preferred Syntax": form.preferredSyntax.value
                 };
 
-                alert("Saved Information:\n\n" + Object.entries(data).map(([k,v]) => `${k}: ${v}`).join('\n'));
+                // Get existing specs or create new array
+                let specs = JSON.parse(localStorage.getItem("specifications") || "[]");
+                const editingSpecId = localStorage.getItem("selectedSpecification");
+
+                if (editingSpecId) {
+                    // If we are editing, find the index of the old specification.
+                    const specIndex = specs.findIndex(spec => spec.specName === editingSpecId);
+                    if (specIndex > -1) {
+                        // If found, replace it with the new data.
+                        specs[specIndex] = data;
+                        alert("Specification updated and saved as In Progress.");
+                    } else {
+                        // If not found (edge case), add as a new spec.
+                        specs.push(data);
+                        alert("Specification saved as In Progress.");
+                    }
+                    } else {
+                        // If we are not editing, just add the new spec.
+                        specs.push(data);
+                        alert("Specification saved as In Progress.");
+                    }
+                
+                    localStorage.setItem("specifications", JSON.stringify(specs));
+
+                    // Clean up the editing flags from localStorage
+                    localStorage.removeItem("selectedSpecification");
+                    localStorage.removeItem("editSpecData");
+                    
+                    isFormDirty = false;
+            }
+
+            function handleSubmit() {
+                const form = document.getElementById('identifyingForm');
+                if (!form.reportValidity()) return;
+
+                // Gather form data
+                const data = {
+                    "specName": form.specName.value,
+                    "governingEntity": form.governingEntity.value,
+                    "contactInfo": form.contactInfo.value,
+                    "sector": form.sector.value,
+                    "subSector": form.subSector.value,
+                    "country": form.country.value,
+                    "purpose": form.purpose.value,
+                    "specId": form.specId.value,
+                    "specVersion": form.specVersion.value,
+                    "implDate": form.implDate.value,
+                    "coreVersion": form.coreVersion.value,
+                    "underlyingSpec": form.underlyingSpec.value,
+                    "sourceLink": form.sourceLink.value,
+                    "preferredSyntax": form.preferredSyntax.value,
+                    "conformanceLevel": "N/A",
+                    "registryStatus": "Submitted"
+                };
+
+                // Get existing specs or create new array
+                let specs = JSON.parse(localStorage.getItem("specifications") || "[]");
+                const editingSpecId = localStorage.getItem("selectedSpecification");
+
+                if (editingSpecId) {
+                    // If we are editing, find the index of the old specification.
+                    const specIndex = specs.findIndex(spec => spec.specName === editingSpecId);
+                    if (specIndex > -1) {
+                        // If found, replace it with the new data.
+                        specs[specIndex] = data;
+                        alert("Specification updated and submitted.");
+                    } else {
+                        specs.push(data);
+                        alert("Specification submitted.");
+                    }
+                } else {
+                    specs.push(data);
+                    alert("Specification submitted.");
+                }
+
+                localStorage.setItem("specifications", JSON.stringify(specs));
+                
+                // Clean up the editing flags from localStorage
+                localStorage.removeItem("selectedSpecification");
+                localStorage.removeItem("editSpecData");
+
                 isFormDirty = false;
+            }
+
+            function handleCancel() {
+                // Display a confirmation dialog to the user.
+                const userConfirmed = confirm("Warning! This Specification will be deleted, do you want to proceed?");
+                // Proceed only if the user clicks "OK".
+                if (userConfirmed) {
+                    // Check if we are in "Edit" mode by seeing if a specification was selected.
+                    const editingSpecId = localStorage.getItem("selectedSpecification");
+                    if (editingSpecId) {
+                        // If editing, find and remove the specification from the stored array.
+                        let specifications = JSON.parse(localStorage.getItem("specifications") || "[]");
+                        // Create a new array excluding the specification being deleted.
+                        const updatedSpecifications = specifications.filter(spec => spec.id !== editingSpecId);
+                        // Save the updated array back to localStorage.
+                        localStorage.setItem('specifications', JSON.stringify(updatedSpecifications));
+                        // Clean up the edit flag.
+                        localStorage.removeItem("selectedSpecification");
+                    }
+                    // Redirect the user back to their specifications page.
+                    window.location.href = 'mySpecifications.html';
+                }
+                // If the user clicks "Cancel" on the confirmation, do nothing.
             }
 
             document.addEventListener('DOMContentLoaded', () => 

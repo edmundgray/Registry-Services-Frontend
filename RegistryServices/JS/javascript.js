@@ -17,8 +17,10 @@ function updateVisibility()
         item.style.display = loggedInStatus ? "block" : "none";
     });
 
-    document.getElementById("loginLogoutButton").innerText = loggedInStatus ? "Logout" : "Login";
-
+    const loginLogoutButton = document.getElementById("loginLogoutButton");
+    if (loginLogoutButton) {
+        loginLogoutButton.innerText = loggedInStatus ? "Logout" : "Login";
+    }
 /******************************************************************************
     Log in/out functionality 
     For the Core Invoice Model & Extension Component Data Model specifically
@@ -41,29 +43,24 @@ function updateVisibility()
     }
 }
 
+document.addEventListener("DOMContentLoaded", updateVisibility);
 /******************************************************************************
     For the List
  ******************************************************************************/
-let currentPage = 1;
-let rowsPerPage = 10;
-let filteredData = [];
-
 document.addEventListener("DOMContentLoaded", function () 
 {
-    let originalData = 
-    [{
-            "Name": "RetailConnect Billing Rules",
-            "Purpose": "Groups invoice lines and adds settlement plans",
-            "Type": "Extension",
-            "Sector": "Other Service Activities",
-            "Country": "NL",
-            "Implementation Date": "2024-11-18",
-            "Preferred Syntax": "UBL",
-            "Governing Entity": "Retail Invoice Group",
-            "Extension Component": "Grouping Invoice Lines by Sublines & Settlement Plans",
-            "Conformance Level": "Party Core Conformant",
-            "View": "View"
-    }];
+    const registryTable = document.getElementById("myTable");
+    if (!registryTable) {
+        return; // If the table doesn't exist, don't run the table/filter logic.
+    }
+
+let currentPage = 1;
+let rowsPerPage = 10;
+let originalData = [];
+let filteredData = [];
+
+
+   
 
     const rowsPerPageSelect = document.getElementById("rowsPerPage");
     const prevPageButton = document.getElementById("prevPage");
@@ -105,8 +102,8 @@ document.addEventListener("DOMContentLoaded", function ()
         .then(data => 
         {
             originalData = data;
-            filteredData = data;
-            populateTable(filteredData);
+            applyFilters(); // Initial population of the table with all data
+            
         })
         .catch(error => console.error("Error loading JSON:", error));
 
@@ -123,17 +120,15 @@ document.addEventListener("DOMContentLoaded", function ()
         const table = document.getElementById("myTable");
         table.innerHTML = "";
 
-        if (data.length > 0) 
-        {
+        const headers = originalData.length > 0 ? Object.keys(originalData[0]).filter(header => header !== "IDs") : [];
+        if (headers.length > 0) {
             const headerRow = table.insertRow(0);
-            const headers = Object.keys(data[0]).filter(header => header !== "IDs");
-
-            headers.forEach(header => 
-            {
+            headers.forEach(header => {
                 const th = document.createElement("th");
                 th.textContent = header;
                 headerRow.appendChild(th);
             });
+        }
 
             const startIndex = (currentPage - 1) * rowsPerPage;
             const endIndex = Math.min(startIndex + rowsPerPage, data.length);
@@ -143,6 +138,9 @@ document.addEventListener("DOMContentLoaded", function ()
                 const entry = data[i];
                 const row = table.insertRow(-1);
 
+                if (loggedInStatus && entry["Registry Status"] === "Submitted") {
+                row.classList.add("submitted-row");
+            }
                 headers.forEach(header => 
                 {
                     const cell = row.insertCell(-1);
@@ -167,7 +165,7 @@ document.addEventListener("DOMContentLoaded", function ()
                     }
                 });
             }
-        }
+        
 
         const totalPages = Math.ceil(data.length / rowsPerPage);
         
@@ -188,6 +186,9 @@ document.addEventListener("DOMContentLoaded", function ()
         // Filter the data
         filteredData = originalData.filter(entry => 
         {
+            if (!loggedInStatus && entry["Registry Status"] === "Submitted") {
+                return false;
+            }
             const matchesSearch = Object.values(entry).some
             (
                 value =>

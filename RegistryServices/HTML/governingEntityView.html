@@ -99,100 +99,175 @@
             <div id="specificationsSection"></div>
             <div id="usersSection"></div>
         </div>
+<script>
+    // This function makes the 'Edit' button work.
+    function startEdit(event) {
+        const button = event.target;
+        const specName = button.getAttribute('data-spec-name');
+        const specParams = button.getAttribute('data-spec-params');
 
-<!----------------------------------------------------------------------------
-            JavaScript to handle the Governing Entity details
-  ------------------------------------------------------------------------------>
-        <script>
-            document.addEventListener("DOMContentLoaded", function () 
-            {
-                // Parse the URL parameters to get the Governing Entity details
-                const params = new URLSearchParams(window.location.search);
-                const entity = {
-                    Created: params.get("Created") || "",
-                    GoverningEntity: params.get("GoverningEntity") || "",
-                    NoOfUsers: params.get("NoOfUsers") || "",
-                    NoOfSpecifications: params.get("NoOfSpecifications") || "",
-                    InProgress: params.get("InProgress") || ""
-                };
+        if (specName) {
+            localStorage.setItem("selectedSpecification", specName);
+            localStorage.setItem("editSpecData", specParams);
+            window.location.href = "IdentifyingInformation.html";
+        } else {
+            alert("Cannot edit: Specification name not found.");
+        }
+    }
 
-                // Set the title
-                document.getElementById("entityTitle").innerHTML =
-                    `<i class="fa-solid fa-building"></i> Viewing ${entity.GoverningEntity} Governing Entity`;
+    document.addEventListener("DOMContentLoaded", function () {
+        // Parse URL to get entity details
+        const params = new URLSearchParams(window.location.search);
+        const entity = {
+            Created: params.get("Created") || "",
+            GoverningEntity: params.get("GoverningEntity") || "",
+            NoOfUsers: params.get("NoOfUsers") || "",
+            NoOfSpecifications: params.get("NoOfSpecifications") || "",
+            InProgress: params.get("InProgress") || ""
+        };
 
-                // Main entity info table (matching mockup columns)
-                const entityTable = `
-                    <table class="styled-table" style="max-width:900px;">
-                        <thead>
-                            <tr>
-                                <th>Created</th>
-                                <th>Sector</th>
-                                <th>Country</th>
-                                <th>Primary Contact Name</th>
-                                <th>Primary Contact Information</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>${entity.Created}</td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                `;
-                document.getElementById("entityDetails").innerHTML = entityTable;
+        // Set the page title
+        document.getElementById("entityTitle").innerHTML =
+            `<i class="fa-solid fa-building"></i> Viewing ${entity.GoverningEntity} Governing Entity`;
 
-                // Specifications table with columns (matching mockup)
-                const specificationsTable = `
-                    <h2 style="margin:24px 0 8px 0;font-size:20px;">Specifications</h2>
-                    <table class="styled-table" style="font-size:13px;">
-                        <thead>
-                            <tr>
-                                <th>Created/Modified</th>
-                                <th>Name</th>
-                                <th>Purpose</th>
-                                <th>Implementation Date</th>
-                                <th>Type</th>
-                                <th>Sector</th>
-                                <th>Country</th>
-                                <th>Preferred Syntax</th>
-                                <th>Conformance level</th>
-                                <th>Registry Status</th>
-                                <th>Last Modified by</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Data rows go here -->
-                        </tbody>
-                    </table>
-                `;
-                document.getElementById("specificationsSection").innerHTML = specificationsTable;
+        // --- Restoring the "Entity Details" table ---
+        const entityTable = `
+            <table class="styled-table" style="max-width:900px;">
+                <thead>
+                    <tr>
+                        <th>Created</th>
+                        <th>Sector</th>
+                        <th>Country</th>
+                        <th>Primary Contact Name</th>
+                        <th>Primary Contact Information</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>${entity.Created}</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        `;
+        document.getElementById("entityDetails").innerHTML = entityTable;
 
-                // Users table with columns (matching mockup)
-                const usersTable = `
-                    <h2 style="margin:24px 0 8px 0;font-size:20px;">Users</h2>
-                    <table class="styled-table" style="font-size:13px;max-width:900px;">
-                        <thead>
-                            <tr>
-                                <th>Joined</th>
-                                <th>Name</th>
-                                <th>Specifications submitted</th>
-                                <th>In Progress</th>
-                                <th>Contact Information</th>
-                                <th>Contributor</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Data rows go here -->
-                        </tbody>
-                    </table>
-                `;
-                document.getElementById("usersSection").innerHTML = usersTable;
-            });
-        </script>
+        // --- This is the corrected "Specifications" table ---
+        const specificationsTable = `
+            <h2 style="margin:24px 0 8px 0;font-size:20px;">Specifications</h2>
+            <table class="styled-table" id="specificationsTable" style="font-size:13px;">
+                <thead>
+                    <tr>
+                        <th>Created/Modified</th>
+                        <th>Name</th>
+                        <th>Purpose</th>
+                        <th>Implementation Date</th>
+                        <th>Type</th>
+                        <th>Sector</th>
+                        <th>Country</th>
+                        <th>Preferred Syntax</th>
+                        <th>Conformance level</th>
+                        <th>Registry Status</th>
+                        <th>Last Modified by</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
+        `;
+        document.getElementById("specificationsSection").innerHTML = specificationsTable;
+        
+        const tbody = document.querySelector('#specificationsTable tbody');
+        const allSpecs = JSON.parse(localStorage.getItem("specifications") || "[]");
+        const entitySpecs = allSpecs.filter(s => s.governingEntity === entity.GoverningEntity);
+        
+        tbody.innerHTML = '';
+        entitySpecs.forEach(spec => {
+            const tr = document.createElement('tr');
+            
+            const queryParams = new URLSearchParams({
+                "Name": spec.specName || "",
+                "Governing Entity": spec.governingEntity || "",
+                "Purpose": spec.purpose || "",
+                "Implementation Date": spec.implDate || "",
+                "Sector": spec.sector || "",
+                "Country": spec.country || "",
+                "Preferred Syntax": spec.preferredSyntax || "",
+                "Specification Identifier": spec.specId || "",
+                "Specification Version": spec.specVersion || "",
+                "Contact Information": spec.contactInfo || "",
+                "Core Version": spec.coreVersion || "",
+                "Underlying Specification": spec.underlyingSpec || "",
+                "Specification Source Link": spec.sourceLink || "",
+                "IDs": JSON.stringify(spec.coreInvoiceModelIds || [])
+            }).toString();
+
+
+        let actionButtonHtml = '';
+
+        if (spec.registryStatus === 'In Progress') {
+            actionButtonHtml = `<button class="view-button" onclick="startEdit(event)" data-spec-name="${spec.specName}" data-spec-params='${queryParams}'>Edit</button>`;
+        } else {
+            actionButtonHtml = `<button class="view-button" onclick="window.location.href='viewSpecification.html?${queryParams}'">View</button>`;
+        }
+
+        if (spec.registryStatus === 'Submitted') {
+            tr.classList.add("submitted-row");
+        }
+
+        tr.innerHTML = `
+                <td>${spec.implDate || 'N/A'}</td>
+                <td>${spec.specName || ''}</td>
+                <td>${spec.purpose || ''}</td>
+                <td>${spec.implDate || ''}</td>
+                <td>CIUS</td>
+                <td>${spec.sector || ''}</td>
+                <td>${spec.country || ''}</td>
+                <td>${spec.preferredSyntax || ''}</td>
+                <td>${spec.conformanceLevel || ''}</td>
+                <td>${spec.registryStatus || ''}</td>
+                <td>Admin</td>
+                <td>${actionButtonHtml}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // --- Restoring the "Users" table ---
+        const usersTable = `
+            <h2 style="margin:24px 0 8px 0;font-size:20px;">Users</h2>
+            <table class="styled-table" style="font-size:13px;max-width:900px;">
+                <thead>
+                    <tr>
+                        <th>Joined</th>
+                        <th>Name</th>
+                        <th>Specifications submitted</th>
+                        <th>In Progress</th>
+                        <th>Contact Information</th>
+                        <th>Contributor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
+        `;
+        document.getElementById("usersSection").innerHTML = usersTable;
+
+        // Admin functionality for 'New Specification' button
+        const userRole = localStorage.getItem("userRole") || "EndUser";
+        if (userRole === "Admin") {
+            document.getElementById("adminNewSpecContainer").innerHTML = `
+                <button class="view-button" id="newSpecBtn">New Specification</button>
+            `;
+            document.getElementById("newSpecBtn").onclick = function() {
+                localStorage.setItem("newSpecGoverningEntity", entity.GoverningEntity);
+                window.location.href = "IdentifyingInformation.html";
+            };
+        }
+    });
+</script>
     </body>
 </html>
