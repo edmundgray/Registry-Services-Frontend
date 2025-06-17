@@ -215,4 +215,30 @@ document.addEventListener("DOMContentLoaded", function () {
         // Re-populate the table with the new filtered data
         populateTable(filteredData);
     }
+
+    function handleSaveAndRedirect() {
+        // First confirmation alert
+        const confirmation = confirm("You are about to save your work and move to the core invoice model page, are you sure?");
+        if (!confirmation) {
+            return; // Exit if the user selects "No"
+        }
+
+        // Gather form data
+        const form = document.getElementById('identifyingForm');
+        const formData = new FormData(form);
+        const data = {};
+        formData.forEach((value, key) => {
+            data[key] = value;
+        });
+
+        // Second confirmation alert showing saved data
+        const approval = confirm("Data saved:\n\n" + Object.entries(data).map(([key, value]) => `${key}: ${value}`).join('\n') + "\n\nApprove?");
+        if (!approval) {
+            return; // Exit if the user selects "Deny"
+        }
+
+        // Redirect if both confirmations are approved
+        alert("Data successfully saved!");
+        window.location.href = 'coreInvoiceModel.html'; // Redirect to Core Invoice Model page
+    }
 });

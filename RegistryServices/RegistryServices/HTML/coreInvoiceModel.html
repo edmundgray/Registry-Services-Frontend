@@ -123,6 +123,16 @@
   ------------------------------------------------------------------------------>
         <div class="page-Content">
             <h1><i class="fa-solid fa-car"></i> Core Invoice Model</h1>
+            <br/>
+            <!-- Color Legend -->
+            <div class="color-legend">
+                <p><strong>Color Legend:</strong></p>
+                <ul>
+                    <li style="color: #217a36; font-weight: bold;">Dark Green: Level 1 Parent Rows</li>
+                    <li style="color: #4caf50; font-weight: bold;">Medium Green: Level 2 and 3 Parent Rows</li>
+                    <li>No Color: Rows that are not parents</li>
+                </ul>
+            </div>
 
             <div class="table-container">
                 <table id="coreInvoiceTable" class="styled-table">
@@ -135,7 +145,7 @@
                             <th>Usage Note</th>
                             <th>Business Rules</th>
                             <th>Data Type</th>
-                            <th></th>
+                            <th>Parent</th>
                         </tr>
                     </thead>
                     <tbody>

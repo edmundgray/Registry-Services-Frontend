@@ -357,7 +357,7 @@
                     </div>
                     
                     <div>
-                        <button type="button" onclick="window.location.href='coreInvoiceModel.html'" class="view-button" style="background:#217a36;">Core Invoice Model</button>
+                        <button type="button" onclick="handleSaveAndRedirect()" class="view-button" style="background:#217a36;">Core Invoice Model</button>
                     </div>
                 </div>
             </form>
@@ -394,6 +394,11 @@
 
                 alert("Saved Information:\n\n" + Object.entries(data).map(([k,v]) => `${k}: ${v}`).join('\n'));
                 isFormDirty = false;
+            }
+
+            function handleSaveAndRedirect() {
+                handleSave();
+                window.location.href = 'coreInvoiceModel.html';
             }
 
             document.addEventListener('DOMContentLoaded', () => 
