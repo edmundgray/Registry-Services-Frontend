@@ -1,0 +1,734 @@
+/******************************************************************************
+    General Category
+ ******************************************************************************/
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
+}
+
+body {
+    background: #edeaea
+}
+
+.page-Content {
+    padding: 25px;
+    margin-left: 80px;
+}
+
+/******************************************************************************
+    Sidebar Styling
+ ******************************************************************************/
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 75px;
+    z-index: 1;
+    background: #000033;
+    overflow-x: hidden;
+    padding-top: 10px;
+    transition: 0.5s ease;
+    box-shadow: 0 0 10px rgba(0,0,0,0);
+}
+
+.sidebar:hover {
+    width: 450px;
+    transition: 0.5s ease;
+}
+
+.sidebar ul {
+    position: relative;
+    height: 97vh;
+}
+
+.sidebar ul li {
+    list-style: none;
+    margin: 5px 0;
+}
+
+.sidebar ul li:hover {
+    background: #A9A9D0;
+    transition: 0.15s ease;
+}
+
+.sidebar ul li a {
+    position: relative;
+    display: flex;
+    white-space: nowrap;
+    text-decoration: none;
+    color: #fff;
+}
+
+.sidebar ul li .logo {
+    margin-bottom: 80px;
+}
+
+.sidebar ul li .logo .text {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.sidebar ul li:last-child {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+}
+
+.sidebar ul li a .icon {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-width: 75px;
+    height: 60px;
+    font-size: 22px;
+}
+
+.sidebar ul li a .text {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 60px;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    font-weight: 500;
+}
+
+.child-element
+{
+    padding-left: 60px;
+}
+
+/******************************************************************************
+    List Styling
+ ******************************************************************************/
+
+ #myInput {
+    background-image: url('/css/searchicon.png');
+    background-position: 10px 12px;
+    background-repeat: no-repeat;
+    width: 100%;
+    font-size: 12px;
+    padding: 12px 20px 12px 40px;
+    border: 1px solid #ddd;
+    margin-bottom: 12px;
+  }
+  
+  #myTable {
+    border-collapse: collapse;
+    width: 100%;
+    border: 1px solid #ddd;
+    font-size: 12px;
+    table-layout: auto;
+  }
+  
+  #myTable th, #myTable td {
+    text-align: left;
+    padding: 8px;
+  }
+  
+  #myTable tr {
+    border-bottom: 1px solid #ddd;
+  }
+  
+  #myTable tr.header, #myTable tr:hover {
+    background-color: #f1f1f1;
+  }
+
+#detailsTable {
+    border-collapse: collapse;
+    width: 100%;
+    border: 1px solid #ddd;
+    font-size: 12px;
+    table-layout: auto;
+}
+
+#detailsTable th, #detailsTable td {
+    text-align: left;
+    padding: 8px;
+}
+
+#detailsTable tr {
+    border-bottom: 1px solid #ddd;
+}
+
+#detailsTable tr:hover {
+    background-color: #f1f1f1;
+}
+
+.view-button {
+    padding: 5px 10px;
+    font-size: 12px;
+    color: #fff;
+    background-color: #F4A261;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.view-button:hover {
+    background-color: #E68A3F;
+}
+
+.filter-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.filter-container input[type="text"],
+.filter-container select {
+    flex: 1;
+    min-width: 200px;
+    padding: 10px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    height: 40px;
+    box-sizing: border-box;
+    background-color: #fff;
+}
+
+.filter-container input[type="text"] {
+    background-image: url('/css/searchicon.png');
+    background-position: 10px center;
+    background-repeat: no-repeat;
+    padding-left: 40px;
+}
+
+#pagination-controls {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: 10px;
+    gap: 12px;
+    font-size: 14px;
+}
+
+#pagination-controls select {
+    padding: 6px 28px 6px 12px;
+    font-size: 16px;
+    border: 1.5px solid #F4A261;
+    border-radius: 6px;
+    background-color: #fff;
+    color: #333;
+    font-weight: 600;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg fill='none' height='16' viewBox='0 0 20 20' width='16' xmlns='http://www.w3.org/2000/svg'><path d='M5 8l5 5 5-5' stroke='%23F4A261' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 18px 18px;
+    height: 40px;
+    box-sizing: border-box;
+    margin: 0;
+    vertical-align: middle;
+    line-height: 1.2;
+}
+
+#pagination-controls select:focus {
+    border-color: #E68A3F;
+    outline: none;
+    box-shadow: 0 0 0 2px #F4A26133;
+}
+
+#pagination-controls select option {
+    background: #fff;
+    color: #333;
+    font-weight: 500;
+}
+
+#pagination-controls select::-ms-expand {
+    display: none;
+}
+
+#pagination-controls button {
+    padding: 5px 12px;
+    font-size: 18px;
+    border: 1px solid #F4A261;
+    border-radius: 4px;
+    background-color: #F4A261;
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s, border 0.3s;
+    font-weight: bold;
+    outline: none;
+    height: 40px;
+    min-width: 40px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+}
+
+#pagination-controls button:disabled {
+    background-color: #f1f1f1;
+    color: #ccc;
+    border: 1px solid #ccc;
+    cursor: not-allowed;
+    opacity: 1;
+}
+
+.details-container {
+    padding: 20px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin: 20px;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/******************************************************************************
+    Styling for the Tabs in viewSpecification.html
+ ******************************************************************************/
+.tabs {
+    display: flex;
+    margin-top: 20px;
+    border-bottom: 2px solid #ddd;
+}
+
+.tab-button {
+    padding: 10px 20px;
+    cursor: pointer;
+    background-color: #f9f9f9;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+}
+
+.tab-button:hover {
+    background-color: #f1f1f1;
+}
+
+.tab-button.active {
+    border-bottom: 2px solid #007BFF;
+    font-weight: bold;
+    background-color: #fff;
+}
+
+/* Tab content styling */
+.tab-content {
+    display: none;
+    padding: 20px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-top: none;
+    margin-top: -1px;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/******************************************************************************
+    Styling for the Info Section in viewSpecification.html
+ ******************************************************************************/
+
+.info-section {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    margin-top: 20px;
+    margin: 20px 0;
+}
+
+.info-table {
+    flex: 1;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    padding: 15px;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+.info-table h3 {
+    margin-bottom: 15px;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 5px;
+}
+
+.info-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.info-row label {
+    width: 250px;
+    font-weight: bold;
+}
+
+.info-row span {
+    flex: 1;
+    flex: 1;
+}
+
+.info-row a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.info-row a:hover {
+    text-decoration: underline;
+}
+
+.info-table table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.info-table th, .info-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.info-table th {
+    background-color: #f9f9f9;
+    font-weight: bold;
+}
+
+.info-table tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+.info-table tr:hover {
+    background-color: #f1f1f1;
+}
+
+/******************************************************************************
+    Styling for the Table in coreInvoiceModel.html
+ ******************************************************************************/
+.styled-table {
+    border-collapse: collapse;
+    margin: 25px 0;
+    font-size: 1em;
+    font-family: inherit;
+    box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    width: auto; /* Change from 100% to auto */
+    background-color: #fff;
+}
+
+.styled-table thead tr {
+    background-color: #F4A261;
+    color: #ffffff;
+    text-align: left;
+}
+
+.styled-table th,
+.styled-table td {
+    padding: 12px 15px;
+    border: 1px solid #dddddd;
+    min-width: 175px;
+    max-width: 300px;
+    word-wrap: break-word;
+}
+
+.styled-table tbody tr {
+    border-bottom: 1px solid #dddddd;
+}
+
+.styled-table tbody tr:nth-of-type(even) {
+    background-color: #f3f3f3;
+}
+
+.styled-table .has-children-parent-row,
+.styled-table .has-children-show-more-row {
+    background-color: #217a36 !important;
+    color: #fff;
+}
+
+.styled-table tr.child-row.has-children-parent-row td {
+    background-color: #217a36 !important;
+    color: #fff;
+}
+
+/******************************************************************************
+    Styling for the Tooltip in coreInvoiceModel.html
+ ******************************************************************************/
+.semantic-tooltip {
+    margin-left: 6px;
+    color: #F4A261;
+    cursor: pointer;
+    font-size: 1em;
+    vertical-align: middle;
+}
+
+.semantic-tooltip:hover {
+    color: #d18c54;
+}
+
+/******************************************************************************
+    Styling for the Child Row in coreInvoiceModel.html
+ ******************************************************************************/
+.child-row td {
+    padding-left: 32px;
+    background: #b9f5c1 !important;
+}
+
+.show-more-btn {
+    display: inline-block;
+    white-space: nowrap;
+    min-width: 90px;
+    padding: 4px 14px;
+    font-size: 12px;
+    color: #fff;
+    background-color: #F4A261;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(244, 162, 97, 0.15);
+    transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+    outline: none;
+    vertical-align: middle;
+}
+
+.styled-table td:last-child {
+    text-align: center;
+    vertical-align: middle;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+/******************************************************************************
+    Styling for the Data Table in coreInvoiceModel.html
+ ******************************************************************************/
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.data-table th, .data-table td {
+    border: 1px solid #d0d8e4;
+    padding: 8px;
+    text-align: left;
+}
+.data-table th {
+    color: #000000;
+}
+.centered-cell {
+    text-align: center;
+    color: #555;
+}
+
+/******************************************************************************
+    Styling for the Select Dropdown in coreInvoiceModel.html
+ ******************************************************************************/
+select {
+    padding: 8px 12px;
+    border: 1px solid #d0d8e4;
+    border-radius: 4px;
+    font-size: 1rem;
+    color: #000000;
+    margin-top: 4px;
+    margin-bottom: 8px;
+    transition: border 0.2s, box-shadow 0.2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+
+select:focus {
+    border-color: #888;
+    outline: none;
+    box-shadow: 0 0 0 2px #d0d8e4;
+}
+
+select option:hover,
+select option:checked {
+    background: #22336b;
+    color: #fff;
+}
+
+/******************************************************************************
+    Button Styling
+ ******************************************************************************/
+button {
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #fff;
+    background-color: #007BFF;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+button:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+}
+
+button:active {
+    background-color: #004085;
+    transform: translateY(0);
+}
+
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+button[onclick*="deleteRow"] {
+    background-color: #dc3545;
+}
+
+button[onclick*="deleteRow"]:hover {
+    background-color: #c82333;
+}
+
+button[onclick*="deleteRow"]:active {
+    background-color: #a71d2a;
+}
+
+.button-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    gap: 10px;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+}
+
+/******************************************************************************
+    Styling for the Additional Requirements Page
+ ******************************************************************************/
+.spec-preview-btn {
+    margin-left: auto;
+}
+
+#additionalRequirementsTable input,
+#additionalRequirementsTable select,
+#additionalRequirementsTable textarea {
+    font-size: 90%;
+}
+
+#additionalRequirementsTable {
+    table-layout: fixed;
+}
+#additionalRequirementsTable th,
+#additionalRequirementsTable td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* --- Improve pagination dropdown appearance --- */
+#pagination-controls select {
+    padding: 6px 28px 6px 12px;
+    font-size: 16px;
+    border: 1.5px solid #F4A261;
+    border-radius: 6px;
+    background-color: #fff;
+    color: #333;
+    font-weight: 600;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image:
+        linear-gradient(45deg, #F4A261 50%, transparent 50%),
+        linear-gradient(135deg, #F4A261 50%, transparent 50%);
+    background-position:
+        calc(100% - 20px) calc(50% - 5px),
+        calc(100% - 15px) calc(50% - 5px);
+    background-size: 6px 6px, 6px 6px;
+    background-repeat: no-repeat;
+    transition: border 0.2s, box-shadow 0.2s;
+    box-shadow: 0 1px 4px rgba(244,162,97,0.08);
+}
+
+#pagination-controls select:focus {
+    border-color: #E68A3F;
+    outline: none;
+    box-shadow: 0 0 0 2px #F4A26133;
+}
+
+#pagination-controls select option {
+    background: #fff;
+    color: #333;
+    font-weight: 500;
+}
+
+/* Custom dropdown arrow for select */
+#pagination-controls select::-ms-expand {
+    display: none;
+}
+
+#pagination-controls select {
+    background-image: url("data:image/svg+xml;utf8,<svg fill='none' height='16' viewBox='0 0 20 20' width='16' xmlns='http://www.w3.org/2000/svg'><path d='M5 8l5 5 5-5' stroke='%23F4A261' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 18px 18px;
+}
+
+/******************************************************************************
+    Styling for the Color Legend on the Core Invoice Model Page
+ ******************************************************************************/
+.color-legend {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    min-width: 150px;
+    max-width: 350px;
+    width: auto;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    font-size: 0.95em;
+}
+
+.color-legend ul {
+    list-style-type: disc;
+    padding-left: 20px;
+    margin: 0;
+}
+
+.color-legend li {
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+/******************************************************************************
+    Styling for the Extension Component table
+ ******************************************************************************/
+#extensionComponentTable {
+    table-layout: fixed; /* Enforce fixed layout */
+    width: 100%; /* Ensure the table spans the container */
+}
+
+#extensionComponentTable th, #extensionComponentTable td {
+    min-width: 100px; /* Minimum width for columns */
+    max-width: 300px; /* Maximum width for columns */
+    word-wrap: break-word; /* Ensure text wraps within the column */
+    overflow: hidden; /* Prevent overflow */
+    text-overflow: ellipsis; /* Add ellipsis for overflowing text */
+    white-space: nowrap; /* Prevent wrapping unless necessary */
+}
