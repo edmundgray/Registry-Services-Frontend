@@ -91,7 +91,24 @@ function saveTable()
         data.push(rowData);
     }
 
-    alert("Data saved: " + JSON.stringify(data, null, 2));
+    const editingSpecName = localStorage.getItem("selectedSpecification");
+    if (!editingSpecName) {
+        alert("Error: No specification selected. Cannot save additional requirements.");
+        return;
+    }
+
+    let specifications = JSON.parse(localStorage.getItem("specifications") || "[]");
+    const specIndex = specifications.findIndex(spec => spec.Name === editingSpecName);
+
+    if (specIndex > -1) {
+        specifications[specIndex].additionalRequirements = data;
+        localStorage.setItem('specifications', JSON.stringify(specifications));
+        alert("Additional requirements saved successfully!");
+        unsavedChanges = false;
+    } else {
+        alert("Error: Could not find the specification to save to.");
+    }
+    // --- END NEW LOGIC ---
 
     unsavedChanges = false;
 }
@@ -119,7 +136,7 @@ function cancelAction()
  **************************************************************/
 function goToSpecificationPreview() 
 {
-    if (unsavedChanges || document.getElementById("additionalRequirementsTable").getElementsByTagName("tbody")[0].getElementsByTagName("tr").length === 0) 
+    if (unsavedChanges) 
     {
         if (!confirm("You have unsaved changes. Are you sure you want to leave?")) 
         {
@@ -136,8 +153,49 @@ function goToSpecificationPreview()
  **************************************************************/
 document.addEventListener("DOMContentLoaded", function () 
 {
-    const table = document.getElementById("additionalRequirementsTable");
-    const firstRow = table.querySelector("tbody tr");
+    const tableBody = document.getElementById("additionalRequirementsTable").getElementsByTagName("tbody")[0];
+    const editingSpecName = localStorage.getItem("selectedSpecification");
 
-    if (firstRow) setUnsavedListeners(firstRow);
+    if (editingSpecName) {
+        const specifications = JSON.parse(localStorage.getItem("specifications") || "[]");
+        const specToEdit = specifications.find(spec => spec.Name === editingSpecName);
+
+        if (specToEdit && specToEdit.additionalRequirements && specToEdit.additionalRequirements.length > 0) {
+            tableBody.innerHTML = ''; // Clear existing empty row if populated
+            specToEdit.additionalRequirements.forEach(rowData => {
+                const newRow = tableBody.insertRow();
+                newRow.innerHTML = `
+                    <td><input type="text" style="width: 100%;" value="${rowData.ID || ''}" /></td>
+                    <td><input type="text" style="width: 100%;" value="${rowData.Level || ''}" /></td>
+                    <td><input type="text" style="width: 100%;" value="${rowData.Cardinality || ''}" /></td>
+                    <td><input type="text" style="width: 100%;" value="${rowData.BusinessTerm || ''}" /></td>
+                    <td><textarea style="width: 100%; resize: vertical; min-height: 32px;">${rowData.Description || ''}</textarea></td>
+                    <td>
+                        <select style="width: 100%; min-width: 220px;">
+                            <option value="Add new information element" ${rowData.TypeOfChange === "Add new information element" ? 'selected' : ''}>Add new information element</option>
+                            <option value="Remove an optional element" ${rowData.TypeOfChange === "Remove an optional element" ? 'selected' : ''}>Remove an optional element</option>
+                            <option value="Make Semantic definition narrower" ${rowData.TypeOfChange === "Make Semantic definition narrower" ? 'selected' : ''}>Make Semantic definition narrower</option>
+                            <option value="Increase number of repetitions" ${rowData.TypeOfChange === "Increase number of repetitions" ? 'selected' : ''}>Increase number of repetitions (e.g. x..1 to x..n)</option>
+                            <option value="Decrease number of repetitions" ${rowData.TypeOfChange === "Decrease number of repetitions" ? 'selected' : ''}>Decrease number of repetitions (e.g. x..n to x..1)</option>
+                            <option value="Restrict values in an existing list" ${rowData.TypeOfChange === "Restrict values in an existing list" ? 'selected' : ''}>Restrict values in an existing list</option>
+                        </select>
+                    </td>
+                    <td><button onclick="deleteRow(this)">Delete</button></td>
+                `;
+                setUnsavedListeners(newRow); // Re-attach listeners for loaded rows
+            });
+        } else if (tableBody.getElementsByTagName("tr").length === 0 || tableBody.rows[0].cells[0].textContent.trim() === "") {
+             // If no existing data, but the initial row is empty placeholder, remove it.
+            tableBody.innerHTML = '';
+            addRow(); // Add one initial empty row for new input
+            unsavedChanges = false;
+        }
+    } else {
+        // If not in editing mode (new spec), ensure one empty row exists initially
+        if (tableBody.getElementsByTagName("tr").length === 0 || tableBody.rows[0].cells[0].textContent.trim() === "") {
+            tableBody.innerHTML = '';
+            addRow(); // Add one initial empty row
+            unsavedChanges = false;
+        }
+    }
 });

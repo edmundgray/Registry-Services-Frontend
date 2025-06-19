@@ -353,7 +353,7 @@
                 <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 30px;">
                     <div>
                         <button type="button" onclick="handleSave()" class="view-button" style="background:#ccc; color:#333;">Save</button>
-                        <button type="button" onclick="handleSubmit()" class="view-button" style="background:#217a36;color:#fff;">Submit</button>
+                       
                         <button type="button" onclick="handleCancel()" class="view-button" style="background-color: #F4A261; color: #fff;">Cancel Specification</button>
                     </div>
 
@@ -431,60 +431,7 @@
                     isFormDirty = false;
                 }
 
-            function handleSubmit() {
-                const form = document.getElementById('identifyingForm');
-                if (!form.reportValidity()) return;
-
-                // Gather form data
-                const data = {
-                    "id": form.specName.value,
-                    "specName": form.specName.value,
-                    "governingEntity": form.governingEntity.value,
-                    "contactInfo": form.contactInfo.value,
-                    "sector": form.sector.value,
-                    "subSector": form.subSector.value,
-                    "country": form.country.value,
-                    "purpose": form.purpose.value,
-                    "specId": form.specId.value,
-                    "specVersion": form.specVersion.value,
-                    "implDate": form.implDate.value,
-                    "coreVersion": form.coreVersion.value,
-                    "underlyingSpec": form.underlyingSpec.value,
-                    "sourceLink": form.sourceLink.value,
-                    "preferredSyntax": form.preferredSyntax.value,
-                    "conformanceLevel": "N/A",
-                    "registryStatus": "Submitted"
-                };
-
-                let specs = JSON.parse(localStorage.getItem("specifications") || "[]");
-
-                const editingSpecId = localStorage.getItem("selectedSpecification");
-
-                if (editingSpecId) {
-                    // If we are editing, find the index of the old specification.
-                    const specIndex = specs.findIndex(spec => spec.specName === editingSpecId);
-                    if (specIndex > -1) {
-                        // If found, replace it with the new data.
-                        specs[specIndex] = data;
-                        alert("Specification updated and submitted.");
-                    } else {
-                        specs.push(data);
-                        alert("Specification submitted.");
-                    }
-                } else {
-                    specs.push(data);
-                    alert("Specification submitted.");
-                }
-
-                localStorage.setItem("specifications", JSON.stringify(specs));
-                
-                // Clean up the editing flags from localStorage
-                localStorage.removeItem("selectedSpecification");
-                localStorage.removeItem("editSpecData");
-
-                isFormDirty = false;
-            }
-
+            
             function saveAndGoToCoreModel() 
             {
                 const form = document.getElementById('identifyingForm');
