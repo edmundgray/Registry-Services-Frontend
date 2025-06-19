@@ -142,9 +142,6 @@
                             <th>Usage Note</th>
                             <th>Business Rules</th>
                             <th>Data Type</th>
-                            <th>Included in Spec</th>
-                            <th>Type of Change</th>
-                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -152,9 +149,6 @@
                         <!-- Example row for coreInvoiceModelRead.html -->
                         <tr>
                             <td class="centered-cell"></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
                             <td></td>
                             <td></td>
                             <td></td>
@@ -179,6 +173,9 @@
         
         <script src="../JS/coreInvoiceModel.js"></script>
         <script>
+            window.coreInvoiceReadOnly = true;
+            window.isCoreInvoiceReadOnly = true;
+
             let isFormDirty = false;
 
         document.addEventListener('DOMContentLoaded', () => {

@@ -41,21 +41,39 @@ document.addEventListener("DOMContentLoaded", function ()
                 if (item.children.length > 0) tr.classList.add('has-children-parent-row');
                 if (level > 0) tr.style.display = 'none';
 
-                tr.innerHTML = `
-                    <td>${item.ID}</td>
-                    <td>${item.Level}</td>
-                    <td>${item.Cardinality}</td>
-                    <td>
-                        <span class="semantic-tooltip" title="${item['Semantic Description'] || ''}">
-                            <i class="fa-solid fa-circle-question"></i>
-                        </span>
-                        ${item['Business Term']}
-                    </td>
-                    <td>${item['Usage Note']}</td>
-                    <td>${item['Business Rules']}</td>
-                    <td>${item['Data Type']}</td>
-                    <td></td> <!-- New cell for Show more button -->
-                `;
+                if (window.isCoreInvoiceReadOnly) {
+                    tr.innerHTML = `
+                        <td>${item.ID}</td>
+                        <td>${item.Level}</td>
+                        <td>${item.Cardinality}</td>
+                        <td>
+                            <span class="semantic-tooltip" title="${item['Semantic Description'] || ''}">
+                                <i class="fa-solid fa-circle-question"></i>
+                            </span>
+                            ${item['Business Term']}
+                        </td>
+                        <td>${item['Usage Note']}</td>
+                        <td>${item['Business Rules']}</td>
+                        <td>${item['Data Type']}</td>
+                    `;
+                } else {
+                    tr.innerHTML = `
+                        <td>${item.ID}</td>
+                        <td>${item.Level}</td>
+                        <td>${item.Cardinality}</td>
+                        <td>
+                            <span class="semantic-tooltip" title="${item['Semantic Description'] || ''}">
+                                <i class="fa-solid fa-circle-question"></i>
+                            </span>
+                            ${item['Business Term']}
+                        </td>
+                        <td>${item['Usage Note']}</td>
+                        <td>${item['Business Rules']}</td>
+                        <td>${item['Data Type']}</td>
+                        <td><!-- Included in Spec --></td>
+                        <td><!-- Type of Change --></td>
+                    `;
+                }
 
                 // If this item has children, add the Show more button to the last cell
                 let showMoreBtn = null;

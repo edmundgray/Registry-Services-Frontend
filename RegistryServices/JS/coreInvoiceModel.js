@@ -126,6 +126,12 @@ document.addEventListener("DOMContentLoaded", function ()
                 return tr;
             }
 
+            const isReadOnly = window.isCoreInvoiceReadOnly === true;
+
+            const columns = isReadOnly
+              ? ["ID", "Level", "Cardinality", "Business Term", "Usage Note", "Business Rules", "Data Type"]
+              : ["ID", "Level", "Cardinality", "Business Term", "Usage Note", "Business Rules", "Data Type", "Included in Spec", "Type of Change"];
+
             roots.forEach(root => createRow(root));
         })
         .catch(error => 
