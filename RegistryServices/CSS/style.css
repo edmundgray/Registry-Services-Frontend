@@ -696,3 +696,12 @@ button[onclick*="deleteRow"]:active {
 #myTable tr.submitted-row:hover {
     background-color: #fff0b3 !important; /* Slightly darker yellow on hover */
 }
+
+.tab-button {
+    color: #000; /* make tab text fully legible */
+}
+.tab-button.active {
+    color: #007BFF; /* active tab text color */
+    background-color: #fff; /* active tab background */
+    border-bottom: 2px solid #007BFF; /* active tab underline */
+}

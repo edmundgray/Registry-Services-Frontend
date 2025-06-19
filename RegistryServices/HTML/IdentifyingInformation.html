@@ -2,12 +2,12 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        
+
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
         <link rel="stylesheet" href="../CSS/style.css">
-        
+
         <script src="../JS/javascript.js"></script>
-        
+
         <title>Registry Services</title>
 
         <style>
@@ -181,7 +181,7 @@
             <form id="identifyingForm" class="info-table" style="max-width: 600px; margin-left: 0;">
                 <div style="background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #0001; padding: 24px 24px 10px 24px; margin-bottom: 30px;">
                     <h3>General Information</h3>
-                    
+
                     <!-- Specification Name (Required) -->
                     <div class="info-row">
                         <label for="specName">*Specification name:
@@ -189,7 +189,7 @@
                         </label>
                         <input type="text" id="specName" name="specName" required>
                     </div>
-                    
+
                     <!-- Governing Entity (Required) -->
                     <div class="info-row">
                         <label for="governingEntity">Governing Entity:
@@ -197,7 +197,7 @@
                         </label>
                         <input type="text" id="governingEntity" name="governingEntity">
                     </div>
-                    
+
                     <!-- Contact Info (Required) -->
                     <div class="info-row">
                         <label for="contactInfo">*Contact Information:
@@ -235,7 +235,7 @@
                             <option>Activities of Households as Employers</option>
                         </select>
                     </div>
-                    
+
                     <!-- Sub Sector (Not Required) -->
                     <div class="info-row">
                         <label for="subSector">Sub Sector:
@@ -243,7 +243,7 @@
                         </label>
                         <input type="text" id="subSector" name="subSector">
                     </div>
-                    
+
                     <!-- Country (Required) -->
                     <div class="info-row">
                         <label for="country">*Country:
@@ -265,7 +265,7 @@
                             <option value="CA">Canada (CA)</option>
                         </select>
                     </div>
-                    
+
                     <!-- Purpose (Required) -->
                     <div class="info-row">
                         <label for="purpose">*Purpose:
@@ -280,7 +280,7 @@
   ------------------------------------------------------------------------------>   
                 <div style="background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #0001; padding: 24px 24px 10px 24px;">
                     <h3 style="margin-top:0;">Technical Information</h3>
-                    
+
                     <!-- Specification Identifier (Required) -->
                     <div class="info-row">
                         <label for="specId">*Specification Identifier:
@@ -288,7 +288,7 @@
                         </label>
                         <input type="text" id="specId" name="specId" required>
                     </div>
-                    
+
                     <!-- Specification Version (Not Required) -->
                     <div class="info-row">
                         <label for="specVersion">Specification Version:
@@ -296,7 +296,7 @@
                         </label>
                         <input type="text" id="specVersion" name="specVersion">
                     </div>
-                    
+
                     <!-- Date of Implementation (Not Required) -->
                     <div class="info-row">
                         <label for="implDate">Date of Implementation:
@@ -304,7 +304,7 @@
                         </label>
                         <input type="date" id="implDate" name="implDate">
                     </div>
-                    
+
                     <!-- Core Version (Not Required) -->
                     <div class="info-row">
                         <label for="coreVersion">Core Version:
@@ -317,7 +317,7 @@
                             <option>3.0</option>
                         </select>
                     </div>
-                    
+
                     <!-- Underlying Specification (Not Required) -->
                     <div class="info-row">
                         <label for="underlyingSpec">Underlying Specification:
@@ -325,7 +325,7 @@
                         </label>
                         <input type="text" id="underlyingSpec" name="underlyingSpec">
                     </div>
-                    
+
                     <!-- Specification Source Link (Not Required) -->
                     <div class="info-row">
                         <label for="sourceLink">Specification Source Link:
@@ -333,13 +333,13 @@
                         </label>
                         <input type="url" id="sourceLink" name="sourceLink">
                     </div>
-                    
+
                     <!-- Preferred Syntax (Not Required) -->
                     <div class="info-row">
                         <label for="preferredSyntax">Preferred Syntax:
                             <span class="semantic-tooltip" title="Select the preferred syntax for this specification (e.g., UBL, EDIFACT, JSON).">?</span>
                         </label>
-                        
+
                         <select id="preferredSyntax" name="preferredSyntax">
                             <option value="">Select Syntax</option>
                             <option>UBL</option>
@@ -348,14 +348,15 @@
                         </select>
                     </div>
                 </div>
-                
+
                 <!-- Save, Cancel & Core Invoice Model Buttons -->
                 <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 30px;">
                     <div>
-                        <button type="button" onclick="handleSave()" class="view-button">Save</button>
-                        <button type="button" onclick="window.location.href='eInvoicingSpecificationRegistry.html'" class="view-button" style="background:#ccc; color:#333;">Cancel</button>
+                        <button type="button" onclick="handleSave()" class="view-button" style="background:#ccc; color:#333;">Save</button>
+                        <button type="button" onclick="handleSubmit()" class="view-button" style="background:#217a36;color:#fff;">Submit</button>
+                        <button type="button" onclick="handleCancel()" class="view-button" style="background-color: #F4A261; color: #fff;">Cancel Specification</button>
                     </div>
-                    
+
                     <div>
                         <button type="button" onclick="window.location.href='coreInvoiceModel.html'" class="view-button" style="background:#217a36;">Core Invoice Model</button>
                     </div>
@@ -376,27 +377,34 @@
 
                 const data = 
                 {
-                    "Specification name": form.specName.value,
-                    "Governing Entity": form.governingEntity.value,
-                    "Contact Information": form.contactInfo.value,
-                    "Sector": form.sector.value,
-                    "Sub Sector": form.subSector.value,
-                    "Country": form.country.value,
-                    "Purpose": form.purpose.value,
-                    "Specification Identifier": form.specId.value,
-                    "Specification Version": form.specVersion.value,
-                    "Date of Implementation": form.implDate.value,
-                    "Core Version": form.coreVersion.value,
-                    "Underlying Specification": form.underlyingSpec.value,
-                    "Specification Source Link": form.sourceLink.value,
-                    "Preferred Syntax": form.preferredSyntax.value
+                    "id": form.specName.value,
+                    "specName": form.specName.value,
+                    "governingEntity": form.governingEntity.value,
+                    "contactInfo": form.contactInfo.value,
+                    "sector": form.sector.value,
+                    "subSector": form.subSector.value,
+                    "country": form.country.value,
+                    "purpose": form.purpose.value,
+                    "specId": form.specId.value,
+                    "specVersion": form.specVersion.value,
+                    "implDate": form.implDate.value,
+                    "coreVersion": form.coreVersion.value,
+                    "underlyingSpec": form.underlyingSpec.value,
+                    "sourceLink": form.sourceLink.value,
+                    "preferredSyntax": form.preferredSyntax.value,
+                    "conformanceLevel": "N/A",
+                    "registryStatus": "In Progress" // Always "In Progress"
                 };
 
-                // Get existing specs or create new array
-                let specs = JSON.parse(localStorage.getItem("specifications") || "[]");
-                const editingSpecId = localStorage.getItem("selectedSpecification");
+                
+            
 
-                if (editingSpecId) {
+
+            let specs = JSON.parse(localStorage.getItem("specifications") || "[]");
+
+            const editingSpecId = localStorage.getItem("selectedSpecification");
+            
+            if (editingSpecId) {
                     // If we are editing, find the index of the old specification.
                     const specIndex = specs.findIndex(spec => spec.specName === editingSpecId);
                     if (specIndex > -1) {
@@ -421,7 +429,7 @@
                     localStorage.removeItem("editSpecData");
                     
                     isFormDirty = false;
-            }
+                }
 
             function handleSubmit() {
                 const form = document.getElementById('identifyingForm');
@@ -429,6 +437,7 @@
 
                 // Gather form data
                 const data = {
+                    "id": form.specName.value,
                     "specName": form.specName.value,
                     "governingEntity": form.governingEntity.value,
                     "contactInfo": form.contactInfo.value,
@@ -447,8 +456,8 @@
                     "registryStatus": "Submitted"
                 };
 
-                // Get existing specs or create new array
                 let specs = JSON.parse(localStorage.getItem("specifications") || "[]");
+
                 const editingSpecId = localStorage.getItem("selectedSpecification");
 
                 if (editingSpecId) {
@@ -476,34 +485,116 @@
                 isFormDirty = false;
             }
 
-            function handleCancel() {
-                // Display a confirmation dialog to the user.
-                const userConfirmed = confirm("Warning! This Specification will be deleted, do you want to proceed?");
-                // Proceed only if the user clicks "OK".
-                if (userConfirmed) {
-                    // Check if we are in "Edit" mode by seeing if a specification was selected.
-                    const editingSpecId = localStorage.getItem("selectedSpecification");
-                    if (editingSpecId) {
-                        // If editing, find and remove the specification from the stored array.
-                        let specifications = JSON.parse(localStorage.getItem("specifications") || "[]");
-                        // Create a new array excluding the specification being deleted.
-                        const updatedSpecifications = specifications.filter(spec => spec.id !== editingSpecId);
-                        // Save the updated array back to localStorage.
-                        localStorage.setItem('specifications', JSON.stringify(updatedSpecifications));
-                        // Clean up the edit flag.
-                        localStorage.removeItem("selectedSpecification");
-                    }
-                    // Redirect the user back to their specifications page.
-                    window.location.href = 'mySpecifications.html';
+            function saveAndGoToCoreModel() 
+            {
+                const form = document.getElementById('identifyingForm');
+                if (!form.reportValidity()) {
+                    alert("Please fill out all required fields before proceeding.");
+                    return;
                 }
-                // If the user clicks "Cancel" on the confirmation, do nothing.
+
+                const newSpecification = 
+                {
+                    "id": form.specName.value,
+                    "Specification name": form.specName.value,
+                    "Governing Entity": form.governingEntity.value,
+                    "Contact Information": form.contactInfo.value,
+                    "Sector": form.sector.value,
+                    "Sub Sector": form.subSector.value,
+                    "Country": form.country.value,
+                    "Purpose": form.purpose.value,
+                    "Specification Identifier": form.specId.value,
+                    "Specification Version": form.specVersion.value,
+                    "Date of Implementation": form.implDate.value,
+                    "Core Version": form.coreVersion.value,
+                    "Underlying Specification": form.underlyingSpec.value,
+                    "Specification Source Link": form.sourceLink.value,
+                    "Preferred Syntax": form.preferredSyntax.value,
+                    "Registry Status": "In Progress",
+                    "Type": "CIUS",
+                    "Conformance Level": "N/A",
+                };
+                let specifications = JSON.parse(localStorage.getItem("mySpecification")) || [];
+                specifications.push(newSpecification);
+                localStorage.setItem('mySpecifications', JSON.stringify(specifications));
+                isFormDirty = false; // Reset the dirty flag
+
+                alert("Information saved successfully! You can now proceed to the Core Invoice Model.");
+                window.location.href = 'coreInvoiceModel.html'; // Redirect to the Core Invoice Model page
+
             }
+
+             function handleCancel() {
+        // Display a confirmation dialog to the user.
+        const userConfirmed = confirm("Warning! This Specification will be deleted, do you want to proceed?");
+
+        // Proceed only if the user clicks "OK".
+        if (userConfirmed) {
+
+            
+
+            // Check if we are in "Edit" mode by seeing if a specification was selected.
+            const editingSpecId = localStorage.getItem("selectedSpecification");
+
+            if (editingSpecId) {
+                // If editing, find and remove the specification from the stored array.
+                let specifications = JSON.parse(localStorage.getItem("specifications") || "[]");
+
+                // Create a new array excluding the specification being deleted.
+                const updatedSpecifications = specifications.filter(spec => spec.Name !== editingSpecId);
+
+                // Save the updated array back to localStorage.
+                localStorage.setItem('specifications', JSON.stringify(updatedSpecifications));
+
+                // Clean up the edit flag.
+                localStorage.removeItem("selectedSpecification");
+            }
+            // Note: If not in "Edit" mode (i.e., creating a new spec that hasn't been saved),
+            // there is nothing to delete from localStorage, so we can just redirect.
+
+            // Redirect the user back to their specifications page.
+            window.location.href = 'mySpecifications.html';
+        }
+        // If the user clicks "Cancel" on the confirmation, do nothing.
+    }
+
 
             document.addEventListener('DOMContentLoaded', () => 
             {
                 const form = document.getElementById('identifyingForm');
-                const elements = form.querySelectorAll('input, textarea, select');
+                
 
+                const editingSpecId = localStorage.getItem("selectedSpecification");
+                const specDataString = localStorage.getItem("editSpecData");
+
+                if (editingSpecId) {
+                    const titleElement = document.querySelector('.page-Content h1');
+                    if (titleElement) {
+                        titleElement.innerHTML += ` for: ${editingSpecId}`;
+                    }
+                }
+
+                if (editingSpecId && specDataString) {
+                    const params = new URLSearchParams(specDataString);
+
+                    // Populate form fields with data from localStorage
+                    form.specName.value = params.get('Name') || '';
+                    form.governingEntity.value = params.get('Governing Entity') || '';
+                    form.contactInfo.value = params.get('Contact Information') || 'N/A';
+                    form.sector.value = params.get('Sector') || '';
+                    form.subSector.value = params.get('Sub Sector') || '';
+                    form.country.value = params.get('Country') || '';
+                    form.purpose.value = params.get('Purpose') || '';
+                    form.specId.value = params.get('Specification Identifier') || '';
+                    form.specVersion.value = params.get('Specification Version') || '';
+                    form.implDate.value = params.get('Implementation Date') || '';
+                    form.coreVersion.value = params.get('Core Version') || '';
+                    form.underlyingSpec.value = params.get('Underlying Specification') || '';
+                    form.sourceLink.value = params.get('Specification Source Link') || '';
+                    form.preferredSyntax.value = params.get('Preferred Syntax') || '';
+                }
+
+                const elements = form.querySelectorAll('input, textarea, select');
                 elements.forEach(element => 
                 {
                     element.addEventListener('change', () => 
@@ -523,13 +614,6 @@
                 }
             });
 
-    document.addEventListener("DOMContentLoaded", function () {
-        let selectedSpec = localStorage.getItem("selectedSpecification");
-
-        if (selectedSpec) {
-            document.getElementById("specName").value = selectedSpec;
-        }
-    });
         </script>
     </body>
 </html>
