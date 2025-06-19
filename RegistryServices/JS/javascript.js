@@ -1,4 +1,4 @@
-/******************************************************************************
+/******************************************************************************More actions
     Log in/out functionality
     General
  ******************************************************************************/
@@ -17,17 +17,15 @@ function updateVisibility()
         item.style.display = loggedInStatus ? "block" : "none";
     });
 
-    const loginLogoutButton = document.getElementById("loginLogoutButton");
-    if (loginLogoutButton) {
-        loginLogoutButton.innerText = loggedInStatus ? "Logout" : "Login";
-    }
+    document.getElementById("loginLogoutButton").innerText = loggedInStatus ? "Logout" : "Login";
+
 /******************************************************************************
     Log in/out functionality 
     For the Core Invoice Model & Extension Component Data Model specifically
  ******************************************************************************/
     const coreInvoiceModel = document.querySelector("li:nth-of-type(6)");
     const extensionComponent = document.querySelector("li:nth-of-type(7)");
-    
+
     if (coreInvoiceModel && extensionComponent) 
     {
         if (loggedInStatus)
@@ -43,29 +41,50 @@ function updateVisibility()
     }
 }
 
-document.addEventListener("DOMContentLoaded", updateVisibility);
 /******************************************************************************
     For the List
  ******************************************************************************/
+let currentPage = 1;
+let rowsPerPage = 10;
+let filteredData = [];
+let originalData = [];
+
+
+
 document.addEventListener("DOMContentLoaded", function () 
 {
     const registryTable = document.getElementById("myTable");
     if (!registryTable) {
-        return; // If the table doesn't exist, don't run the table/filter logic.
+        // If the table doesn't exist, we are not on the main registry page.
+        // We can still run logic that applies to all pages, like updateVisibility.
+        updateVisibility();
+        return; // Exit and don't run the table/filter logic.
     }
 
-let currentPage = 1;
-let rowsPerPage = 10;
-let originalData = [];
-let filteredData = [];
-
-
-   
+    let originalData = 
+    [{
+            "Name": "RetailConnect Billing Rules",
+            "Purpose": "Groups invoice lines and adds settlement plans",
+            "Type": "Extension",
+            "Sector": "Other Service Activities",
+            "Country": "NL",
+            "Implementation Date": "2024-11-18",
+            "Preferred Syntax": "UBL",
+            "Governing Entity": "Retail Invoice Group",
+            "Extension Component": "Grouping Invoice Lines by Sublines & Settlement Plans",
+            "Conformance Level": "Party Core Conformant",
+            "View": "View"
+    }];
 
     const rowsPerPageSelect = document.getElementById("rowsPerPage");
     const prevPageButton = document.getElementById("prevPage");
     const nextPageButton = document.getElementById("nextPage");
     const currentPageSpan = document.getElementById("currentPage");
+    const searchInput = document.getElementById("searchInput");
+    const typeFilter = document.getElementById("typeFilter");
+    const sectorFilter = document.getElementById("sectorFilter");
+    const countryFilter = document.getElementById("countryFilter");
+    const extensionComponentFilter = document.getElementById("extensionComponentFilter");
 
     // Rows per page select
     rowsPerPageSelect.addEventListener("change", function () 
@@ -74,27 +93,45 @@ let filteredData = [];
         currentPage = 1;
         applyFilters();
     });
+    
+    if (rowsPerPageSelect) {
+        rowsPerPageSelect.addEventListener("change", function () {
+            rowsPerPage = parseInt(this.value, 10);
+            currentPage = 1;
+            applyFilters();
+        });
+    }
 
     // Previous Button
-    prevPageButton.addEventListener("click", function () 
-    {
-        if (currentPage > 1) 
-        {
-            currentPage--;
-            applyFilters();
-        }
-    });
+    
+    if (prevPageButton) {
+        prevPageButton.addEventListener("click", function () {
+            if (currentPage > 1) {
+                currentPage--;
+                applyFilters();
+            }
+        });
+    }
 
     // Next Button
-    nextPageButton.addEventListener("click", function () 
-    {
-        const totalPages = Math.ceil(filteredData.length / rowsPerPage);
-        if (currentPage < totalPages) 
-        {
-            currentPage++;
-            applyFilters();
-        }
-    });
+    
+
+    if (nextPageButton) {
+        nextPageButton.addEventListener("click", function () {
+            const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                applyFilters();
+            }
+        });
+    }
+
+    if (searchInput) searchInput.addEventListener("input", applyFilters);
+    if (typeFilter) typeFilter.addEventListener("change", applyFilters);
+    if (sectorFilter) sectorFilter.addEventListener("change", applyFilters);
+    if (countryFilter) countryFilter.addEventListener("change", applyFilters);
+    if (extensionComponentFilter) extensionComponentFilter.addEventListener("change", applyFilters);
+
 
     // Fetch the data and populate the table
     fetch("../JSON/mockData.json")
@@ -102,8 +139,7 @@ let filteredData = [];
         .then(data => 
         {
             originalData = data;
-            applyFilters(); // Initial population of the table with all data
-            
+            applyFilters(); // Initial population of the table
         })
         .catch(error => console.error("Error loading JSON:", error));
 
@@ -120,15 +156,17 @@ let filteredData = [];
         const table = document.getElementById("myTable");
         table.innerHTML = "";
 
-        const headers = originalData.length > 0 ? Object.keys(originalData[0]).filter(header => header !== "IDs") : [];
-        if (headers.length > 0) {
+        if (data.length > 0) 
+        {
             const headerRow = table.insertRow(0);
-            headers.forEach(header => {
+            const headers = Object.keys(originalData.length > 0 ? originalData[0] : (data.length > 0 ? data[0] : {})).filter(header => header !== "IDs");
+
+            headers.forEach(header => 
+            {
                 const th = document.createElement("th");
                 th.textContent = header;
                 headerRow.appendChild(th);
             });
-        }
 
             const startIndex = (currentPage - 1) * rowsPerPage;
             const endIndex = Math.min(startIndex + rowsPerPage, data.length);
@@ -138,9 +176,12 @@ let filteredData = [];
                 const entry = data[i];
                 const row = table.insertRow(-1);
 
+
+
                 if (loggedInStatus && entry["Registry Status"] === "Submitted") {
                 row.classList.add("submitted-row");
             }
+
                 headers.forEach(header => 
                 {
                     const cell = row.insertCell(-1);
@@ -165,10 +206,10 @@ let filteredData = [];
                     }
                 });
             }
-        
+        }
 
         const totalPages = Math.ceil(data.length / rowsPerPage);
-        
+
         currentPageSpan.textContent = currentPage;
         prevPageButton.disabled = currentPage === 1;
         nextPageButton.disabled = currentPage === totalPages;
@@ -187,8 +228,8 @@ let filteredData = [];
         filteredData = originalData.filter(entry => 
         {
             if (!loggedInStatus && entry["Registry Status"] === "Submitted") {
-                return false;
-            }
+            return false;
+        }
             const matchesSearch = Object.values(entry).some
             (
                 value =>
@@ -209,4 +250,6 @@ let filteredData = [];
         // Re-populate the table with the new filtered data
         populateTable(filteredData);
     }
+
+    updateVisibility(); // Ensure visibility is updated on page load
 });
