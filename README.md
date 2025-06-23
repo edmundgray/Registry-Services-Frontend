@@ -16,7 +16,7 @@ This project includes a comprehensive JWT-based authentication system with three
 - **[FAQ for Developers](FAQ_FOR_DEVELOPERS.md)** - Common questions and troubleshooting
 - **[Implementation Summary](IMPLEMENTATION_SUMMARY.md)** - Project overview and features
 
-### 🎯 For Junior Developers
+### 🎯 For Developers
 
 The authentication system is designed to be **easy to understand and extend**:
 
