@@ -184,11 +184,56 @@
         document.getElementById("specificationsSection").innerHTML = specificationsTable;
         
         const tbody = document.querySelector('#specificationsTable tbody');
+        const preRenderedSpecs = [
+            {
+                "specName": "Pre-rendered In Progress Spec",
+                "purpose": "This is an in-progress specification.",
+                "implDate": "2025-07-01",
+                "type": "CIUS",
+                "sector": "Manufacturing",
+                "country": "IE",
+                "preferredSyntax": "UBL",
+                "conformanceLevel": "Core Conformant",
+                "registryStatus": "In Progress",
+                "governingEntity": entity.GoverningEntity, // Associate with the current entity
+                "contactInfo": "contact@example.com",
+                "specId": "PR-IP-001",
+                "specVersion": "1.0",
+                "coreVersion": "3.0",
+                "underlyingSpec": "None",
+                "sourceLink": "http://example.com/pr-ip-001",
+                "coreInvoiceModelIds": ["BT-1", "BT-2"]
+            },
+            {
+                "specName": "Digital Tax Report",
+                "purpose": "Automated tax filing",
+                "implDate": "2024-01-01",
+                "type": "JSON",
+                "sector": "Finance",
+                "country": "DE",
+                "preferredSyntax": "EDIFACT",
+                "conformanceLevel": "Core Conformant",
+                "registryStatus": "Submitted",
+                "governingEntity": entity.GoverningEntity, // Associate with the current entity
+                "contactInfo": "info@example.com",
+                "specId": "PR-SUB-001",
+                "specVersion": "2.0",
+                "coreVersion": "2.0",
+                "underlyingSpec": "Base Spec v1.0",
+                "sourceLink": "http://example.com/pr-sub-001",
+                "coreInvoiceModelIds": ["BT-5", "BG-2"]
+            }
+        ];
         const allSpecs = JSON.parse(localStorage.getItem("specifications") || "[]");
-        const entitySpecs = allSpecs.filter(s => s.governingEntity === entity.GoverningEntity);
+        //const entitySpecs = allSpecs.filter(s => s.governingEntity === entity.GoverningEntity);
         
+        const combinedSpecs = [...allSpecs.filter(s => s.governingEntity === entity.GoverningEntity), ...preRenderedSpecs];
+        
+        // Filter out duplicates if any (e.g., if pre-rendered specs already exist in localStorage)
+        const uniqueSpecs = Array.from(new Map(combinedSpecs.map(spec => [spec.specName, spec])).values());
+
         tbody.innerHTML = '';
-        entitySpecs.forEach(spec => {
+        uniqueSpecs.forEach(spec => {
             const tr = document.createElement('tr');
             
             const queryParams = new URLSearchParams({
