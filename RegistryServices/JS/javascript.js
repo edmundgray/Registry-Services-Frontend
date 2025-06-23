@@ -1,47 +1,339 @@
 /******************************************************************************
-    Log in/out functionality
+    JWT-based Authentication System
+    Replaces the simple localStorage login/logout functionality
+ ******************************************************************************/
+
+// Simplified configuration for prototype
+const AUTH_CONFIG = {
+    baseUrl: 'https://registryservices-staging.azurewebsites.net/api',
+    endpoints: {
+        login: '/auth/login'
+        // logout: '/auth/logout'  // Not available yet
+        // refresh: '/auth/refresh'  // Not needed for prototype
+    },
+    tokenKeys: {
+        access: 'access_token'
+    },
+    // Simple session configuration for prototype
+    session: {
+        // Keep session for 1 hour (matches JWT expiration)
+        duration: 60 * 60 * 1000, // 1 hour in milliseconds
+        // Show warning 5 minutes before expiration
+        warningTime: 5 * 60 * 1000 // 5 minutes in milliseconds
+    }
+};
+
+// Authentication state management
+class AuthManager {    constructor() {
+        this.isAuthenticated = false;
+        this.userRole = null;
+        this.userID = null;
+        this.username = null;
+        this.accessToken = null;
+        this.init();
+    }
+
+    init() {
+        // Check for existing tokens on page load
+        this.loadTokensFromStorage();
+        this.validateTokens();
+    }    loadTokensFromStorage() {
+        this.accessToken = localStorage.getItem(AUTH_CONFIG.tokenKeys.access);
+        this.userID = localStorage.getItem('userID');
+        this.username = localStorage.getItem('username');
+        this.userRole = localStorage.getItem('userRole');
+        
+        if (this.accessToken) {
+            try {
+                const payload = this.parseJWT(this.accessToken);
+                this.isAuthenticated = !this.isTokenExpired(payload);
+                
+                // If token is valid but we don't have user data, parse from token
+                if (this.isAuthenticated && !this.userRole) {
+                    this.userRole = payload.role;
+                    this.userID = payload.nameid;
+                    this.username = payload.unique_name;
+                }
+            } catch (error) {
+                console.error('Invalid token format:', error);
+                this.clearTokens();
+            }
+        }
+    }
+
+    parseJWT(token) {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+    }
+
+    isTokenExpired(payload) {
+        const currentTime = Date.now() / 1000;
+        return payload.exp < currentTime;
+    }    async login(username, password) {
+        try {
+            console.log('Attempting login for user:', username);
+            
+            const response = await fetch(`${AUTH_CONFIG.baseUrl}${AUTH_CONFIG.endpoints.login}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'accept': 'text/plain'
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+              // Store token and user data (simplified for prototype)
+            this.accessToken = data.token;
+            this.userID = data.userID;
+            this.username = data.username;
+            this.userRole = data.role;
+            this.isAuthenticated = true;
+
+            if (!this.accessToken) {
+                throw new Error('No access token received from server');
+            }
+
+            // Store in localStorage (simplified)
+            localStorage.setItem(AUTH_CONFIG.tokenKeys.access, this.accessToken);
+            localStorage.setItem('userID', this.userID);
+            localStorage.setItem('username', this.username);
+            localStorage.setItem('userRole', this.userRole);
+
+            console.log('Login successful. User:', {
+                id: this.userID,
+                username: this.username,
+                role: this.userRole
+            });
+
+            return { 
+                success: true, 
+                user: { 
+                    id: this.userID,
+                    username: this.username,
+                    role: this.userRole
+                } 
+            };
+
+        } catch (error) {
+            console.error('Login failed:', error);
+            this.clearTokens();
+            return { success: false, error: error.message };
+        }
+    }    async logout() {
+        // Simple logout - just clear tokens (no API call needed for prototype)
+        this.clearTokens();
+        console.log('User logged out');
+    }    clearTokens() {
+        this.isAuthenticated = false;
+        this.userRole = null;
+        this.userID = null;
+        this.username = null;
+        this.accessToken = null;
+        
+        localStorage.removeItem(AUTH_CONFIG.tokenKeys.access);
+        localStorage.removeItem('userID');
+        localStorage.removeItem('username');
+        localStorage.removeItem('userRole');
+    }async refreshAccessToken() {
+        // This API doesn't provide refresh tokens
+        // If needed in the future, implement based on API documentation
+        throw new Error('Token refresh not supported by this API');
+    }    validateTokens() {
+        if (this.accessToken) {
+            try {
+                const payload = this.parseJWT(this.accessToken);
+                const currentTime = Date.now() / 1000;
+                const timeToExpiry = payload.exp - currentTime;
+                
+                if (this.isTokenExpired(payload)) {
+                    console.log('Access token expired, user needs to login again');
+                    this.clearTokens();
+                    updateVisibility();
+                    showMessage('Your session has expired. Please log in again.', 'error');
+                } else if (timeToExpiry < (AUTH_CONFIG.session.warningTime / 1000)) {
+                    // Show warning if token expires in less than 5 minutes
+                    const minutesLeft = Math.floor(timeToExpiry / 60);
+                    console.log(`Token expires in ${minutesLeft} minutes`);
+                    if (minutesLeft > 0) {
+                        showMessage(`Your session will expire in ${minutesLeft} minute(s). Please save your work.`, 'info');
+                    }
+                }
+            } catch (error) {
+                console.error('Token validation failed:', error);
+                this.clearTokens();
+            }
+        }
+    }
+
+    getAuthHeaders() {
+        if (!this.accessToken) {
+            return {};
+        }
+        return {
+            'Authorization': `Bearer ${this.accessToken}`
+        };
+    }
+}
+
+// Initialize auth manager
+const authManager = new AuthManager();
+
+/******************************************************************************
+    Enhanced Authentication Functions
+ ******************************************************************************/
+
+// Updated login function for demo purposes (Admin/Password123)
+async function demoLogin() {
+    const result = await authManager.login('Admin', 'Password123');
+    
+    if (result.success) {
+        loggedInStatus = true;
+        updateVisibility();
+        showMessage(`Welcome ${result.user.username}! Role: ${result.user.role}`, 'success');
+    } else {
+        showMessage(`Login failed: ${result.error}`, 'error');
+    }
+}
+
+// Generic login function
+async function loginUser(username, password) {
+    const result = await authManager.login(username, password);
+    
+    if (result.success) {
+        loggedInStatus = true;
+        updateVisibility();
+        return result;
+    } else {
+        throw new Error(result.error);
+    }
+}
+
+// Helper function to show messages to user
+function showMessage(message, type = 'info') {
+    // Create a simple message display
+    const messageEl = document.createElement('div');
+    messageEl.textContent = message;
+    messageEl.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 10px 20px;
+        border-radius: 4px;
+        color: white;
+        z-index: 1000;
+        background-color: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : '#2196F3'};
+    `;
+    
+    document.body.appendChild(messageEl);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        if (messageEl.parentNode) {
+            messageEl.parentNode.removeChild(messageEl);
+        }
+    }, 3000);
+}
+
+// Enhanced fetch function with method-based authentication
+async function authenticatedFetch(url, options = {}) {
+    const method = options.method || 'GET';
+    const requiresAuth = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method.toUpperCase());
+    
+    // For prototype: GETs are public, POST/PUT/DELETE require login
+    const config = {
+        ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            'accept': 'text/plain',
+            ...options.headers
+        }
+    };
+    
+    // Add auth headers only for methods that require authentication
+    if (requiresAuth) {
+        if (!authManager.isAuthenticated) {
+            showMessage('Please log in to perform this action', 'error');
+            throw new Error('Authentication required for this action');
+        }
+        
+        const authHeaders = authManager.getAuthHeaders();
+        config.headers = {
+            ...config.headers,
+            ...authHeaders
+        };
+    }
+
+    try {
+        let response = await fetch(url, config);
+        
+        // Handle different error scenarios
+        if (!response.ok) {
+            if (response.status === 401) {
+                console.warn('Received 401 - authentication required or token expired');
+                authManager.clearTokens();
+                loggedInStatus = false;
+                updateVisibility();
+                showMessage('Session expired. Please log in again.', 'error');
+                throw new Error('Authentication failed - please log in again');
+            } else if (response.status >= 500) {
+                showMessage('Server error. Please try again shortly.', 'error');
+                throw new Error('Server is temporarily unavailable');
+            } else if (response.status === 404) {
+                throw new Error('Requested resource not found');
+            } else {
+                throw new Error(`Request failed with status: ${response.status}`);
+            }
+        }
+        
+        return response;
+        
+    } catch (error) {
+        // Handle network errors (API down)
+        if (error.name === 'TypeError' || error.message.includes('Failed to fetch')) {
+            showMessage('Unable to connect to server. Please check your connection and try again shortly.', 'error');
+            throw new Error('Network error - server may be down');
+        }
+        throw error;
+    }
+}
+
+/******************************************************************************
+    Log in/out functionality (Legacy compatibility)
     General
  ******************************************************************************/
-let loggedInStatus = !!localStorage.getItem('userRole');
+let loggedInStatus = authManager.isAuthenticated;
 console.log("Page load: User is " + (loggedInStatus ? "logged in" : "logged out"));
 
-function toggleLogin() 
-{
-    loggedInStatus = !loggedInStatus;
-    if (loggedInStatus) {
-        localStorage.setItem('userRole', 'Admin'); // or whatever role you use
+// Updated toggle function to use new authentication system
+async function toggleLogin() {
+    if (authManager.isAuthenticated) {
+        await authManager.logout();
+        loggedInStatus = false;
+        updateVisibility();
+        showMessage('Logged out successfully', 'info');
+        console.log("User logged out");
     } else {
-        localStorage.removeItem('userRole');
+        showLoginModal();
     }
-    updateVisibility();
-    console.log("Button pressed: User is " + (loggedInStatus ? "logged in" : "logged out"));
 }
 
 function updateVisibility() 
 {
-    document.querySelectorAll(".protected").forEach(item => 
-    {
-        item.style.display = loggedInStatus ? "block" : "none";
-    });
-
-    document.getElementById("loginLogoutButton").innerText = loggedInStatus ? "Logout" : "Login";
-
-    const coreInvoiceModel = document.querySelector("a[href='coreInvoiceModel.html']").parentElement;
-    const extensionComponent = document.querySelector("a[href='ExtensionComponentDataModel.html']").parentElement;
-
-    if (coreInvoiceModel && extensionComponent) 
-    {
-        if (loggedInStatus) 
-        {
-            coreInvoiceModel.classList.add("child-element");
-            extensionComponent.classList.add("child-element");
-        } 
-        else 
-        {
-            coreInvoiceModel.classList.remove("child-element");
-            extensionComponent.classList.remove("child-element");
-        }
-    }
+    // Use the new role-based visibility function
+    updateVisibilityWithRoles();
 }
 
 /******************************************************************************
@@ -54,6 +346,7 @@ let filteredData = [];
 document.addEventListener("DOMContentLoaded", function () 
 {
     updateVisibility();
+    createLoginModal();
 
     // Populate the country dropdown
     const countryFilter = document.getElementById("countryFilter");
@@ -120,21 +413,28 @@ document.addEventListener("DOMContentLoaded", function ()
     const defaultExtensionOption = document.createElement("option");
     defaultExtensionOption.value = "";
     defaultExtensionOption.textContent = "All Components";
-    extensionComponentFilter.appendChild(defaultExtensionOption);
-
-    // Fetch Extension Components with a single request for all entries
+    extensionComponentFilter.appendChild(defaultExtensionOption);    // Fetch Extension Components (public GET - no auth needed)
     async function fetchExtensionComponents() {
-        const baseUrl = "https://registryservices-staging.azurewebsites.net/api/extensionmodels/headers";
-        const response = await fetch(`${baseUrl}?page=1&pageSize=12`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        try {
+            const baseUrl = "https://registryservices-staging.azurewebsites.net/api/extensionmodels/headers";
+            const response = await authenticatedFetch(`${baseUrl}?page=1&pageSize=12`, {
+                method: 'GET' // Explicitly specify GET method for clarity
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("API Response:", data);
+
+            // Return the items directly
+            return data.items;
+        } catch (error) {
+            console.error("Error fetching Extension Components:", error);
+            // Error message already handled by authenticatedFetch
+            throw error;
         }
-
-        const data = await response.json();
-        console.log("API Response:", data);
-
-        // Return the items directly
-        return data.items;
     }
 
     // Populate the dropdown with fetched data
@@ -359,4 +659,290 @@ document.addEventListener("DOMContentLoaded", function ()
         alert("Data successfully saved!");
         window.location.href = 'coreInvoiceModel.html'; // Redirect to Core Invoice Model page
     }
+
+    // Login Modal HTML and functionality
+    function createLoginModal() {
+        const modalHTML = `
+            <div id="loginModal" style="
+                display: none;
+                position: fixed;
+                z-index: 1000;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.5);
+            ">
+                <div style="
+                    background-color: white;
+                    margin: 15% auto;
+                    padding: 20px;
+                    border-radius: 8px;
+                    width: 300px;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                ">
+                    <h2>Login</h2>
+                    <form id="loginForm">
+                        <div style="margin-bottom: 15px;">
+                            <label for="username">Username:</label>
+                            <input type="text" id="username" name="username" required style="
+                                width: 100%;
+                                padding: 8px;
+                                margin-top: 5px;
+                                border: 1px solid #ddd;
+                                border-radius: 4px;
+                            ">
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label for="password">Password:</label>
+                            <input type="password" id="password" name="password" required style="
+                                width: 100%;
+                                padding: 8px;
+                                margin-top: 5px;
+                                border: 1px solid #ddd;
+                                border-radius: 4px;
+                            ">
+                        </div>
+                        <div style="text-align: right;">
+                            <button type="button" onclick="closeLoginModal()" style="
+                                background: #ccc;
+                                border: none;
+                                padding: 8px 16px;
+                                margin-right: 10px;
+                                border-radius: 4px;
+                                cursor: pointer;
+                            ">Cancel</button>
+                            <button type="submit" style="
+                                background: #007cba;
+                                color: white;
+                                border: none;
+                                padding: 8px 16px;
+                                border-radius: 4px;
+                                cursor: pointer;
+                            ">Login</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Add form submission handler
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                await loginUser(username, password);
+                loggedInStatus = true;
+                updateVisibility();
+                closeLoginModal();
+                showMessage('Login successful!', 'success');
+            } catch (error) {
+                showMessage(`Login failed: ${error.message}`, 'error');
+            }        });
+    }
 });
+
+// Simplified role checking for prototype
+function getCurrentUser() {
+    if (!authManager.isAuthenticated) {
+        return { role: 'Guest', isAuthenticated: false };
+    }
+    
+    return {
+        id: authManager.userID,
+        username: authManager.username,
+        role: authManager.userRole || 'User',
+        isAuthenticated: authManager.isAuthenticated
+    };
+}
+
+// Simple role hierarchy for prototype
+function getAccessLevel() {
+    const user = getCurrentUser();
+    if (user.role === 'Admin') return 'admin';
+    if (user.isAuthenticated) return 'user';
+    return 'guest';
+}
+
+// Check if user can access specific features
+function canAccess(requiredLevel) {
+    const userLevel = getAccessLevel();
+    
+    // Access hierarchy: admin > user > guest
+    const levels = { guest: 0, user: 1, admin: 2 };
+    return levels[userLevel] >= levels[requiredLevel];
+}
+
+// Convenience functions
+function isAdmin() {
+    return getAccessLevel() === 'admin';
+}
+
+function isLoggedIn() {
+    return getAccessLevel() !== 'guest';
+}
+
+// Example usage for different access levels in your prototype:
+/*
+
+// In your HTML, you can use these classes:
+// class="admin-only" - Only visible to admins
+// class="user-only" - Only visible to logged-in users
+// class="protected" - Only visible to logged-in users (existing)
+
+// Example API calls with different access levels:
+// Public endpoints (no auth needed):
+// - GET /api/extensionmodels/headers (public list)
+// - GET /api/countries (public data)
+
+// User endpoints (requires login):
+// - GET /api/user/specifications (user's own data)
+// - POST /api/user/save (save user data)
+
+// Admin endpoints (requires admin role):
+// - POST /api/admin/specifications (manage all data)
+// - DELETE /api/admin/users (user management)
+
+*/
+
+// Update visibility based on access levels
+function updateVisibilityWithRoles() {
+    const accessLevel = getAccessLevel();
+    
+    // Handle existing protected elements
+    document.querySelectorAll(".protected").forEach(item => {
+        item.style.display = isLoggedIn() ? "block" : "none";
+    });
+    
+    // Handle admin-only elements
+    document.querySelectorAll(".admin-only").forEach(item => {
+        item.style.display = isAdmin() ? "block" : "none";
+    });
+    
+    // Handle user-only elements
+    document.querySelectorAll(".user-only").forEach(item => {
+        item.style.display = isLoggedIn() ? "block" : "none";
+    });
+    
+    // Handle create/edit buttons (requires login)
+    document.querySelectorAll(".create-edit-only").forEach(item => {
+        item.style.display = canCreateOrEdit() ? "block" : "none";
+    });
+    
+    // Handle delete buttons (admin only)
+    document.querySelectorAll(".delete-only").forEach(item => {
+        item.style.display = canDelete() ? "block" : "none";
+    });
+    
+    // Update login button
+    const loginButton = document.getElementById("loginLogoutButton");
+    if (loginButton) {
+        loginButton.innerText = isLoggedIn() ? "Logout" : "Login";
+    }
+    
+    // Update user status display
+    updateUserStatus();
+    
+    // Update existing navigation elements
+    const coreInvoiceModel = document.querySelector("a[href='coreInvoiceModel.html']")?.parentElement;
+    const extensionComponent = document.querySelector("a[href='ExtensionComponentDataModel.html']")?.parentElement;
+
+    if (coreInvoiceModel && extensionComponent) {
+        if (isLoggedIn()) {
+            coreInvoiceModel.classList.add("child-element");
+            extensionComponent.classList.add("child-element");
+        } else {
+            coreInvoiceModel.classList.remove("child-element");
+            extensionComponent.classList.remove("child-element");
+        }
+    }
+    
+    console.log(`UI updated for access level: ${accessLevel}`);
+}
+
+/******************************************************************************
+    API Helper Functions for Prototype
+ ******************************************************************************/
+// Example function to create a new specification (requires login)
+async function createSpecification(specData) {
+    try {
+        const response = await authenticatedFetch('/api/specifications', {
+            method: 'POST',
+            body: JSON.stringify(specData)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            showMessage('Specification created successfully!', 'success');
+            return result;
+        }
+    } catch (error) {
+        console.error('Failed to create specification:', error);
+        // Error message already shown by authenticatedFetch
+        throw error;
+    }
+}
+
+// Example function to get specifications (public access)
+async function getSpecifications(page = 1, pageSize = 10) {
+    try {
+        const response = await authenticatedFetch(`/api/specifications?page=${page}&pageSize=${pageSize}`, {
+            method: 'GET'
+        });
+        
+        if (response.ok) {
+            return await response.json();
+        }
+    } catch (error) {
+        console.error('Failed to fetch specifications:', error);
+        throw error;
+    }
+}
+
+// Check if user can perform write operations
+function canCreateOrEdit() {
+    return isLoggedIn(); // Any logged-in user can create/edit for prototype
+}
+
+// Check if user can delete
+function canDelete() {
+    return isAdmin(); // Only admins can delete for prototype
+}
+
+// Simple session management for prototype
+function startSessionMonitoring() {
+    // Check token validity every 5 minutes
+    setInterval(() => {
+        if (authManager.isAuthenticated) {
+            authManager.validateTokens();
+        }
+    }, 5 * 60 * 1000); // 5 minutes
+}
+
+// Initialize session monitoring when page loads
+document.addEventListener("DOMContentLoaded", function() {
+    startSessionMonitoring();
+});
+
+// Simple user status display for prototype
+function updateUserStatus() {
+    const user = getCurrentUser();
+    const statusElement = document.getElementById('userStatus');
+    
+    if (statusElement) {
+        if (user.isAuthenticated) {
+            statusElement.textContent = `Logged in as: ${user.username} (${user.role})`;
+            statusElement.style.display = 'block';
+        } else {
+            statusElement.style.display = 'none';
+        }
+    }
+}
+
+// Add this to your HTML where you want to show user status:
+// <div id="userStatus" style="display: none; font-size: 12px; color: #666;"></div>
