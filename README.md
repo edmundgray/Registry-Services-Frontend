@@ -4,9 +4,9 @@ A JavaScript-based frontend application for managing eInvoicing specifications w
 
 ## 🚀 Quick Start
 
-1. **Clone the repository**
-2. **Open `RegistryServices/index.html`** in your browser
-3. **Test authentication** with demo login (Admin/Password123)
+
+1. **Open `RegistryServices/index.html`** in your browser
+2. **Test authentication** with demo login (Admin/Password123)
 
 ## 🔐 Authentication System
 
