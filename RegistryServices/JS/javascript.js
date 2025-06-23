@@ -1,13 +1,20 @@
-/******************************************************************************More actions
+/******************************************************************************
     Log in/out functionality
     General
  ******************************************************************************/
-let loggedInStatus = true;
+let loggedInStatus = !!localStorage.getItem('userRole');
+console.log("Page load: User is " + (loggedInStatus ? "logged in" : "logged out"));
 
 function toggleLogin() 
 {
     loggedInStatus = !loggedInStatus;
+    if (loggedInStatus) {
+        localStorage.setItem('userRole', 'Admin'); // or whatever role you use
+    } else {
+        localStorage.removeItem('userRole');
+    }
     updateVisibility();
+    console.log("Button pressed: User is " + (loggedInStatus ? "logged in" : "logged out"));
 }
 
 function updateVisibility() 
@@ -19,16 +26,12 @@ function updateVisibility()
 
     document.getElementById("loginLogoutButton").innerText = loggedInStatus ? "Logout" : "Login";
 
-/******************************************************************************
-    Log in/out functionality 
-    For the Core Invoice Model & Extension Component Data Model specifically
- ******************************************************************************/
-    const coreInvoiceModel = document.querySelector("li:nth-of-type(6)");
-    const extensionComponent = document.querySelector("li:nth-of-type(7)");
+    const coreInvoiceModel = document.querySelector("a[href='coreInvoiceModel.html']").parentElement;
+    const extensionComponent = document.querySelector("a[href='ExtensionComponentDataModel.html']").parentElement;
 
     if (coreInvoiceModel && extensionComponent) 
     {
-        if (loggedInStatus)
+        if (loggedInStatus) 
         {
             coreInvoiceModel.classList.add("child-element");
             extensionComponent.classList.add("child-element");
@@ -42,25 +45,113 @@ function updateVisibility()
 }
 
 /******************************************************************************
-    For the List
+    1/2 Country and Extension Component Dropdown Population
  ******************************************************************************/
 let currentPage = 1;
 let rowsPerPage = 10;
 let filteredData = [];
-let originalData = [];
-
-
 
 document.addEventListener("DOMContentLoaded", function () 
 {
-    const registryTable = document.getElementById("myTable");
-    if (!registryTable) {
-        // If the table doesn't exist, we are not on the main registry page.
-        // We can still run logic that applies to all pages, like updateVisibility.
-        updateVisibility();
-        return; // Exit and don't run the table/filter logic.
+    updateVisibility();
+
+    // Populate the country dropdown
+    const countryFilter = document.getElementById("countryFilter");
+    const countries = [
+        // European Union (EU)
+        { name: "Belgium", code: "BE" },
+        { name: "Bulgaria", code: "BG" },
+        { name: "Czechia", code: "CZ" },
+        { name: "Denmark", code: "DK" },
+        { name: "Germany", code: "DE" },
+        { name: "Estonia", code: "EE" },
+        { name: "Ireland", code: "IE" },
+        { name: "Greece", code: "EL" },
+        { name: "Spain", code: "ES" },
+        { name: "France", code: "FR" },
+        { name: "Croatia", code: "HR" },
+        { name: "Italy", code: "IT" },
+        { name: "Cyprus", code: "CY" },
+        { name: "Latvia", code: "LV" },
+        { name: "Lithuania", code: "LT" },
+        { name: "Luxembourg", code: "LU" },
+        { name: "Hungary", code: "HU" },
+        { name: "Malta", code: "MT" },
+        { name: "Netherlands", code: "NL" },
+        { name: "Austria", code: "AT" },
+        { name: "Poland", code: "PL" },
+        { name: "Portugal", code: "PT" },
+        { name: "Romania", code: "RO" },
+        { name: "Slovenia", code: "SI" },
+        { name: "Slovakia", code: "SK" },
+        { name: "Finland", code: "FI" },
+        { name: "Sweden", code: "SE" },
+
+        // European Free Trade Association (EFTA)
+        { name: "Iceland", code: "IS" },
+        { name: "Norway", code: "NO" },
+        { name: "Liechtenstein", code: "LI" },
+        { name: "Switzerland", code: "CH" }
+    ];
+
+    // Add the default "All Countries" option
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = "All Countries";
+    countryFilter.appendChild(defaultOption);
+
+    // Add the countries as options
+    countries.forEach(country => 
+    {
+        const option = document.createElement("option");
+        option.value = country.code;
+        option.textContent = `${country.name} (${country.code})`;
+        countryFilter.appendChild(option);
+    });
+
+/******************************************************************************
+    2/2 Country and Extension Component Dropdown Population
+ ******************************************************************************/
+
+    // Populate the extensionComponentFilter dropdown
+    const extensionComponentFilter = document.getElementById("extensionComponentFilter");
+
+    // Adding the default "All Components" option
+    const defaultExtensionOption = document.createElement("option");
+    defaultExtensionOption.value = "";
+    defaultExtensionOption.textContent = "All Components";
+    extensionComponentFilter.appendChild(defaultExtensionOption);
+
+    // Fetch Extension Components with a single request for all entries
+    async function fetchExtensionComponents() {
+        const baseUrl = "https://registryservices-staging.azurewebsites.net/api/extensionmodels/headers";
+        const response = await fetch(`${baseUrl}?page=1&pageSize=12`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("API Response:", data);
+
+        // Return the items directly
+        return data.items;
     }
 
+    // Populate the dropdown with fetched data
+    fetchExtensionComponents()
+        .then(extensionComponents => {
+            extensionComponents.forEach(component => {
+                const option = document.createElement("option");
+                option.value = component.id;
+                option.textContent = `${component.id} ${component.name.trim()}`;
+                extensionComponentFilter.appendChild(option);
+            });
+        })
+        .catch(error => console.error("Error fetching Extension Components:", error));
+
+/***********************************************************************
+    Original Data for the table
+ ******************************************************************************/
     let originalData = 
     [{
             "Name": "RetailConnect Billing Rules",
@@ -80,11 +171,6 @@ document.addEventListener("DOMContentLoaded", function ()
     const prevPageButton = document.getElementById("prevPage");
     const nextPageButton = document.getElementById("nextPage");
     const currentPageSpan = document.getElementById("currentPage");
-    const searchInput = document.getElementById("searchInput");
-    const typeFilter = document.getElementById("typeFilter");
-    const sectorFilter = document.getElementById("sectorFilter");
-    const countryFilter = document.getElementById("countryFilter");
-    const extensionComponentFilter = document.getElementById("extensionComponentFilter");
 
     // Rows per page select
     rowsPerPageSelect.addEventListener("change", function () 
@@ -93,45 +179,27 @@ document.addEventListener("DOMContentLoaded", function ()
         currentPage = 1;
         applyFilters();
     });
-    
-    if (rowsPerPageSelect) {
-        rowsPerPageSelect.addEventListener("change", function () {
-            rowsPerPage = parseInt(this.value, 10);
-            currentPage = 1;
-            applyFilters();
-        });
-    }
 
     // Previous Button
-    
-    if (prevPageButton) {
-        prevPageButton.addEventListener("click", function () {
-            if (currentPage > 1) {
-                currentPage--;
-                applyFilters();
-            }
-        });
-    }
+    prevPageButton.addEventListener("click", function () 
+    {
+        if (currentPage > 1) 
+        {
+            currentPage--;
+            applyFilters();
+        }
+    });
 
     // Next Button
-    
-
-    if (nextPageButton) {
-        nextPageButton.addEventListener("click", function () {
-            const totalPages = Math.ceil(filteredData.length / rowsPerPage);
-            if (currentPage < totalPages) {
-                currentPage++;
-                applyFilters();
-            }
-        });
-    }
-
-    if (searchInput) searchInput.addEventListener("input", applyFilters);
-    if (typeFilter) typeFilter.addEventListener("change", applyFilters);
-    if (sectorFilter) sectorFilter.addEventListener("change", applyFilters);
-    if (countryFilter) countryFilter.addEventListener("change", applyFilters);
-    if (extensionComponentFilter) extensionComponentFilter.addEventListener("change", applyFilters);
-
+    nextPageButton.addEventListener("click", function () 
+    {
+        const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+        if (currentPage < totalPages) 
+        {
+            currentPage++;
+            applyFilters();
+        }
+    });
 
     // Fetch the data and populate the table
     fetch("../JSON/mockData.json")
@@ -139,7 +207,8 @@ document.addEventListener("DOMContentLoaded", function ()
         .then(data => 
         {
             originalData = data;
-            applyFilters(); // Initial population of the table
+            filteredData = data;
+            populateTable(filteredData);
         })
         .catch(error => console.error("Error loading JSON:", error));
 
@@ -159,7 +228,7 @@ document.addEventListener("DOMContentLoaded", function ()
         if (data.length > 0) 
         {
             const headerRow = table.insertRow(0);
-            const headers = Object.keys(originalData.length > 0 ? originalData[0] : (data.length > 0 ? data[0] : {})).filter(header => header !== "IDs");
+            const headers = Object.keys(data[0]).filter(header => header !== "IDs");
 
             headers.forEach(header => 
             {
@@ -176,32 +245,49 @@ document.addEventListener("DOMContentLoaded", function ()
                 const entry = data[i];
                 const row = table.insertRow(-1);
 
-
-
-                if (loggedInStatus && entry["Registry Status"] === "Submitted") {
-                row.classList.add("submitted-row");
-            }
-
                 headers.forEach(header => 
                 {
                     const cell = row.insertCell(-1);
 
-                    if (header === "View") 
-                    {
+                    if (header === "Sector") {
+                        // Map sector codes to full names
+                        const sectorMapping = {
+                            "A": "Agriculture, Forestry and Fishing",
+                            "B": "Mining and Quarrying",
+                            "C": "Manufacturing",
+                            "D": "Electricity, Gas, Steam and Air Conditioning Supply",
+                            "E": "Water Supply; Sewerage, Waste Management and Remediation Activities",
+                            "F": "Construction",
+                            "G": "Wholesale and Retail Trade; Repair of Motor Vehicles and Motorcycles",
+                            "H": "Transportation and Storage",
+                            "I": "Accommodation and Food Service Activities",
+                            "J": "Information and Communication",
+                            "K": "Financial and Insurance Activities",
+                            "L": "Real Estate Activities",
+                            "M": "Professional, Scientific and Technical Activities",
+                            "N": "Administrative and Support Service Activities",
+                            "O": "Public Administration and Defence; Compulsory Social Security",
+                            "P": "Education",
+                            "Q": "Human Health and Social Work Activities",
+                            "R": "Arts, Entertainment and Recreation",
+                            "S": "Other Service Activities",
+                            "T": "Activities of Households as Employers; Undifferentiated Goods- and Services-Producing Activities of Households for Own Use",
+                            "U": "Activities of Extraterritorial Organisations and Bodies"
+                        };
+
+                        cell.textContent = sectorMapping[entry[header]] || entry[header];
+                    } else if (header === "View") {
                         const button = document.createElement("button");
 
                         button.textContent = "View";
                         button.className = "view-button";
-                        button.addEventListener("click", () => 
-                        {
+                        button.addEventListener("click", () => {
                             const queryParams = new URLSearchParams(entry).toString();
                             window.location.href = `viewSpecification.html?${queryParams}`;
                         });
 
                         cell.appendChild(button);
-                    } 
-                    else 
-                    {
+                    } else {
                         cell.textContent = entry[header];
                     }
                 });
@@ -209,7 +295,7 @@ document.addEventListener("DOMContentLoaded", function ()
         }
 
         const totalPages = Math.ceil(data.length / rowsPerPage);
-
+        
         currentPageSpan.textContent = currentPage;
         prevPageButton.disabled = currentPage === 1;
         nextPageButton.disabled = currentPage === totalPages;
@@ -227,9 +313,6 @@ document.addEventListener("DOMContentLoaded", function ()
         // Filter the data
         filteredData = originalData.filter(entry => 
         {
-            if (!loggedInStatus && entry["Registry Status"] === "Submitted") {
-            return false;
-        }
             const matchesSearch = Object.values(entry).some
             (
                 value =>
@@ -251,5 +334,29 @@ document.addEventListener("DOMContentLoaded", function ()
         populateTable(filteredData);
     }
 
-    updateVisibility(); // Ensure visibility is updated on page load
+    function handleSaveAndRedirect() {
+        // First confirmation alert
+        const confirmation = confirm("You are about to save your work and move to the core invoice model page, are you sure?");
+        if (!confirmation) {
+            return; // Exit if the user selects "No"
+        }
+
+        // Gather form data
+        const form = document.getElementById('identifyingForm');
+        const formData = new FormData(form);
+        const data = {};
+        formData.forEach((value, key) => {
+            data[key] = value;
+        });
+
+        // Second confirmation alert showing saved data
+        const approval = confirm("Data saved:\n\n" + Object.entries(data).map(([key, value]) => `${key}: ${value}`).join('\n') + "\n\nApprove?");
+        if (!approval) {
+            return; // Exit if the user selects "Deny"
+        }
+
+        // Redirect if both confirmations are approved
+        alert("Data successfully saved!");
+        window.location.href = 'coreInvoiceModel.html'; // Redirect to Core Invoice Model page
+    }
 });
