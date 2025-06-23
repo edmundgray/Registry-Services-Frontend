@@ -300,21 +300,23 @@ body {
 .tab-button {
     padding: 10px 20px;
     cursor: pointer;
-    background-color: #f9f9f9;
+    background-color: #f9f9f9; /* Light background */
     border: none;
     border-bottom: 2px solid transparent;
     font-size: 14px;
+    color: #333; /* Darker text color for better contrast */
     transition: background-color 0.3s ease;
 }
 
 .tab-button:hover {
-    background-color: #f1f1f1;
+    background-color: #e0e0e0; /* Slightly darker background on hover */
 }
 
 .tab-button.active {
     border-bottom: 2px solid #007BFF;
     font-weight: bold;
     background-color: #fff;
+    color: #000; /* Ensure active tab text is clearly visible */
 }
 
 /* Tab content styling */
@@ -427,9 +429,8 @@ body {
     margin: 25px 0;
     font-size: 1em;
     font-family: inherit;
-    min-width: 800px;
     box-shadow: 0 0 10px rgba(0,0,0,0.05);
-    width: 100%;
+    width: auto; /* Change from 100% to auto */
     background-color: #fff;
 }
 
@@ -443,6 +444,9 @@ body {
 .styled-table td {
     padding: 12px 15px;
     border: 1px solid #dddddd;
+    min-width: 175px;
+    max-width: 300px;
+    word-wrap: break-word;
 }
 
 .styled-table tbody tr {
@@ -681,40 +685,71 @@ button[onclick*="deleteRow"]:active {
 }
 
 #pagination-controls select {
-    /* ...other styles... */
     background-image: url("data:image/svg+xml;utf8,<svg fill='none' height='16' viewBox='0 0 20 20' width='16' xmlns='http://www.w3.org/2000/svg'><path d='M5 8l5 5 5-5' stroke='%23F4A261' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>");
     background-repeat: no-repeat;
     background-position: right 12px center;
     background-size: 18px 18px;
 }
 
-#myTable tr.submitted-row {
-    background-color: #fffacd; /* Light yellow */
-    font-weight: bold !important; 
+/******************************************************************************
+    Styling for the Color Legend on the Core Invoice Model Page
+ ******************************************************************************/
+.color-legend {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    min-width: 150px;
+    max-width: 350px;
+    width: auto;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    font-size: 0.95em;
 }
 
-#myTable tr.submitted-row:hover {
-    background-color: #fff0b3 !important; /* Slightly darker yellow on hover */
+.color-legend ul {
+    list-style-type: disc;
+    padding-left: 20px;
+    margin: 0;
 }
 
-.tab-button {
-    color: #000; /* make tab text fully legible */
-}
-.tab-button.active {
-    color: #007BFF; /* active tab text color */
-    background-color: #fff; /* active tab background */
-    border-bottom: 2px solid #007BFF; /* active tab underline */
+.color-legend li {
+    margin-bottom: 8px;
+    line-height: 1.5;
 }
 
-.preview-container {
+/******************************************************************************
+    Styling for the Extension Component table
+ ******************************************************************************/
+#extensionComponentTable {
+    table-layout: fixed; /* Enforce fixed layout */
+    width: 100%; /* Ensure the table spans the container */
+}
+
+#extensionComponentTable th, #extensionComponentTable td {
+    min-width: 100px; /* Minimum width for columns */
+    max-width: 300px; /* Maximum width for columns */
+    word-wrap: break-word; /* Ensure text wraps within the column */
+    overflow: hidden; /* Prevent overflow */
+    text-overflow: ellipsis; /* Add ellipsis for overflowing text */
+    white-space: nowrap; /* Prevent wrapping unless necessary */
+}
+
+.button-container {
     display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    align-items: flex-start; /* Aligns tables to the top */
+    justify-content: flex-end; /* Align the button to the right */
+    margin-bottom: 10px; /* Add spacing below the button */
 }
 
-.preview-table-wrapper {
-    flex: 1 1 calc(33.333% - 20px); /* Flex properties for 3 columns */
-    min-width: 300px; /* Minimum width before wrapping */
-    /* ... other styles ... */
+#newSpecificationButton {
+    padding: 10px 15px;
+    background-color: #28a745; /* Green color */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#newSpecificationButton:hover {
+    background-color: #218838; /* Darker green on hover */
 }
