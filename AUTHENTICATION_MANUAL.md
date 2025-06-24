@@ -1,4 +1,4 @@
-# Authentication System Manual for Junior Developers
+# Authentication System Manual for Developers
 
 ## 📖 Table of Contents
 1. [Overview](#overview)
@@ -600,7 +600,7 @@ toggleLogin()            // Show login modal or logout
 
 ---
 
-## 🎓 Learning Path for Junior Developers
+## 🎓 Learning Path for Developers
 
 ### Week 1: Understanding
 - [ ] Read this manual completely

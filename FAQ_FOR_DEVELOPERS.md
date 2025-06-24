@@ -1,6 +1,6 @@
 # Frequently Asked Questions - JWT Authentication System
 
-## Common Questions from Junior Developers
+## Common Questions from Developers
 
 ### Q1: What exactly is happening when I call `authenticatedFetch()`?
 
