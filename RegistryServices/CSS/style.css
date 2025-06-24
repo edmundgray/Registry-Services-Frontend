@@ -278,6 +278,88 @@ body {
     opacity: 1;
 }
 
+.pagination-navigation {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+#pageNumbers {
+    display: flex;
+    gap: 2px;
+    margin: 0 8px;
+}
+
+.page-number {
+    padding: 5px 10px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #fff;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: 500;
+    min-width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+
+.page-number:hover {
+    background-color: #f0f0f0;
+    border-color: #F4A261;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.page-number.active {
+    background-color: #FF6600;
+    color: #fff;
+    border-color: #FF6600;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(255, 102, 0, 0.3);
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}
+
+.page-number.active:hover {
+    background-color: #E55A00;
+    border-color: #E55A00;
+    box-shadow: 0 3px 6px rgba(255, 102, 0, 0.4);
+}
+
+.page-number.ellipsis {
+    cursor: default;
+    background-color: transparent;
+    border: none;
+    color: #666;
+}
+
+.page-number.ellipsis:hover {
+    background-color: transparent;
+    border: none;
+}
+
+#pagination-controls #firstPage,
+#pagination-controls #prevPage,
+#pagination-controls #nextPage,
+#pagination-controls #lastPage {
+    height: 36px;
+    min-width: 36px;
+    font-size: 16px;
+}
+
+#pageInfo {
+    margin-left: 20px;
+    font-weight: 600;
+    color: #666;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
 .details-container {
     padding: 20px;
     background-color: #fff;
