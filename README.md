@@ -2,12 +2,15 @@
 
 A JavaScript-based frontend application for managing eInvoicing specifications with JWT-based authentication.
 
+
 ## 🚀 Quick Start
 
 1. **Clone the repository**
 2. **Open `RegistryServices/index.html`** in your browser
 3. **Open browser console** (F12 → Console tab)
 4. **Test authentication** by typing: `demoLogin()` and pressing Enter
+
+=======
 
 ## 🔐 Authentication System
 
