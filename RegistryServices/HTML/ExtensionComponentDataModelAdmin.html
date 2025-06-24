@@ -111,7 +111,7 @@ if (localStorage.userRole === "Admin") {
         <div class="page-Content">
             <h1>
                 <i class="fa-solid fa-trailer"></i> Extension Component Data Model
-                <span style="color: #b22222; font-size: 0.6em; margin-left: 12px; vertical-align: middle;">ADMIN VIEW (READ-ONLY)</span>
+                <span style="color: #b22222; font-size: 0.6em; margin-left: 12px; vertical-align: middle;">(READ-ONLY)</span>
             </h1>
             <br/>
             <span><b>Select the required Extension Component and view its required elements</b></span>
@@ -265,25 +265,26 @@ if (localStorage.userRole === "Admin") {
             section.innerHTML = `
     <select class="component-select" onchange="populateComponentTable(this)">${options}</select>
     <p style="margin-top: 5px;">Select the required Extension Component and view its required elements</p>
-    <table class="styled-table" style="width:100%;">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Level</th>
-                <th>Cardinality</th>
-                <th>Business Term</th>
-                <th>Usage Note</th>
-                <th>Justification</th>
-                <th>Data Type</th>
-                <th>Type of Extension</th>
-                <th>Core Conformant /Rules broken</th>
-                <th>Included in Spec</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr><td colspan="10" style="text-align:center;">Please select a component from the dropdown.</td></tr>
-        </tbody>
-    </table>
+    <div style="overflow-x: auto;">
+        <table class="styled-table" style="width:100%;">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Level</th>
+                    <th>Cardinality</th>
+                    <th>Business Term</th>
+                    <th>Usage Note</th>
+                    <th>Justification</th>
+                    <th>Data Type</th>
+                    <th>Type of Extension</th>
+                    <th>Core Conformant /Rules broken</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="10" style="text-align:center;">Please select a component from the dropdown.</td></tr>
+            </tbody>
+        </table>
+    </div>
     <button class="view-button" style="margin-top: 10px; background: #ccc; color: #333;" disabled>Clear Selection</button>
 `;
             componentsContainer.appendChild(section);
@@ -313,9 +314,6 @@ if (localStorage.userRole === "Admin") {
                     <td>${el['Data Type']}</td>
                     <td>${el['Type of Extension']}</td>
                     <td>${el['Core Conformant/Rules broken']}</td>
-                    <td style="text-align:center;">
-                        <input type="checkbox" class="element-selector" data-id="${el.ID}" disabled ${el.included ? 'checked' : ''}>
-                    </td>
                 `;
                 tableBody.appendChild(row);
             });
@@ -379,6 +377,7 @@ if (localStorage.userRole === "Admin") {
         .selected-row {
             background-color: #d0e7ff !important;
         }
+        
         </style>
     </body>
 </html>
