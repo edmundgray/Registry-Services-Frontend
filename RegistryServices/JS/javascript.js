@@ -450,20 +450,23 @@ document.addEventListener("DOMContentLoaded", function ()
         .catch(error => console.error("Error fetching Extension Components:", error));
 
 /***********************************************************************
-    Original Data for the table
+    API Data Loading for Specifications Table
+    Replaces mockData.json with live API endpoint
  ******************************************************************************/
+
+    // Fallback data for when API is unavailable
     let originalData = 
     [{
             "Name": "RetailConnect Billing Rules",
             "Purpose": "Groups invoice lines and adds settlement plans",
             "Type": "Extension",
-            "Sector": "Other Service Activities",
+            "Sector": "Retail Trade",
             "Country": "NL",
-            "Implementation Date": "2024-11-18",
+            "Implementation Date": "18/11/2024",
             "Preferred Syntax": "UBL",
             "Governing Entity": "Retail Invoice Group",
-            "Extension Component": "Grouping Invoice Lines by Sublines & Settlement Plans",
-            "Conformance Level": "Party Core Conformant",
+            "Extension Component": "urn:cen.eu:en16931:2025#conformant#urn:45614.com:22813",
+            "Conformance Level": "Core Conformant",
             "View": "View"
     }];
 
@@ -499,18 +502,53 @@ document.addEventListener("DOMContentLoaded", function ()
             currentPage++;
             applyFilters();
         }
-    });
-
-    // Fetch the data and populate the table
-    fetch("../JSON/mockData.json")
-        .then(response => response.json())
-        .then(data => 
-        {
-            originalData = data;
-            filteredData = data;
+    });    // Fetch the data from API and populate the table
+    async function loadSpecificationsData() {
+        try {
+            const response = await authenticatedFetch(
+                'https://registryservices-staging.azurewebsites.net/api/specifications?PageNumber=1&PageSize=50',
+                {
+                    method: 'GET'
+                }
+            );
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const apiData = await response.json();
+            console.log("API Response:", apiData);
+            
+            // Map API response to expected table format
+            const mappedData = apiData.items.map(item => ({
+                "Name": item.specificationName,
+                "Purpose": item.purpose,
+                "Type": item.specificationType,
+                "Sector": item.sector,
+                "Country": item.country,
+                "Implementation Date": new Date(item.dateOfImplementation).toLocaleDateString('en-GB'),
+                "Preferred Syntax": item.preferredSyntax,
+                "Governing Entity": item.governingEntity,
+                "Extension Component": item.specificationIdentifier, // Using identifier as extension component
+                "Conformance Level": item.conformanceLevel,
+                "View": "View"
+            }));
+            
+            originalData = mappedData;
+            filteredData = mappedData;
             populateTable(filteredData);
-        })
-        .catch(error => console.error("Error loading JSON:", error));
+            
+        } catch (error) {
+            console.error("Error loading specifications data:", error);
+            // Fallback to hardcoded data if API fails
+            console.log("Falling back to hardcoded data");
+            filteredData = originalData; // Use the hardcoded fallback data
+            populateTable(filteredData);
+        }
+    }
+    
+    // Load specifications data
+    loadSpecificationsData();
 
     // Add event listeners for the filters
     document.getElementById("searchInput").addEventListener("input", applyFilters);

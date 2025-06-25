@@ -2,6 +2,16 @@
 
 A JavaScript-based frontend application for managing eInvoicing specifications with JWT-based authentication.
 
+
+## 🚀 Quick Start
+
+1. **Clone the repository**
+2. **Open `RegistryServices/index.html`** in your browser
+3. **Open browser console** (F12 → Console tab)
+4. **Test authentication** by typing: `demoLogin()` and pressing Enter
+
+=======
+
 ## 🔐 Authentication System
 
 This project includes a comprehensive JWT-based authentication system with three access levels:
@@ -48,7 +58,18 @@ RegistryServices/
 
 ## 🧪 Testing
 
+**Prerequisites**: Load any HTML page that includes the authentication system:
+
+- **Main page**: `RegistryServices/index.html` (now updated)
+- **Registry page**: `RegistryServices/HTML/eInvoicingSpecificationRegistry.html`
+- **Any other page** in the HTML folder
+
 ### Demo Login
+
+1. **Open any page** with authentication (e.g., `RegistryServices/index.html`)
+2. **Open browser console** (F12 → Console tab)
+3. **Run the demo login**:
+
 ```javascript
 // Quick test login (use in browser console)
 demoLogin(); // Logs in as Admin with Password123
@@ -113,22 +134,6 @@ The system integrates with the RegistryServices API:
 - **Automatic session monitoring** and warnings
 - **Graceful error handling** for all scenarios
 
-## 🔮 Future Enhancements
-
-### Short-term
-- User registration functionality
-- Password reset capability
-- "Remember me" option
-
-### Medium-term
-- Refresh token implementation
-- Enhanced session management
-- Advanced error recovery
-
-### Long-term
-- Single Sign-On (SSO) integration
-- Advanced user management
-- Performance optimizations
 
 ## 🤝 Contributing
 
