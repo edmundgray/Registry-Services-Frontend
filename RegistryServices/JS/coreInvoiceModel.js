@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", function ()
     
     async function fetchCoreInvoiceModelsFromAPI() {
         try {
-            const apiUrl = `${AUTH_CONFIG.baseUrl}/coreinvoicemodels`; // Use backend base URL
+            const apiUrl = `${AUTH_CONFIG.baseUrl}/coreinvoicemodels?pageSize=250`; // Use backend base URL
 
             console.log(`Attempting to fetch Core Invoice Models from API: ${apiUrl}`);
 
@@ -52,14 +52,15 @@ document.addEventListener("DOMContentLoaded", function ()
     }
 
     fetchCoreInvoiceModelsFromAPI()
-        .then(elementsToDisplay => {
+        .then(data => {
             const tableBody = document.querySelector('#coreInvoiceTable tbody');
             const isReadOnly = window.isCoreInvoiceReadOnly === true;
             const nodeMap = {};
 
              tableBody.innerHTML = '';
 
-            
+            const elementsToDisplay = Array.isArray(data) ? data : (data.items || []);
+
 
             elementsToDisplay.forEach(item => {
                 const normalizedId = item.id || item.ID; // Use 'id' or 'ID' as key
@@ -68,8 +69,7 @@ document.addEventListener("DOMContentLoaded", function ()
                     Level: item.level || item.Level || 'N/A',
                     Cardinality: item.cardinality || item.Cardinality || 'N/A',
                     "Business Term": item.businessTerm || item.BusinessTerm || item['Business Term'] || 'N/A',
-                    "Semantic Description": item.semanticDescription || item.SemanticDescription || item['Semantic Description'] || 'N/A',
-                    "Usage Note": item.usageNote || item.UsageNote || item['Usage Note'] || 'N/A',
+                    "Usage Note": item.semanticDescription || item.SemanticDescription || item['Semantic Description'] || 'N/A',
                     "Business Rules": item.businessRules || item.BusinessRules || item['Business Rules'] || 'N/A',
                     "Data Type": item.dataType || item.DataType || item['Data Type'] || 'N/A',
                     "Req ID": item.reqId || item.ReqID || item['Req ID'] || 'N/A',
@@ -95,16 +95,16 @@ document.addEventListener("DOMContentLoaded", function ()
             });
 
             // Recursive row creation
-            function createRow(item, level = 0) 
+            function renderRowAndChildren(item, container, level = 0) 
             {
                 const tr = document.createElement('tr');
-
                 tr.classList.add(level === 0 ? 'parent-row' : 'child-row');
                 if (item.children.length > 0) tr.classList.add('has-children-parent-row');
                 if (level > 0) tr.style.display = 'none';
 
                 const isMandatory = item.Cardinality === '1..1';
-                 const isChecked = savedCoreIds.includes(item.ID) || isMandatory;
+                const isChecked = savedCoreIds.includes(item.ID) || isMandatory;
+
                 tr.innerHTML = `
                     <td>${item.ID || 'N/A'}</td>
                     <td>${item.Level || 'N/A'}</td>
@@ -120,6 +120,7 @@ document.addEventListener("DOMContentLoaded", function ()
                     <td>${item['Data Type'] || 'N/A'}</td>
                     `;
                     
+                    //const checkboxCell = document.createElement("td");
                     if (!isReadOnly) {
                     const checkboxCell = document.createElement("td");
                     checkboxCell.innerHTML = `<input type="checkbox" class="row-selector" data-id="${item.ID}" ${isMandatory || isChecked ? 'checked' : ''} ${isMandatory ? 'disabled' : ''}>`;
@@ -147,33 +148,34 @@ document.addEventListener("DOMContentLoaded", function ()
                 const btnCell = document.createElement("td");
                 tr.appendChild(btnCell);
 
-                let childTrs = [];
+                const immediateChildTrs = [];
 
                 if (item.children.length > 0) 
                 {
                     const showMoreBtn = document.createElement('button');
-                    showMoreBtn = document.createElement('button');
+                    
                     showMoreBtn.className = 'show-more-btn';
                     showMoreBtn.textContent = 'Show more';
                     showMoreBtn.style.fontSize = '12px';
                     btnCell.appendChild(showMoreBtn);
 
-                    childTrs = item.children.map(child => createRow(child, level + 1));
-
+                    item.children.forEach(child => {
+                        const childTr = renderRowAndChildren(child, container, level + 1);
+                        immediateChildTrs.push(childTr); // Store child TR for toggling
+                    });
                     showMoreBtn.addEventListener('click', function () {
                         const isHidden = childTrs[0].style.display === 'none';
-                        childTrs.forEach(tr => tr.style.display = isHidden ? '' : 'none');
+                        immediateChildTrs.forEach(childTr => childTr.style.display = isHidden ? '' : 'none');
                         this.textContent = isHidden ? 'Show less' : 'Show more';
                         this.blur();
                     });
                 }
 
-                tableBody.appendChild(tr);
-                item.children.forEach(child => createRow(child, level + 1));
+                container.appendChild(tr);
                 return tr;
             }
 
-            roots.forEach(root => createRow(root));
+            roots.forEach(root => renderRowAndChildren(root, tableBody));
         })
         .catch(error => {
             console.error("Error loading core invoice model data from API or JSON:", error);
