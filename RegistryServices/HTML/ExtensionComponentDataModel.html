@@ -116,22 +116,40 @@
 
         <script>
             let isFormDirty = false;
-            let extensionComponentData = {};
+            // Cache for storing fetched extension component elements to avoid re-fetching
+            let extensionComponentElementsCache = {}; // Changed from extensionComponentData
             let componentsContainer;
 
             async function loadExtensionData() {
                 try {
-                    const response = await fetch('../JSON/extensionComponentModelElements.json');
-                    const data = await response.json();
-                    
-                    data.forEach(item => {
-                        const componentName = item.Component;
-                        if (!extensionComponentData[componentName]) {
-                            extensionComponentData[componentName] = { elements: [] };
-                        }
-                        extensionComponentData[componentName].elements.push(item);
+                    // Fetch the list of available Extension Components (headers)
+                    // Assuming /api/extensionmodels/headers provides a list of {id, name} objects
+                    const headersApiUrl = `${AUTH_CONFIG.baseUrl}/extensionmodels/headers?page=1&pageSize=50`; // Adjust page size as needed
+
+                    console.log(`Attempting to fetch Extension Component Headers from API: ${headersApiUrl}`);
+                    const headersResponse = await authenticatedFetch(headersApiUrl, {
+                        method: 'GET',
+                        forceAuth: true // Assuming this endpoint also requires authentication
                     });
 
+                    if (!headersResponse.ok) {
+                        throw new Error(`HTTP error! status: ${headersResponse.status}`);
+                    }
+                    const headersData = await headersResponse.json();
+                    const availableComponents = headersData.items || headersData; // Assuming it returns {items: []} or directly an array
+                    console.log('Available Extension Component Headers:', availableComponents);
+
+                    // Populate the dropdown with available components
+                    const initialSectionSelect = document.querySelector('.component-section .component-select');
+                    if (initialSectionSelect) {
+                        let options = '<option value="">Select an Extension Component</option>';
+                        availableComponents.forEach(comp => {
+                            options += `<option value="${comp.id}">${comp.name || comp.id}</option>`; // Use comp.name if available, else comp.id
+                        });
+                        initialSectionSelect.innerHTML = options;
+                    }
+
+                    // Pre-select any saved extensions when loading for editing
                     const editingSpecName = localStorage.getItem("selectedSpecification");
                     let savedExtensions = [];
                     if (editingSpecName) {
@@ -143,28 +161,52 @@
                     }
 
                     if (savedExtensions.length > 0) {
-                        savedExtensions.forEach(savedExt => {
-                            addNewComponentSection(savedExt.componentName, savedExt.selectedElements);
-                        });
+                        // For each saved extension, add a section and populate its table
+                        for (const savedExt of savedExtensions) {
+                            await addNewComponentSection(savedExt.componentName, savedExt.selectedElements);
+                        }
+                        // Remove the initial empty section if more than one saved extension was added
+                        if (savedExtensions.length > 0 && document.querySelectorAll('.component-section').length > 1) {
+                            document.querySelector('.component-section:first-child').remove();
+                        }
                     } else {
-                        addNewComponentSection();
+                        // If no saved extensions, ensure at least one empty section is present
+                        if (document.querySelectorAll('.component-section').length === 0) {
+                            addNewComponentSection();
+                        }
                     }
 
                 } catch (error) {
                     console.error("Error loading extension component data:", error);
+                    if (componentsContainer) {
+                         componentsContainer.innerHTML = `<p style="color: red;">Error: Could not load extension component data. Please ensure you are logged in and the API is accessible.</p>`;
+                    }
                 }
             }
 
-            function addNewComponentSection(selectedComponent = '', selectedIds = []) {
+            // addNewComponentSection now takes an optional preSelectedComponentId and preSelectedElementIds
+            async function addNewComponentSection(preSelectedComponentId = '', preSelectedElementIds = []) {
                 const sectionId = `section-${Date.now()}`;
                 const section = document.createElement('div');
                 section.className = 'component-section';
                 section.id = sectionId;
 
-                let options = '<option value="">Select an Extension Component</option>';
-                for (const key in extensionComponentData) {
-                    options += `<option value="${key}" ${key === selectedComponent ? 'selected' : ''}>${key}</option>`;
+                // Fetch the list of all components again to populate the new dropdown
+                const headersApiUrl = `${AUTH_CONFIG.baseUrl}/extensionmodels/headers?page=1&pageSize=50`;
+                let availableComponents = [];
+                try {
+                    const headersResponse = await authenticatedFetch(headersApiUrl, { method: 'GET', forceAuth: true });
+                    const headersData = await headersResponse.json();
+                    availableComponents = headersData.items || headersData;
+                } catch (error) {
+                    console.error("Error re-fetching component headers for new section:", error);
                 }
+
+                let options = '<option value="">Select an Extension Component</option>';
+                availableComponents.forEach(comp => {
+                    options += `<option value="${comp.id}" ${comp.id === preSelectedComponentId ? 'selected' : ''}>${comp.name || comp.id}</option>`;
+                });
+
 
                 section.innerHTML = `
                     <select class="component-select" onchange="populateComponentTable(this, [])">${options}</select>
@@ -181,38 +223,96 @@
                             <tr><td colspan="10" style="text-align:center;">Please select a component from the dropdown.</td></tr>
                         </tbody>
                     </table>
-                    <button onclick="document.getElementById('${sectionId}').remove(); isFormDirty=true;" class="view-button" style="margin-top: 10px; background: #dc3545;">Remove Selection</button>
+                    <button onclick="document.getElementById('${sectionId}').remove(); isFormDirty=true; updateComponentSections();" class="view-button" style="margin-top: 10px; background: #dc3545;">Remove Selection</button>
                 `;
                 componentsContainer.appendChild(section);
 
-                if (selectedComponent) {
-                    populateComponentTable(section.querySelector('.component-select'), selectedIds);
+                if (preSelectedComponentId) {
+                    // Populate table immediately if a component is pre-selected
+                    populateComponentTable(section.querySelector('.component-select'), preSelectedElementIds);
                 }
             }
 
-            function populateComponentTable(selectElement, selectedIds = []) {
-                const selectedValue = selectElement.value;
+            // Function to handle removing sections and ensuring at least one remains
+            function updateComponentSections() {
+                const sections = document.querySelectorAll('.component-section');
+                if (sections.length === 0) {
+                    addNewComponentSection(); // Add a new empty section if all are removed
+                }
+            }
+
+            // populateComponentTable now fetches elements for the selected component
+            async function populateComponentTable(selectElement, selectedIds = []) {
+                const selectedComponentId = selectElement.value;
                 const tableBody = selectElement.closest('.component-section').querySelector('tbody');
 
-                if (!selectedValue) {
+                if (!selectedComponentId) {
                     tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Please select a component.</td></tr>';
                     return;
                 }
 
-                const component = extensionComponentData[selectedValue];
-                tableBody.innerHTML = '';
-                component.elements.forEach(el => {
+                let componentElements = [];
+                // Check cache first
+                if (extensionComponentElementsCache[selectedComponentId]) {
+                    componentElements = extensionComponentElementsCache[selectedComponentId];
+                    console.log(`Loaded ${selectedComponentId} elements from cache.`);
+                } else {
+                    // Fetch elements for the selected component
+                    const elementsApiUrl = `${AUTH_CONFIG.baseUrl}/extensionmodels/elements/${selectedComponentId}`;
+                    console.log(`Fetching elements for component: ${elementsApiUrl}`);
+                    try {
+                        const elementsResponse = await authenticatedFetch(elementsApiUrl, {
+                            method: 'GET',
+                            forceAuth: true // This endpoint also requires authentication
+                        });
+                        if (!elementsResponse.ok) {
+                            throw new Error(`HTTP error! status: ${elementsResponse.status}`);
+                        }
+                        const elementsData = await elementsResponse.json();
+                        componentElements = Array.isArray(elementsData) ? elementsData : (elementsData.items || []); // Adjust based on API response structure
+                        extensionComponentElementsCache[selectedComponentId] = componentElements; // Cache the fetched data
+                        console.log(`Fetched ${componentElements.length} elements for ${selectedComponentId}.`);
+                    } catch (error) {
+                        console.error(`Error fetching elements for component ${selectedComponentId}:`, error);
+                        tableBody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:red;">Failed to load elements for this component.</td></tr>`;
+                        return;
+                    }
+                }
+
+                tableBody.innerHTML = ''; // Clear previous elements
+                if (componentElements.length === 0) {
+                     tableBody.innerHTML = `<tr><td colspan="10" style="text-align:center;">No elements found for this component.</td></tr>`;
+                     return;
+                }
+
+
+                componentElements.forEach(el => {
                     const row = document.createElement('tr');
-                    const isChecked = selectedIds.includes(el.ID);
+                    const isChecked = selectedIds.includes(el.id || el.ID); // Check against normalized ID
+
+                    // Map properties from API response (assuming potential camelCase/PascalCase differences)
+                    const mappedEl = {
+                        ID: el.id || el.ID || 'N/A',
+                        Level: el.level || el.Level || 'N/A',
+                        Cardinality: el.cardinality || el.Cardinality || 'N/A',
+                        "Business Term": el.businessTerm || el.BusinessTerm || el['Business Term'] || 'N/A',
+                        "Usage Note": el.usageNote || el.UsageNote || el['Usage Note'] || 'N/A',
+                        Justification: el.justification || el.Justification || 'N/A',
+                        "Data Type": el.dataType || el.DataType || el['Data Type'] || 'N/A',
+                        "Type of Extension": el.typeOfExtension || el.TypeOfExtension || el['Type of Extension'] || 'N/A',
+                        "Core Conformant/Rules broken": el.coreConformantRulesBroken || el.CoreConformantRulesBroken || el['Core Conformant/Rules broken'] || 'N/A'
+                    };
+
                     row.innerHTML = `
-                        <td>${el.ID}</td><td>${el.Level}</td><td>${el.Cardinality}</td>
-                        <td>${el['Business Term']}<i class="fa-solid fa-circle-question" title="${el['Usage Note']}"></i></td>
-                        <td>${el['Usage Note']}</td><td>${el.Justification}</td><td>${el['Data Type']}</td>
-                        <td>${el['Type of Extension']}</td><td>${el['Core Conformant/Rules broken']}</td>
-                        <td style="text-align:center;"><input type="checkbox" class="element-selector" data-id="${el.ID}" ${isChecked ? 'checked' : ''} onchange="isFormDirty=true;"></td>
+                        <td>${mappedEl.ID}</td><td>${mappedEl.Level}</td><td>${mappedEl.Cardinality}</td>
+                        <td>${mappedEl['Business Term']}<i class="fa-solid fa-circle-question" title="${mappedEl['Usage Note']}"></i></td>
+                        <td>${mappedEl['Usage Note']}</td><td>${mappedEl.Justification}</td><td>${mappedEl['Data Type']}</td>
+                        <td>${mappedEl['Type of Extension']}</td><td>${mappedEl['Core Conformant/Rules broken']}</td>
+                        <td style="text-align:center;"><input type="checkbox" class="element-selector" data-id="${mappedEl.ID}" ${isChecked ? 'checked' : ''} onchange="isFormDirty=true;"></td>
                     `;
                     tableBody.appendChild(row);
                 });
+                isFormDirty = true; // Mark form as dirty after population
             }
 
             function handleSave(showAlert = true) {
@@ -224,8 +324,10 @@
                         section.querySelectorAll('.element-selector:checked').forEach(checkbox => {
                             selectedElements.push(checkbox.getAttribute('data-id'));
                         });
-                        if (selectedElements.length > 0) {
-                             selectedExtensions.push({ componentName, selectedElements });
+                        // Only save component sections that have selected elements OR if the component itself is selected (even if no elements are ticked for it)
+                        // Adjust this logic if you want to save empty component selections
+                        if (selectedElements.length > 0) { // Only save if at least one element is selected
+                            selectedExtensions.push({ componentName, selectedElements });
                         }
                     }
                 });
@@ -260,17 +362,16 @@
             }
 
             document.addEventListener('DOMContentLoaded', () => {
+                const titleElement = document.querySelector('.page-Content h1');
                 const editingSpecName = localStorage.getItem("selectedSpecification");
-                if (editingSpecName) {
-                    const titleElement = document.querySelector('.page-Content h1');
-                    if (titleElement) {
-                        titleElement.innerHTML = `<i class="fa-solid fa-trailer"></i> Extension Component Data Model for: ${editingSpecName}`;
-                    }
+                if (titleElement && editingSpecName) {
+                    titleElement.innerHTML = `<i class="fa-solid fa-trailer"></i> Extension Component Data Model for: ${editingSpecName}`;
                 }
-                
-                componentsContainer = document.getElementById('components-container');
-                loadExtensionData();
 
+                componentsContainer = document.getElementById('components-container');
+                loadExtensionData(); // Initial load of components for dropdown
+
+                // Listen for changes anywhere in the container to mark form dirty
                 componentsContainer.addEventListener('change', () => { isFormDirty = true; });
             });
 

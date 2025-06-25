@@ -480,4 +480,335 @@ document.addEventListener("DOMContentLoaded", function ()
         alert("Data successfully saved!");
         window.location.href = 'coreInvoiceModel.html'; // Redirect to Core Invoice Model page
     }
+}); // <-- End of DOMContentLoaded
+
+// ----------- CODE FROM MAIN BRANCH (role/access/session management, etc.) ------------
+
+// Login Modal HTML and functionality
+function createLoginModal() {
+    const modalHTML = `
+        <div id="loginModal" style="
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        ">
+            <div style="
+                background-color: white;
+                margin: 15% auto;
+                padding: 20px;
+                border-radius: 8px;
+                width: 300px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            ">
+                <h2>Login</h2>
+                <form id="loginForm">
+                    <div style="margin-bottom: 15px;">
+                        <label for="username">Username:</label>
+                        <input type="text" id="username" name="username" required style="
+                            width: 100%;
+                            padding: 8px;
+                            margin-top: 5px;
+                            border: 1px solid #ddd;
+                            border-radius: 4px;
+                        ">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label for="password">Password:</label>
+                        <input type="password" id="password" name="password" required style="
+                            width: 100%;
+                            padding: 8px;
+                            margin-top: 5px;
+                            border: 1px solid #ddd;
+                            border-radius: 4px;
+                        ">
+                    </div>
+                    <div style="text-align: right;">
+                        <button type="button" onclick="closeLoginModal()" style="
+                            background: #ccc;
+                            border: none;
+                            padding: 8px 16px;
+                            margin-right: 10px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                        ">Cancel</button>
+                        <button type="submit" style="
+                            background: #007cba;
+                            color: white;
+                            border: none;
+                            padding: 8px 16px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                        ">Login</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Add form submission handler
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        
+        try {
+            await loginUser(username, password);
+            loggedInStatus = true;
+            updateVisibility();
+            closeLoginModal();
+            showMessage('Login successful!', 'success');
+        } catch (error) {
+            showMessage(`Login failed: ${error.message}`, 'error');
+        }
+    });
+}
+
+// Simplified role checking for prototype
+function getCurrentUser() {
+    if (!authManager.isAuthenticated) {
+        return { role: 'Guest', isAuthenticated: false };
+    }
+    
+    return {
+        id: authManager.userID,
+        username: authManager.username,
+        role: authManager.userRole || 'User',
+        isAuthenticated: authManager.isAuthenticated
+    };
+}
+
+// Simple role hierarchy for prototype
+function getAccessLevel() {
+    const user = getCurrentUser();
+    if (user.role === 'Admin') return 'admin';
+    if (user.isAuthenticated) return 'user';
+    return 'guest';
+}
+
+// Check if user can access specific features
+function canAccess(requiredLevel) {
+    const userLevel = getAccessLevel();
+    
+    // Access hierarchy: admin > user > guest
+    const levels = { guest: 0, user: 1, admin: 2 };
+    return levels[userLevel] >= levels[requiredLevel];
+}
+
+// Convenience functions
+function isAdmin() {
+    return getAccessLevel() === 'admin';
+}
+
+function isLoggedIn() {
+    return getAccessLevel() !== 'guest';
+}
+
+// Example usage for different access levels in your prototype:
+/*
+
+// In your HTML, you can use these classes:
+// class="admin-only" - Only visible to admins
+// class="user-only" - Only visible to logged-in users
+// class="protected" - Only visible to logged-in users (existing)
+
+// Example API calls with different access levels:
+// Public endpoints (no auth needed):
+// - GET /api/extensionmodels/headers (public list)
+// - GET /api/countries (public data)
+
+// User endpoints (requires login):
+// - GET /api/user/specifications (user's own data)
+// - POST /api/user/save (save user data)
+
+// Admin endpoints (requires admin role):
+// - POST /api/admin/specifications (manage all data)
+// - DELETE /api/admin/users (user management)
+
+*/
+
+// Update visibility based on access levels
+function updateVisibilityWithRoles() {
+    const accessLevel = getAccessLevel();
+    
+    // Handle existing protected elements
+    document.querySelectorAll(".protected").forEach(item => {
+        item.style.display = isLoggedIn() ? "block" : "none";
+    });
+    
+    // Handle admin-only elements
+    document.querySelectorAll(".admin-only").forEach(item => {
+        item.style.display = isAdmin() ? "block" : "none";
+    });
+    
+    // Handle user-only elements
+    document.querySelectorAll(".user-only").forEach(item => {
+        item.style.display = isLoggedIn() ? "block" : "none";
+    });
+    
+    // Handle create/edit buttons (requires login)
+    document.querySelectorAll(".create-edit-only").forEach(item => {
+        item.style.display = canCreateOrEdit() ? "block" : "none";
+    });
+    
+    // Handle delete buttons (admin only)
+    document.querySelectorAll(".delete-only").forEach(item => {
+        item.style.display = canDelete() ? "block" : "none";
+    });
+    
+    // Update login button
+    const loginButton = document.getElementById("loginLogoutButton");
+    if (loginButton) {
+        loginButton.innerText = isLoggedIn() ? "Logout" : "Login";
+    }
+    
+    // Update user status display
+    updateUserStatus();
+    
+    // Update existing navigation elements
+    const coreInvoiceModel = document.querySelector("a[href='coreInvoiceModel.html']")?.parentElement;
+    const extensionComponent = document.querySelector("a[href='ExtensionComponentDataModel.html']")?.parentElement;
+
+    if (coreInvoiceModel && extensionComponent) {
+        if (isLoggedIn()) {
+            coreInvoiceModel.classList.add("child-element");
+            extensionComponent.classList.add("child-element");
+        } else {
+            coreInvoiceModel.classList.remove("child-element");
+            extensionComponent.classList.remove("child-element");
+        }
+    }
+    
+    console.log(`UI updated for access level: ${accessLevel}`);
+}
+
+/******************************************************************************
+    API Helper Functions for Prototype
+ ******************************************************************************/
+// Example function to create a new specification (requires login)
+async function createSpecification(specData) {
+    try {
+        const response = await authenticatedFetch('/api/specifications', {
+            method: 'POST',
+            body: JSON.stringify(specData)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            showMessage('Specification created successfully!', 'success');
+            return result;
+        }
+    } catch (error) {
+        console.error('Failed to create specification:', error);
+        // Error message already shown by authenticatedFetch
+        throw error;
+    }
+}
+
+// Example function to get specifications (public access)
+async function getSpecifications(page = 1, pageSize = 10) {
+    try {
+        const response = await authenticatedFetch(`/api/specifications?page=${page}&pageSize=${pageSize}`, {
+            method: 'GET'
+        });
+        
+        if (response.ok) {
+            return await response.json();
+        }
+    } catch (error) {
+        console.error('Failed to fetch specifications:', error);
+        throw error;
+    }
+}
+
+async function fetchCoreInvoiceModels() {
+    try {
+        // Construct the full URL for the GET request
+        const apiUrl = `${AUTH_CONFIG.baseUrl}/coreinvoicemodels`; // Uses the base URL from AUTH_CONFIG
+
+        console.log(`Attempting to fetch data from: ${apiUrl}`);
+
+        // Make the GET request using authenticatedFetch
+        const response = await authenticatedFetch(apiUrl, {
+            method: 'GET' // Explicitly set method to GET
+        });
+
+        // Check if the response was successful
+        if (!response.ok) {
+            // authenticatedFetch already handles common errors (401, 500, network errors)
+            // You can add specific handling here if needed for other status codes
+            throw new Error(`Failed to fetch data: ${response.statusText}`);
+        }
+
+        // Parse the JSON response
+        const data = await response.json();
+        console.log('Fetched Core Invoice Models:', data);
+
+        // Here you would typically process the data
+        // For example, populate a table, update UI elements, etc.
+        // As seen in coreInvoiceModel.js and javascript.js, you would iterate over 'data.items' if the API returns a paginated result.
+        // Example: populateTableWithData(data.items);
+
+        return data;
+
+    } catch (error) {
+        console.error('Error fetching core invoice models:', error.message);
+        // showMessage is already available for user-friendly notifications
+        // showMessage(`Could not load core invoice models: ${error.message}`, 'error');
+    }
+}
+
+// You can call this function when your page loads or when a user action triggers it
+document.addEventListener("DOMContentLoaded", function() {
+    fetchCoreInvoiceModels();
 });
+
+// Check if user can perform write operations
+function canCreateOrEdit() {
+    return isLoggedIn(); // Any logged-in user can create/edit for prototype
+}
+
+// Check if user can delete
+function canDelete() {
+    return isAdmin(); // Only admins can delete for prototype
+}
+
+// Simple session management for prototype
+function startSessionMonitoring() {
+    // Check token validity every 5 minutes
+    setInterval(() => {
+        if (authManager.isAuthenticated) {
+            authManager.validateTokens();
+        }
+    }, 5 * 60 * 1000); // 5 minutes
+}
+
+// Initialize session monitoring when page loads
+document.addEventListener("DOMContentLoaded", function() {
+    startSessionMonitoring();
+});
+
+// Simple user status display for prototype
+function updateUserStatus() {
+    const user = getCurrentUser();
+    const statusElement = document.getElementById('userStatus');
+    
+    if (statusElement) {
+        if (user.isAuthenticated) {
+            statusElement.textContent = `Logged in as: ${user.username} (${user.role})`;
+            statusElement.style.display = 'block';
+        } else {
+            statusElement.style.display = 'none';
+        }
+    }
+}
+
+// Add this to your HTML where you want to show user status:
+// <div id="userStatus" style="display: none; font-size: 12px; color: #666;"></div>
