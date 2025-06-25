@@ -1,5 +1,6 @@
 [
     {
+        "Modified Date": "2024-12-15",
         "Name": "Automotive Goods Delivery and Acceptance Specification (AGDAS)",
         "Purpose": "Enhances traceability and efficiency in invoicing by incorporating delivery locations, dispatch information, and buyer-confirmed quantities received and accepted",
         "Type": "Extension",
@@ -15,6 +16,7 @@
         "IDs": ["BT-1", "BT-2", "BT-5"]
     },
     {
+        "Modified Date": "2024-12-10",
         "Name": "ChainPay Automotive v2.0",
         "Purpose": "Adds Delivery Information and VMI support for automotive supply chains",
         "Type": "Extension",
@@ -22,7 +24,7 @@
         "Country": "DE",
         "Implementation Date": "2024-12-01",
         "Preferred Syntax": "EDIFACT",
-        "Registry Status": "Under Review",
+        "Registry Status": "Submitted",
         "Governing Entity": "European Automotive Supply Forum",
         "Extension Component": "Delivery Information",
         "Conformance Level": "Party Core Conformant",
@@ -30,6 +32,7 @@
         "IDs": ["BT-3", "BT-24", "BT-27"]
     },
     {
+        "Modified Date": "2024-12-05",
         "Name": "RetailConnect Billing Rules",
         "Purpose": "Groups invoice lines and adds settlement plans",
         "Type": "Extension",
@@ -37,15 +40,15 @@
         "Country": "NL",
         "Implementation Date": "2024-11-18",
         "Preferred Syntax": "UBL",
-        "Registry Status": "Under Review",
+        "Registry Status": "Submitted",
         "Governing Entity": "Retail Invoice Group",
         "Extension Component": "Grouping Invoice Lines by Sublines & Settlement Plans",
         "Conformance Level": "Party Core Conformant",
         "View": "View",
         "IDs": ["BT-1", "BT-2", "BT-3", "BT-5", "BG-2", "BT-24", "BG-4", "BT-27", "BG-5", "BT-55", "BG-7", "BT-44", "BG-8", "BG-22", "BT-106", "BT-109", "BT-112", "BG-23", "BT-164", "BT-116", "BT-117", "BT-118", "BG-25", "BT-126", "BT-129", "BT-130", "BT-131", "BG-29", "BT-146", "BG-30", "BT-151", "BG-31", "BT-153",
-        "XT-40", "XT-41"]
-    },
+        "XT-40", "XT-41"]    },
     {
+        "Modified Date": "2024-11-28",
         "Name": "PharmaTrack Pro Invoice",
         "Purpose": "Restricts batch data, adds delivery confirmation for cold chain and compliant medication, and payment for medical agencies",
         "Type": "CIUS",
@@ -53,7 +56,7 @@
         "Country": "BE",
         "Implementation Date": "2024-10-22",
         "Preferred Syntax": "UBL",
-        "Registry Status": "Under Review",
+        "Registry Status": "Verified",
         "Governing Entity": "LifeScience Logistics Consortium European MedTech Alliance",
         "Extension Component": "Batch Data Restrictions, Delivery Confirmation & Payment Terms",
         "Conformance Level": "Party Core Conformant",
@@ -62,6 +65,7 @@
         "XT-40", "XT-41"]
     },
     {
+        "Modified Date": "2024-11-20",
         "Name": "Invoice4Media",
         "Purpose": "Adds media line items and splits payments",
         "Type": "Extension",
@@ -75,9 +79,9 @@
         "Conformance Level": "Party Core Conformant",
         "View": "View",
         "IDs": ["BT-1", "BT-2", "BT-3", "BT-5", "BG-2", "BT-24", "BG-4", "BT-27", "BG-5", "BT-55", "BG-7", "BT-44", "BG-8", "BG-22", "BT-106", "BT-109", "BT-112", "BG-23", "BT-164", "BT-116", "BT-117", "BT-118", "BG-25", "BT-126", "BT-129", "BT-130", "BT-131", "BG-29", "BT-146", "BG-30", "BT-151", "BG-31", "BT-153",
-        "XT-40", "XT-41"]
-    },
+        "XT-40", "XT-41"]    },
     {
+        "Modified Date": "2024-11-15",
         "Name": "SmartGrid B2B Template",
         "Purpose": "Adds line-level VAT and energy usage breakdown",
         "Type": "Extension",
@@ -85,7 +89,7 @@
         "Country": "FR",
         "Implementation Date": "2024-09-30",
         "Preferred Syntax": "UBL",
-        "Registry Status": "Under Review",
+        "Registry Status": "Submitted",
         "Governing Entity": "Nordic Smart Energy Consortium",
         "Extension Component": "Calculate VAT at Line Level",
         "Conformance Level": "Party Core Conformant",

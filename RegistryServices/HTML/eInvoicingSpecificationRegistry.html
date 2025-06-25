@@ -41,13 +41,12 @@
                         <span class="icon"><i class="fa-solid fa-folder"></i></span>
                         <span class="text">My Specifications</span>
                     </a>
-                </li>
-                <li class="protected">
+                </li>                <li class="protected">
                     <a href="#">
                         <span class="icon"><i class="fa-solid fa-file-medical"></i></span>
                         <span class="text">Add New Specification</span>
                     </a>
-                </li class="protected">
+                </li>
                 <li class="child-element protected">
                     <a href="IdentifyingInformation.html">
                         <span class="icon"><i class="fa-solid fa-info"></i></span>
@@ -130,22 +129,17 @@
                     <option value="S">Other Service Activities</option>
                     <option value="T">Activities of Households as Employers; Undifferentiated Goods- and Services-Producing Activities of Households for Own Use</option>
                     <option value="U">Activities of Extraterritorial Organisations and Bodies</option>
-                </select>
-
-                <!-- Populated by Javascript.js -->
+                </select>                <!-- Populated by Javascript.js -->
                 <!-- ctrl + f 'Country and Extension Component Dropdown Population' in javascript.js to view the code -->
                 <select id="countryFilter">
                 </select>
             
-                <!-- Populated by Javascript.js -->
-                <!-- ctrl + f 'Country and Extension Component Dropdown Population' in javascript.js to view the code -->
-                <select id="extensionComponentFilter">
-                </select>
+                <!-- Comment out Extension Component filter - will be part of Advanced search instead -->
+                <!-- <select id="extensionComponentFilter">
+                </select> -->
             </div>
 
-            <table id="myTable"></table>
-
-            <div id="pagination-controls">
+            <table id="myTable"></table>            <div id="pagination-controls">
                 <label for="rowsPerPage">Show</label>
 
                 <select id="rowsPerPage">
@@ -155,9 +149,15 @@
                 </select>
                 
                 <span>rows</span>
-                <button id="prevPage">«</button>
-                <span id="currentPage">1</span>
-                <button id="nextPage">»</button>
+                  <div class="pagination-navigation">
+                    <button id="firstPage" title="First page">«</button>
+                    <button id="prevPage" title="Previous page">‹</button>
+                    <div id="pageNumbers"></div>
+                    <button id="nextPage" title="Next page">›</button>
+                    <button id="lastPage" title="Last page">»</button>
+                </div>
+                
+                <span id="pageInfo"></span>
             </div>
         </div>
     </body>
