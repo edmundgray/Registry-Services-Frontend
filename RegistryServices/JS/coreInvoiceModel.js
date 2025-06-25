@@ -17,32 +17,80 @@ document.addEventListener("DOMContentLoaded", function ()
         }
     }
     
-    fetch("../JSON/coreInvoiceModelElements.json")
-        .then(response => response.json())
-        .then(data =>
-        {
+    
+    async function fetchCoreInvoiceModelsFromAPI() {
+        try {
+            const apiUrl = `${AUTH_CONFIG.baseUrl}/coreinvoicemodels`; // Use backend base URL
+
+            console.log(`Attempting to fetch Core Invoice Models from API: ${apiUrl}`);
+
+            const response = await authenticatedFetch(apiUrl, {
+                method: 'GET',
+                forceAuth: true 
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const apiData = await response.json();
+            console.log('API Response for Core Invoice Models:', apiData);
+
+            // Assuming your backend API returns data in a structure similar to coreInvoiceModelElements.json,
+            // or directly as an array of elements. If it's paginated, you might access apiData.items.
+            // Adjust this line based on your actual API response structure.
+            return Array.isArray(apiData) ? apiData : (apiData.items || []); // Assuming apiData is the array of elements or contains 'items' property
+
+        } catch (error) {
+            console.error("Error fetching Core Invoice Model data from API:", error);
+            // Fallback to local JSON if API fails, or just display an error
+            // For now, let's simply re-throw to be caught by the main DOMContentLoaded block
             const tableBody = document.querySelector('#coreInvoiceTable tbody');
+            tableBody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:red;">Failed to load Core Invoice Model data. Please ensure you are logged in and the API is accessible.</td></tr>`;
+            throw error;
+        }
+    }
+
+    fetchCoreInvoiceModelsFromAPI()
+        .then(elementsToDisplay => {
+            const tableBody = document.querySelector('#coreInvoiceTable tbody');
+            const isReadOnly = window.isCoreInvoiceReadOnly === true;
             const nodeMap = {};
 
-            data.forEach(item => 
-            {
-                nodeMap[item.ID] = { ...item, children: [] };
+             tableBody.innerHTML = '';
+
+            
+
+            elementsToDisplay.forEach(item => {
+                const normalizedId = item.id || item.ID; // Use 'id' or 'ID' as key
+                nodeMap[normalizedId] = {
+                    ID: normalizedId, // Store the normalized ID
+                    Level: item.level || item.Level || 'N/A',
+                    Cardinality: item.cardinality || item.Cardinality || 'N/A',
+                    "Business Term": item.businessTerm || item.BusinessTerm || item['Business Term'] || 'N/A',
+                    "Semantic Description": item.semanticDescription || item.SemanticDescription || item['Semantic Description'] || 'N/A',
+                    "Usage Note": item.usageNote || item.UsageNote || item['Usage Note'] || 'N/A',
+                    "Business Rules": item.businessRules || item.BusinessRules || item['Business Rules'] || 'N/A',
+                    "Data Type": item.dataType || item.DataType || item['Data Type'] || 'N/A',
+                    "Req ID": item.reqId || item.ReqID || item['Req ID'] || 'N/A',
+                    "Parent ID": item.parentId || item.ParentID || item['Parent ID'] || null, // Store normalized Parent ID
+                    "Type of Change": item.typeOfChange || item.TypeOfChange || item['Type of Change'] || 'N/A',
+                    children: []
+                };
             });
 
             const roots = [];
 
-            data.forEach(item => 
-            {
-                if (item['Parent ID']) 
-                {
-                    if (nodeMap[item['Parent ID']]) 
-                    {
-                        nodeMap[item['Parent ID']].children.push(nodeMap[item.ID]);
-                    }
-                }
-                else 
-                {
-                    roots.push(nodeMap[item.ID]);
+            elementsToDisplay.forEach(item => {
+                const normalizedId = item.id || item.ID; // Get the ID of the current item (normalized)
+                const mappedItem = nodeMap[normalizedId]; // Retrieve the already mapped and normalized item from nodeMap
+
+                const parentId = mappedItem['Parent ID']; // Get the normalized Parent ID from the mapped item
+
+                if (parentId && nodeMap[parentId]) { // Check if a normalized Parent ID exists and the parent is in nodeMap
+                    nodeMap[parentId].children.push(mappedItem); // Push the mapped child item to its mapped parent's children array
+                } else {
+                    roots.push(mappedItem); // Add the mapped item to roots if no parent or parent not found
                 }
             });
 
@@ -58,84 +106,81 @@ document.addEventListener("DOMContentLoaded", function ()
                 const isMandatory = item.Cardinality === '1..1';
                  const isChecked = savedCoreIds.includes(item.ID) || isMandatory;
                 tr.innerHTML = `
-                    
-                    <td>${item.ID}</td>
-                    <td>${item.Level}</td>
-                    <td>${item.Cardinality}</td>
+                    <td>${item.ID || 'N/A'}</td>
+                    <td>${item.Level || 'N/A'}</td>
+                    <td>${item.Cardinality || 'N/A'}</td>
                     <td>
                         <span class="semantic-tooltip" title="${item['Semantic Description'] || ''}">
                             <i class="fa-solid fa-circle-question"></i>
                         </span>
-                        ${item['Business Term']}
+                        ${item['Business Term'] || 'N/A'}
                     </td>
-                    <td>${item['Usage Note']}</td>
-                    <td>${item['Business Rules']}</td>
-                    <td>${item['Data Type']}</td>
-                    <td>
-                        <input type="checkbox" class="row-selector" data-id="${item.ID}" ${isMandatory || isChecked ? 'checked' : ''} ${isMandatory ? 'disabled' : ''}>
-                    </td>
-                    <td>
+                    <td>${item['Usage Note'] || 'N/A'}</td>
+                    <td>${item['Business Rules'] || 'N/A'}</td>
+                    <td>${item['Data Type'] || 'N/A'}</td>
+                    `;
+                    
+                    if (!isReadOnly) {
+                    const checkboxCell = document.createElement("td");
+                    checkboxCell.innerHTML = `<input type="checkbox" class="row-selector" data-id="${item.ID}" ${isMandatory || isChecked ? 'checked' : ''} ${isMandatory ? 'disabled' : ''}>`;
+                    tr.appendChild(checkboxCell);
+
+                    const selectCell = document.createElement("td");
+                    selectCell.innerHTML = `
                         <select class="type-of-change-select">
                             <option>Type of Change</option>
                             <option>Add</option>
                             <option>Remove</option>
                             <option>Modify</option>
                             <option selected>No Change</option>
-                        </select>
-                    </td>
-                    <td></td> <!-- New cell for Show more button -->
-                `;
+                        </select>`;
+                    tr.appendChild(selectCell);
+                } else {
+                    // In read-only mode, only show the "Included in Spec" checkbox as read-only if it was checked
+                    const checkboxCell = document.createElement("td");
+                    checkboxCell.innerHTML = `<input type="checkbox" class="row-selector" data-id="${item.ID}" ${isChecked ? 'checked' : ''} disabled>`;
+                    checkboxCell.className = "centered-cell";
+                    tr.appendChild(checkboxCell);
+                }
 
                 // If this item has children, add the Show more button to the last cell
-                let showMoreBtn = null;
+                const btnCell = document.createElement("td");
+                tr.appendChild(btnCell);
+
                 let childTrs = [];
 
                 if (item.children.length > 0) 
                 {
+                    const showMoreBtn = document.createElement('button');
                     showMoreBtn = document.createElement('button');
                     showMoreBtn.className = 'show-more-btn';
                     showMoreBtn.textContent = 'Show more';
                     showMoreBtn.style.fontSize = '12px';
+                    btnCell.appendChild(showMoreBtn);
 
-                    tr.lastElementChild.appendChild(showMoreBtn);
-                }
+                    childTrs = item.children.map(child => createRow(child, level + 1));
 
-                tableBody.appendChild(tr);
-
-                item.children.forEach(child => 
-                {
-                    const childTr = createRow(child, level + 1);
-                    childTrs.push(childTr);
-                });
-
-                // Show/hide logic for children
-                if (showMoreBtn) 
-                {
-                    showMoreBtn.addEventListener('click', function () 
-                    {
-                        //if (!childTrs.length) return;
-
+                    showMoreBtn.addEventListener('click', function () {
                         const isHidden = childTrs[0].style.display === 'none';
-
                         childTrs.forEach(tr => tr.style.display = isHidden ? '' : 'none');
                         this.textContent = isHidden ? 'Show less' : 'Show more';
                         this.blur();
                     });
                 }
 
+                tableBody.appendChild(tr);
+                item.children.forEach(child => createRow(child, level + 1));
                 return tr;
             }
 
-            const isReadOnly = window.isCoreInvoiceReadOnly === true;
-
-            const columns = isReadOnly
-              ? ["ID", "Level", "Cardinality", "Business Term", "Usage Note", "Business Rules", "Data Type"]
-              : ["ID", "Level", "Cardinality", "Business Term", "Usage Note", "Business Rules", "Data Type", "Included in Spec", "Type of Change"];
-
             roots.forEach(root => createRow(root));
         })
-        .catch(error => 
-        {
-            console.error("Error loading coreInvoiceModelElements.json:", error);
+        .catch(error => {
+            console.error("Error loading core invoice model data from API or JSON:", error);
+            // Optionally, load from local JSON as a fallback here if needed
+            // fetch("../JSON/coreInvoiceModelElements.json") ...
+            // Or display a user-friendly error message on the page
+            const tableBody = document.querySelector('#coreInvoiceTable tbody');
+            tableBody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:red;">Failed to load Core Invoice Model data. Please try again later.</td></tr>`;
         });
 });
