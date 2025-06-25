@@ -942,6 +942,48 @@ async function getSpecifications(page = 1, pageSize = 10) {
     }
 }
 
+async function fetchCoreInvoiceModels() {
+    try {
+        // Construct the full URL for the GET request
+        const apiUrl = `${AUTH_CONFIG.baseUrl}/coreinvoicemodels`; // Uses the base URL from AUTH_CONFIG
+
+        console.log(`Attempting to fetch data from: ${apiUrl}`);
+
+        // Make the GET request using authenticatedFetch
+        const response = await authenticatedFetch(apiUrl, {
+            method: 'GET' // Explicitly set method to GET
+        });
+
+        // Check if the response was successful
+        if (!response.ok) {
+            // authenticatedFetch already handles common errors (401, 500, network errors)
+            // You can add specific handling here if needed for other status codes
+            throw new Error(`Failed to fetch data: ${response.statusText}`);
+        }
+
+        // Parse the JSON response
+        const data = await response.json();
+        console.log('Fetched Core Invoice Models:', data);
+
+        // Here you would typically process the data
+        // For example, populate a table, update UI elements, etc.
+        // As seen in coreInvoiceModel.js and javascript.js, you would iterate over 'data.items' if the API returns a paginated result.
+        // Example: populateTableWithData(data.items);
+
+        return data;
+
+    } catch (error) {
+        console.error('Error fetching core invoice models:', error.message);
+        // showMessage is already available for user-friendly notifications
+        // showMessage(`Could not load core invoice models: ${error.message}`, 'error');
+    }
+}
+
+// You can call this function when your page loads or when a user action triggers it
+document.addEventListener("DOMContentLoaded", function() {
+    fetchCoreInvoiceModels();
+});
+
 // Check if user can perform write operations
 function canCreateOrEdit() {
     return isLoggedIn(); // Any logged-in user can create/edit for prototype
