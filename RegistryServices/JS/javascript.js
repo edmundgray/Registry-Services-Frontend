@@ -1,111 +1,4 @@
 /******************************************************************************
-    Authentication Configuration and Functions
- ******************************************************************************/
-
-// Authentication configuration
-const AUTH_CONFIG = {
-    baseUrl: 'https://registryservices-staging.azurewebsites.net/api',
-    endpoints: {
-        login: '/auth/login'
-    },
-    tokenKeys: {
-        access: 'access_token'
-    },
-    session: {
-        duration: 60 * 60 * 1000,      // 1 hour
-        warningTime: 5 * 60 * 1000     // 5 minutes warning
-    }
-};
-
-// Simple AuthManager class stub
-class AuthManager {
-    constructor() {
-        this.isAuthenticated = false;
-        this.userRole = null;
-        this.userID = null;
-        this.username = null;
-        this.accessToken = null;
-        this.init();
-    }
-
-    init() {
-        // Try to load from localStorage
-        const token = localStorage.getItem('access_token');
-        const role = localStorage.getItem('userRole');
-        const username = localStorage.getItem('username');
-        
-        if (token && role) {
-            this.accessToken = token;
-            this.userRole = role;
-            this.username = username;
-            this.isAuthenticated = true;
-        }
-    }
-
-    getAuthHeaders() {
-        if (this.accessToken) {
-            return {
-                'Authorization': `Bearer ${this.accessToken}`,
-                'Content-Type': 'application/json'
-            };
-        }
-        return {
-            'Content-Type': 'application/json'
-        };
-    }
-
-    validateTokens() {
-        // Simple validation - in a real app this would check token expiration
-        return this.isAuthenticated;
-    }
-
-    logout() {
-        this.isAuthenticated = false;
-        this.userRole = null;
-        this.userID = null;
-        this.username = null;
-        this.accessToken = null;
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('username');
-    }
-}
-
-// Create global auth manager instance
-const authManager = new AuthManager();
-
-// authenticatedFetch function
-async function authenticatedFetch(url, options = {}) {
-    try {
-        // Prepare headers
-        const headers = {
-            'Content-Type': 'application/json',
-            ...options.headers
-        };
-
-        // Add auth headers if available
-        if (authManager.accessToken) {
-            headers['Authorization'] = `Bearer ${authManager.accessToken}`;
-        }
-
-        // Make the request
-        const response = await fetch(url, {
-            ...options,
-            headers
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        return response;
-    } catch (error) {
-        console.error('API request failed:', error);
-        throw error;
-    }
-}
-
-/******************************************************************************
     Log in/out functionality
     General
  ******************************************************************************/
@@ -115,15 +8,18 @@ console.log("Page load: User is " + (loggedInStatus ? "logged in" : "logged out"
 function toggleLogin() 
 {
     loggedInStatus = !loggedInStatus;
-    if (loggedInStatus) {
-        localStorage.setItem('userRole', 'admin'); // Set as admin for testing
-    } else {
+    if (loggedInStatus) 
+    {
+        localStorage.setItem('userRole', 'admin');
+    } 
+    else 
+    {
         localStorage.removeItem('userRole');
     }
     updateVisibility();
     
-    // Refresh the table to update highlighting
-    if (typeof filteredData !== 'undefined' && filteredData.length > 0) {
+    if (typeof filteredData !== 'undefined' && filteredData.length > 0) 
+    {
         populateTable(filteredData);
     }
     
@@ -169,60 +65,59 @@ document.addEventListener("DOMContentLoaded", function ()
     updateVisibility();
 
     // Populate the country dropdown
-    // Defensive: Only try to populate countryFilter if it exists
     const countryFilter = document.getElementById("countryFilter");
-    if (countryFilter) {
-        const countries = [
-            // European Union (EU)
-            { name: "Belgium", code: "BE" },
-            { name: "Bulgaria", code: "BG" },
-            { name: "Czechia", code: "CZ" },
-            { name: "Denmark", code: "DK" },
-            { name: "Germany", code: "DE" },
-            { name: "Estonia", code: "EE" },
-            { name: "Ireland", code: "IE" },
-            { name: "Greece", code: "EL" },
-            { name: "Spain", code: "ES" },
-            { name: "France", code: "FR" },
-            { name: "Croatia", code: "HR" },
-            { name: "Italy", code: "IT" },
-            { name: "Cyprus", code: "CY" },
-            { name: "Latvia", code: "LV" },
-            { name: "Lithuania", code: "LT" },
-            { name: "Luxembourg", code: "LU" },
-            { name: "Hungary", code: "HU" },
-            { name: "Malta", code: "MT" },
-            { name: "Netherlands", code: "NL" },
-            { name: "Austria", code: "AT" },
-            { name: "Poland", code: "PL" },
-            { name: "Portugal", code: "PT" },
-            { name: "Romania", code: "RO" },
-            { name: "Slovenia", code: "SI" },
-            { name: "Slovakia", code: "SK" },
-            { name: "Finland", code: "FI" },
-            { name: "Sweden", code: "SE" },
+    const countries = 
+    [
+        // European Union (EU)
+        { name: "Belgium", code: "BE" },
+        { name: "Bulgaria", code: "BG" },
+        { name: "Czechia", code: "CZ" },
+        { name: "Denmark", code: "DK" },
+        { name: "Germany", code: "DE" },
+        { name: "Estonia", code: "EE" },
+        { name: "Ireland", code: "IE" },
+        { name: "Greece", code: "EL" },
+        { name: "Spain", code: "ES" },
+        { name: "France", code: "FR" },
+        { name: "Croatia", code: "HR" },
+        { name: "Italy", code: "IT" },
+        { name: "Cyprus", code: "CY" },
+        { name: "Latvia", code: "LV" },
+        { name: "Lithuania", code: "LT" },
+        { name: "Luxembourg", code: "LU" },
+        { name: "Hungary", code: "HU" },
+        { name: "Malta", code: "MT" },
+        { name: "Netherlands", code: "NL" },
+        { name: "Austria", code: "AT" },
+        { name: "Poland", code: "PL" },
+        { name: "Portugal", code: "PT" },
+        { name: "Romania", code: "RO" },
+        { name: "Slovenia", code: "SI" },
+        { name: "Slovakia", code: "SK" },
+        { name: "Finland", code: "FI" },
+        { name: "Sweden", code: "SE" },
 
-            // European Free Trade Association (EFTA)
-            { name: "Iceland", code: "IS" },
-            { name: "Norway", code: "NO" },
-            { name: "Liechtenstein", code: "LI" },
-            { name: "Switzerland", code: "CH" }
-        ];
+        // European Free Trade Association (EFTA)
+        { name: "Iceland", code: "IS" },
+        { name: "Norway", code: "NO" },
+        { name: "Liechtenstein", code: "LI" },
+        { name: "Switzerland", code: "CH" }
+    ];
 
-        // Add the default "All Countries" option
-        const defaultOption = document.createElement("option");
-        defaultOption.value = "";
-        defaultOption.textContent = "All Countries";
-        countryFilter.appendChild(defaultOption);
+    // Add the default "All Countries" option
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = "All Countries";
+    countryFilter.appendChild(defaultOption);
 
-        // Add the countries as options
-        countries.forEach(country => {
-            const option = document.createElement("option");
-            option.value = country.code;
-            option.textContent = `${country.name} (${country.code})`;
-            countryFilter.appendChild(option);
-        });
-    }
+    // Add the countries as options
+    countries.forEach(country => 
+    {
+        const option = document.createElement("option");
+        option.value = country.code;
+        option.textContent = `${country.name} (${country.code})`;
+        countryFilter.appendChild(option);
+    });
 
 /******************************************************************************
     2/2 Country and Extension Component Dropdown Population
@@ -267,7 +162,158 @@ document.addEventListener("DOMContentLoaded", function ()
         .catch(error => console.error("Error fetching Extension Components:", error));
     */
 
-/***********************************************************************
+/******************************************************************************
+    API Functions for fetching data from backend
+ ******************************************************************************/  
+    // API base URL
+    const API_BASE_URL = "https://registryservices-staging.azurewebsites.net/api";
+    
+    // Store total count for pagination
+    let totalSpecifications = 0;
+    
+    // Fetch specifications from the API
+    async function fetchSpecifications() 
+    {
+        try 
+        {
+            console.log("Fetching specifications from API...");
+            const response = await fetch(`${API_BASE_URL}/specifications?PageNumber=${currentPage}&PageSize=${rowsPerPage}`);
+            
+            if (!response.ok) 
+            {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log("API Response:", data);
+            
+            // Handle the response structure
+            if (data.items && Array.isArray(data.items)) 
+            {
+                originalData = data.items;
+                filteredData = data.items;
+
+                // Check for total count in metadata first, then try other possible property names
+                totalSpecifications = (data.metadata && data.metadata.totalCount) || 
+                                      data.totalCount || data.TotalCount || data.total || data.Total || 
+                                      data.count || data.Count || 0;
+                console.log(`Loaded ${data.items.length} items, total: ${totalSpecifications}`);
+                
+                // If no total count in response, make a rough estimate based on current data
+                if (totalSpecifications === 0 && data.items.length > 0) 
+                {
+                    totalSpecifications = Math.max(data.items.length, currentPage * rowsPerPage);
+                    console.log(`No total count found, estimated: ${totalSpecifications}`);
+                }
+            } 
+            else if (Array.isArray(data)) 
+            {
+                // Handle case where response is directly an array
+                originalData = data;
+                filteredData = data;
+                totalSpecifications = data.length;
+                console.log(`Loaded ${data.length} items (direct array)`);
+            } 
+            else 
+            {
+                // Unexpected response format
+                console.warn("Unexpected API response format:", data);
+                originalData = [];
+                filteredData = [];
+                totalSpecifications = 0;
+            }
+            
+            populateTable(filteredData);
+        }
+        catch (error) 
+        {
+            console.error("Error fetching specifications:", error);
+            alert("Failed to load specifications from the server. Please check your connection and try again.");
+            // Fallback to empty data
+            originalData = [];
+            filteredData = [];
+            totalSpecifications = 0;
+            populateTable(filteredData);
+        }
+    }
+    
+    // Function to fetch specifications with filters
+    async function fetchSpecificationsWithFilters() 
+    {
+        try 
+        {
+            const searchText = document.getElementById("searchInput").value;
+            const typeFilter = document.getElementById("typeFilter").value;
+            const sectorFilter = document.getElementById("sectorFilter").value;
+            const countryFilter = document.getElementById("countryFilter").value;
+            
+            // Build query parameters
+            const params = new URLSearchParams
+            ({
+                PageNumber: currentPage.toString(),
+                PageSize: rowsPerPage.toString()
+            });
+            
+            if (searchText.trim()) params.append('SearchTerm', searchText.trim());
+            if (typeFilter) params.append('SpecificationType', typeFilter);
+            if (sectorFilter) params.append('Sector', sectorFilter);
+            if (countryFilter) params.append('Country', countryFilter);
+            
+            const url = `${API_BASE_URL}/specifications?${params.toString()}`;
+            console.log("Fetching with URL:", url);
+            
+            const response = await fetch(url);
+            
+            if (!response.ok) 
+            {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log("Filtered API Response:", data);
+            
+            // Handle the response structure
+            if (data.items && Array.isArray(data.items)) 
+            {
+                filteredData = data.items;
+                // Check for total count in metadata first, then try other possible property names
+                totalSpecifications = (data.metadata && data.metadata.totalCount) || 
+                                      data.totalCount || data.TotalCount || data.total || data.Total || 
+                                      data.count || data.Count || 0;
+                console.log(`Filtered to ${data.items.length} items, total: ${totalSpecifications}`);
+                
+                // If no total count in response, make a rough estimate based on current data
+                if (totalSpecifications === 0 && data.items.length > 0) 
+                {
+                    totalSpecifications = Math.max(data.items.length, currentPage * rowsPerPage);
+                    console.log(`No total count found, estimated: ${totalSpecifications}`);
+                }
+            } 
+            else if (Array.isArray(data)) 
+            {
+                // Handle case where response is directly an array
+                filteredData = data;
+                totalSpecifications = data.length;
+                console.log(`Filtered to ${data.length} items (direct array)`);
+            } 
+            else 
+            {
+                // Unexpected response format
+                console.warn("Unexpected API response format:", data);
+                filteredData = [];
+                totalSpecifications = 0;
+            }
+            
+            populateTable(filteredData);
+        } 
+        catch (error) 
+        {
+            console.error("Error fetching filtered specifications:", error);
+            alert("Failed to filter specifications. Please try again.");
+        }
+    }
+
+/******************************************************************************
     Original Data for the table
  ******************************************************************************/
     let originalData = [];
@@ -284,67 +330,69 @@ document.addEventListener("DOMContentLoaded", function ()
     rowsPerPageSelect.addEventListener("change", function () 
     {
         rowsPerPage = parseInt(this.value, 10);
-        currentPage = 1;
+        currentPage = 1; // Reset to first page
+        console.log(`Rows per page changed to ${rowsPerPage}, resetting to page 1`);
         applyFilters();
     });
 
     // First Page Button
-    firstPageButton.addEventListener("click", function () 
+    firstPageButton.addEventListener("click", function (e) 
     {
-        currentPage = 1;
-        applyFilters();
+        e.preventDefault();
+        if (currentPage !== 1) {
+            currentPage = 1;
+            console.log("First page clicked, moving to page 1");
+            applyFilters();
+        }
     });
 
     // Previous Button
-    prevPageButton.addEventListener("click", function () 
+    prevPageButton.addEventListener("click", function (e) 
     {
+        e.preventDefault();
         if (currentPage > 1) 
         {
             currentPage--;
+            console.log(`Previous page clicked, moving to page ${currentPage}`);
             applyFilters();
         }
     });
 
     // Next Button
-    nextPageButton.addEventListener("click", function () 
+    nextPageButton.addEventListener("click", function (e) 
     {
-        const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+        e.preventDefault();
+        const totalPages = Math.ceil(totalSpecifications / rowsPerPage);
         if (currentPage < totalPages) 
         {
             currentPage++;
+            console.log(`Next page clicked, moving to page ${currentPage}`);
             applyFilters();
         }
     });
 
     // Last Page Button
-    lastPageButton.addEventListener("click", function () 
+    lastPageButton.addEventListener("click", function (e) 
     {
-        const totalPages = Math.ceil(filteredData.length / rowsPerPage);
-        currentPage = totalPages;
-        applyFilters();
-    });    // Fetch the data and populate the table
-    fetch("../JSON/mockData.json")
-        .then(response => response.json())
-        .then(data => 
-        {
-            originalData = data;
-            filteredData = data;
-            populateTable(filteredData);
-        })
-        .catch(error => console.error("Error loading JSON:", error));
+        e.preventDefault();
+        const totalPages = Math.ceil(totalSpecifications / rowsPerPage);
+        if (currentPage !== totalPages && totalPages > 0) {
+            currentPage = totalPages;
+            console.log(`Last page clicked, moving to page ${currentPage}`);
+            applyFilters();
+        }
+    });
 
-    // Add event listeners for the filters, but only if the elements exist
-    const searchInput = document.getElementById("searchInput");
-    if (searchInput) searchInput.addEventListener("input", applyFilters);
-    const typeFilter = document.getElementById("typeFilter");
-    if (typeFilter) typeFilter.addEventListener("change", applyFilters);
-    const sectorFilter = document.getElementById("sectorFilter");
-    if (sectorFilter) sectorFilter.addEventListener("change", applyFilters);
-    const countryFilter2 = document.getElementById("countryFilter");
-    if (countryFilter2) countryFilter2.addEventListener("change", applyFilters);
+    // Fetch the data from API and populate the table
+    fetchSpecifications();
+
+    // Add event listeners for the filters
+    document.getElementById("searchInput").addEventListener("input", debounce(applyFilters, 300));
+    document.getElementById("typeFilter").addEventListener("change", applyFilters);
+    document.getElementById("sectorFilter").addEventListener("change", applyFilters);
+    document.getElementById("countryFilter").addEventListener("change", applyFilters);
     // Comment out Extension Component filter - will be part of Advanced search instead
-    // const extensionComponentFilter = document.getElementById("extensionComponentFilter");
-    // if (extensionComponentFilter) extensionComponentFilter.addEventListener("change", applyFilters);    // Populating the table
+    // document.getElementById("extensionComponentFilter").addEventListener("change", applyFilters);    // Populating the table
     function populateTable(data) 
     {
         const table = document.getElementById("myTable");
@@ -354,9 +402,9 @@ document.addEventListener("DOMContentLoaded", function ()
         {
             const headerRow = table.insertRow(0);
             
-            // Define the desired column order
+            // Define the desired column order with exact mappings to match the required layout
             const columnOrder = [
-                "Modified Date",
+                "Created/Modified Date",
                 "Name", 
                 "Purpose", 
                 "Implementation Date",
@@ -366,15 +414,12 @@ document.addEventListener("DOMContentLoaded", function ()
                 "Preferred Syntax", 
                 "Registry Status",
                 "Governing Entity", 
-                // "Extension Component", // Commented out - will be part of Advanced search instead
                 "Conformance Level", 
                 "View"
             ];
 
-            // Filter headers to only include those that exist in data and are in our desired order
-            const headers = columnOrder.filter(header => 
-                data[0].hasOwnProperty(header) || header === "Modified Date"
-            );
+            // Always include all columns since we want to show them even if empty
+            const headers = columnOrder;
 
             headers.forEach(header => 
             {
@@ -383,16 +428,16 @@ document.addEventListener("DOMContentLoaded", function ()
                 headerRow.appendChild(th);
             });
 
-            const startIndex = (currentPage - 1) * rowsPerPage;
-            const endIndex = Math.min(startIndex + rowsPerPage, data.length);
-
-            for (let i = startIndex; i < endIndex; i++) 
+            // For API data, we display all items in the current page data
+            // since pagination is handled server-side
+            for (let i = 0; i < data.length; i++) 
             {
                 const entry = data[i];
                 const row = table.insertRow(-1);
                   // Add styling for Submitted rows if user is logged in admin
                 const userRole = localStorage.getItem('userRole');
-                if (loggedInStatus && userRole === 'admin' && entry["Registry Status"] === "Submitted") {
+                const registryStatus = getPropertyValue(entry, "Registry Status");
+                if (loggedInStatus && userRole === 'admin' && registryStatus === "Submitted") {
                     row.style.backgroundColor = "#ffeb3b"; // Yellow highlight for submitted rows
                     row.style.fontWeight = "bold";
                 }
@@ -401,9 +446,26 @@ document.addEventListener("DOMContentLoaded", function ()
                 {
                     const cell = row.insertCell(-1);
 
-                    if (header === "Modified Date") {
-                        // Use Implementation Date as Modified Date for now
-                        cell.textContent = entry["Implementation Date"] || "N/A";
+                    if (header === "Created/Modified Date") {
+                        // Format the created/modified date to show only the date part
+                        const createdDate = getPropertyValue(entry, header);
+                        if (createdDate) {
+                            // Extract just the date part (YYYY-MM-DD) if it's in ISO format
+                            const dateOnly = createdDate.includes('T') ? createdDate.split('T')[0] : createdDate;
+                            cell.textContent = dateOnly;
+                        } else {
+                            cell.textContent = "N/A";
+                        }
+                    } else if (header === "Implementation Date") {
+                        // Format the implementation date to show only the date part
+                        const implDate = getPropertyValue(entry, header);
+                        if (implDate) {
+                            // Extract just the date part (YYYY-MM-DD) if it's in ISO format
+                            const dateOnly = implDate.includes('T') ? implDate.split('T')[0] : implDate;
+                            cell.textContent = dateOnly;
+                        } else {
+                            cell.textContent = "N/A";
+                        }
                     } else if (header === "Sector") {
                         // Map sector codes to full names
                         const sectorMapping = {
@@ -430,7 +492,8 @@ document.addEventListener("DOMContentLoaded", function ()
                             "U": "Activities of Extraterritorial Organisations and Bodies"
                         };
 
-                        cell.textContent = sectorMapping[entry[header]] || entry[header];
+                        const sectorValue = getPropertyValue(entry, header);
+                        cell.textContent = sectorMapping[sectorValue] || sectorValue || "N/A";
                     } else if (header === "View") {
                         const button = document.createElement("button");
 
@@ -443,136 +506,179 @@ document.addEventListener("DOMContentLoaded", function ()
 
                         cell.appendChild(button);
                     } else {
-                        cell.textContent = entry[header];
+                        const value = getPropertyValue(entry, header);
+                        cell.textContent = value || "N/A";
                     }
                 });
             }
-        }        const totalPages = Math.ceil(data.length / rowsPerPage);
+        } 
+        else 
+        {
+            // Show "No data" message when there are no results
+            const noDataRow = table.insertRow(0);
+            const noDataCell = noDataRow.insertCell(0);
+            noDataCell.colSpan = 12; // Span all columns
+            noDataCell.style.textAlign = "center";
+            noDataCell.style.padding = "20px";
+            noDataCell.style.fontStyle = "italic";
+            noDataCell.style.color = "#666";
+            noDataCell.textContent = "No specifications found matching your criteria.";
+        }
+
+        // Calculate total pages based on API total count, not current data length
+        let totalPages = Math.ceil(totalSpecifications / rowsPerPage);
+        
+        // If totalSpecifications is 0 or unreliable, use estimation
+        if (totalSpecifications === 0 || totalPages === 0) {
+            totalPages = estimateTotalPages();
+            console.log(`Using estimated totalPages: ${totalPages}`);
+        }
+        
+        console.log(`Calculated totalPages: ${totalPages} (totalSpecifications: ${totalSpecifications}, rowsPerPage: ${rowsPerPage})`);
         
         updatePaginationControls(totalPages);
-    }    // Function to update pagination controls with numbered buttons
-    function updatePaginationControls(totalPages) {
-        console.log(`Updating pagination controls: currentPage=${currentPage}, totalPages=${totalPages}`);
+    }
+    
+    // Update the pagination controls with numbered buttons
+    function updatePaginationControls(totalPages) 
+    {
+        console.log(`Updating pagination controls: currentPage=${currentPage}, totalPages=${totalPages}, totalSpecifications=${totalSpecifications}`);
         
         // Update navigation button states
         firstPageButton.disabled = currentPage === 1;
         prevPageButton.disabled = currentPage === 1;
-        nextPageButton.disabled = currentPage === totalPages;
-        lastPageButton.disabled = currentPage === totalPages;
+        nextPageButton.disabled = currentPage === totalPages || totalPages === 0;
+        lastPageButton.disabled = currentPage === totalPages || totalPages === 0;
 
         // Update page info display
         const pageInfo = document.getElementById('pageInfo');
-        if (pageInfo && filteredData.length > 0) {
+        if (pageInfo && totalSpecifications > 0) 
+        {
             const start = (currentPage - 1) * rowsPerPage + 1;
-            const end = Math.min(currentPage * rowsPerPage, filteredData.length);
-            pageInfo.textContent = `Page ${currentPage} of ${totalPages} (${start}-${end} of ${filteredData.length} items)`;
+            const end = Math.min(currentPage * rowsPerPage, totalSpecifications);
+            pageInfo.textContent = `Page ${currentPage} of ${totalPages} (${start}-${end} of ${totalSpecifications} items)`;
+        } 
+        else if (pageInfo) 
+        {
+            pageInfo.textContent = "No items found";
         }
 
         // Clear existing page numbers
         console.log('Clearing existing page numbers');
         pageNumbersDiv.innerHTML = '';
 
-        if (totalPages <= 1) return;
+        // Always show page numbers, even if there's only 1 page
+        if (totalPages === 0) return;
 
-        // Calculate which page numbers to show
+        // If only 1 page, just show "1"
+        if (totalPages === 1) 
+        {
+            addPageButton(1);
+            return;
+        }
+
+        // Calculate which page numbers to show for multiple pages
         let startPage = Math.max(1, currentPage - 2);
         let endPage = Math.min(totalPages, currentPage + 2);
 
         // Adjust range if we're near the beginning or end
-        if (currentPage <= 3) {
+        if (currentPage <= 3) 
+        {
             endPage = Math.min(5, totalPages);
         }
-        if (currentPage >= totalPages - 2) {
+        if (currentPage >= totalPages - 2) 
+        {
             startPage = Math.max(1, totalPages - 4);
         }
 
         // Add first page if not already shown
-        if (startPage > 1) {
+        if (startPage > 1) 
+        {
             addPageButton(1);
-            if (startPage > 2) {
+            if (startPage > 2) 
+            {
                 addEllipsis();
             }
         }
 
         // Add page numbers in range
-        for (let i = startPage; i <= endPage; i++) {
+        for (let i = startPage; i <= endPage; i++) 
+        {
             addPageButton(i);
         }
 
         // Add last page if not already shown
-        if (endPage < totalPages) {
-            if (endPage < totalPages - 1) {
+        if (endPage < totalPages) 
+        {
+            if (endPage < totalPages - 1) 
+            {
                 addEllipsis();
             }
             addPageButton(totalPages);
         }
-    }    // Function to add a page number button
-    function addPageButton(pageNum) {
+    }
+    
+    // Function to add a page number button
+    function addPageButton(pageNum) 
+    {
         const button = document.createElement('button');
         button.className = 'page-number';
         button.textContent = pageNum;
+        button.type = 'button';
         
         console.log(`Adding page button ${pageNum}, current page is ${currentPage}`);
         
-        if (pageNum === currentPage) {
+        if (pageNum === currentPage) 
+        {
             button.classList.add('active');
             console.log(`Added active class to page ${pageNum}`);
         }
         
-        button.addEventListener('click', () => {
+        button.addEventListener('click', (e) => 
+        {
+            e.preventDefault();
             console.log(`Page ${pageNum} clicked, changing from page ${currentPage}`);
-            currentPage = pageNum;
-            applyFilters();
+            
+            if (pageNum !== currentPage) 
+            {
+                currentPage = pageNum;
+                console.log(`Current page changed to ${currentPage}, calling applyFilters`);
+                applyFilters();
+            }
         });
         
         pageNumbersDiv.appendChild(button);
-    }// Function to add ellipsis
-    function addEllipsis() {
+    }
+    
+    // Function to add ellipsis
+    function addEllipsis() 
+    {
         const ellipsis = document.createElement('span');
         ellipsis.className = 'page-number ellipsis';
         ellipsis.textContent = '...';
         pageNumbersDiv.appendChild(ellipsis);
     }
 
-    // Apply the filters
+    // Apply the filters - now uses API instead of client-side filtering
     function applyFilters() 
     {
-        const searchText = document.getElementById("searchInput").value.toLowerCase();
-        const typeFilter = document.getElementById("typeFilter").value;
-        const sectorFilter = document.getElementById("sectorFilter").value;
-        const countryFilter = document.getElementById("countryFilter").value;
-        // Comment out Extension Component filter - will be part of Advanced search instead
-        // const extensionComponentFilter = document.getElementById("extensionComponentFilter").value;
-
-        // Filter the data
-        filteredData = originalData.filter(entry => 
-        {
-            const matchesSearch = Object.values(entry).some
-            (
-                value =>
-                value.toString().toLowerCase().includes(searchText)
-            );
-
-            const sector = entry.Sector || "Other Service Activities";
-            const matchesSector = sectorFilter === "" || sector === sectorFilter;
-
-            const matchesType = typeFilter === "" || entry.Type === typeFilter;
-            const matchesCountry = countryFilter === "" || entry.Country === countryFilter;
-            // Comment out Extension Component filter - will be part of Advanced search instead
-            // const matchesExtensionComponent =
-            //     extensionComponentFilter === "" || entry["Extension Component"] === extensionComponentFilter;
-
-            return matchesSearch && matchesType && matchesSector && matchesCountry;
-        });
-
-        // Re-populate the table with the new filtered data
-        populateTable(filteredData);
+        console.log(`Applying filters, fetching from API - Page: ${currentPage}, PageSize: ${rowsPerPage}`);
+        
+        // Show loading state (optional)
+        const table = document.getElementById("myTable");
+        if (table) {
+            table.innerHTML = "<tr><td colspan='12' style='text-align: center; padding: 20px;'>Loading...</td></tr>";
+        }
+        
+        fetchSpecificationsWithFilters();
     }
 
-    function handleSaveAndRedirect() {
+    function handleSaveAndRedirect()
+    {
         // First confirmation alert
         const confirmation = confirm("You are about to save your work and move to the core invoice model page, are you sure?");
-        if (!confirmation) {
+        if (!confirmation) 
+        {
             return; // Exit if the user selects "No"
         }
 
@@ -580,21 +686,24 @@ document.addEventListener("DOMContentLoaded", function ()
         const form = document.getElementById('identifyingForm');
         const formData = new FormData(form);
         const data = {};
-        formData.forEach((value, key) => {
+
+        formData.forEach((value, key) => 
+        {
             data[key] = value;
         });
 
         // Second confirmation alert showing saved data
         const approval = confirm("Data saved:\n\n" + Object.entries(data).map(([key, value]) => `${key}: ${value}`).join('\n') + "\n\nApprove?");
-        if (!approval) {
+        if (!approval) 
+        {
             return; // Exit if the user selects "Deny"
         }
 
         // Redirect if both confirmations are approved
         alert("Data successfully saved!");
-        window.location.href = 'coreInvoiceModel.html'; // Redirect to Core Invoice Model page
+        window.location.href = 'coreInvoiceModel.html';
     }
-}); // <-- End of DOMContentLoaded
+});
 
 // ----------- CODE FROM MAIN BRANCH (role/access/session management, etc.) ------------
 
@@ -683,7 +792,52 @@ function createLoginModal() {
             showMessage(`Login failed: ${error.message}`, 'error');
         }
     });
-}
+}    // Helper function to safely get property value with API field mappings
+    function getPropertyValue(obj, displayName) {
+        // Map display names to API field names
+        const fieldMappings = {
+            "Created/Modified Date": "modifiedDate", // Use modifiedDate from API response
+            "Name": "specificationName",
+            "Purpose": "purpose", 
+            "Type": "specificationType",
+            "Sector": "sector",
+            "Country": "country",
+            "Implementation Date": "dateOfImplementation",
+            "Preferred Syntax": "preferredSyntax",
+            "Registry Status": "registrationStatus",
+            "Governing Entity": "governingEntity",
+            "Conformance Level": "conformanceLevel"
+        };
+        
+        // Get the actual API field name
+        const apiFieldName = fieldMappings[displayName];
+        
+        // If it's Extension Component, return empty string for now
+        if (displayName === "Extension Component") {
+            return "";
+        }
+        
+        // Try the mapped field name first
+        if (apiFieldName && obj.hasOwnProperty(apiFieldName)) {
+            return obj[apiFieldName];
+        }
+        
+        // Fallback: try the display name directly
+        if (obj.hasOwnProperty(displayName)) {
+            return obj[displayName];
+        }
+        
+        // Try lowercase version
+        const lowerName = displayName.toLowerCase();
+        for (const key in obj) {
+            if (key.toLowerCase() === lowerName) {
+                return obj[key];
+            }
+        }
+        
+        // Return empty string if not found
+        return "";
+    }
 
 // Simplified role checking for prototype
 function getCurrentUser() {
@@ -927,53 +1081,44 @@ function updateUserStatus() {
 // Add this to your HTML where you want to show user status:
 // <div id="userStatus" style="display: none; font-size: 12px; color: #666;"></div>
 
-// Example: Wrap event listener attachments for pagination and filter elements in null checks
-const paginationPrev = document.getElementById('paginationPrev');
-if (paginationPrev) {
-    paginationPrev.addEventListener('click', function() {
-        // ...existing code...
-    });
-}
-const paginationNext = document.getElementById('paginationNext');
-if (paginationNext) {
-    paginationNext.addEventListener('click', function() {
-        // ...existing code...
-    });
-}
-const filterInput = document.getElementById('filterInput');
-if (filterInput) {
-    filterInput.addEventListener('input', function() {
-        // ...existing code...
-    });
-}
-// Repeat this pattern for any other event listener attachments for pagination/filter elements
-
-// Helper function to get selectedSpecification ID, defaulting to 1 if not set
-function getSelectedSpecificationId() {
-    const selected = localStorage.getItem("selectedSpecification");
-    // If null or empty string, return 1
-    if (selected === null || selected === "") {
-        return 1;
+// Utility function for debouncing search input
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}    // Add event listener for New Specification button
+    const newSpecificationButton = document.getElementById("newSpecificationButton");
+    if (newSpecificationButton) {
+        newSpecificationButton.addEventListener("click", function() {
+            if (loggedInStatus) {
+                window.location.href = "IdentifyingInformation.html";
+            } else {
+                alert("Please log in to create a new specification.");
+            }
+        });
     }
-    // If it's a number string, return as number, else return as is
-    const parsed = parseInt(selected, 10);
-    return isNaN(parsed) ? selected : parsed;
-}
 
-// Helper function to get mySpecifications, defaulting to an empty array if not set
-function getMySpecifications() {
-    const specs = localStorage.getItem("mySpecifications");
-    if (specs === null || specs === "") {
-        return [];
+// Fallback function to estimate total pages when API doesn't provide total count
+    function estimateTotalPages() {
+        // If we have data but no total count, make educated guesses
+        if (filteredData.length === rowsPerPage) {
+            // If we got exactly rowsPerPage items, there might be more pages
+            return Math.max(2, currentPage + 1);
+        } else if (filteredData.length < rowsPerPage && currentPage === 1) {
+            // If we got less than rowsPerPage on first page, this is probably the only page
+            return 1;
+        } else if (filteredData.length < rowsPerPage && currentPage > 1) {
+            // If we got less than rowsPerPage on a later page, this is probably the last page
+            return currentPage;
+        } else if (filteredData.length === 0) {
+            return 0;
+        }
+        // Default fallback
+        return Math.max(1, currentPage);
     }
-    try {
-        return JSON.parse(specs);
-    } catch (e) {
-        // If parsing fails, return empty array
-        return [];
-    }
-}
-
-// Example usage:
-// const mySpecs = getMySpecifications();
-// Use mySpecs wherever you previously used localStorage.getItem("mySpecifications")
