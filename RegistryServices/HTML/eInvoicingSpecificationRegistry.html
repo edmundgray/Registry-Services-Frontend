@@ -129,17 +129,23 @@
                     <option value="S">Other Service Activities</option>
                     <option value="T">Activities of Households as Employers; Undifferentiated Goods- and Services-Producing Activities of Households for Own Use</option>
                     <option value="U">Activities of Extraterritorial Organisations and Bodies</option>
-                </select>                <!-- Populated by Javascript.js -->
+                </select>                
+                
+                <!-- Populated by Javascript.js -->
                 <!-- ctrl + f 'Country and Extension Component Dropdown Population' in javascript.js to view the code -->
                 <select id="countryFilter">
                 </select>
             
-                <!-- Comment out Extension Component filter - will be part of Advanced search instead -->
-                <!-- <select id="extensionComponentFilter">
-                </select> -->
+                <!-- The Extension Component filter - will be part of Advanced search instead -->
+                <!-- 
+                <select id="extensionComponentFilter">
+                </select> 
+                -->
             </div>
 
-            <table id="myTable"></table>            <div id="pagination-controls">
+            <table id="myTable"></table>
+
+            <div id="pagination-controls">
                 <label for="rowsPerPage">Show</label>
 
                 <select id="rowsPerPage">
@@ -152,7 +158,9 @@
                   <div class="pagination-navigation">
                     <button id="firstPage" title="First page">«</button>
                     <button id="prevPage" title="Previous page">‹</button>
+
                     <div id="pageNumbers"></div>
+                    
                     <button id="nextPage" title="Next page">›</button>
                     <button id="lastPage" title="Last page">»</button>
                 </div>

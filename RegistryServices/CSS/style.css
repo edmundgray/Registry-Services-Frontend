@@ -106,7 +106,6 @@ body {
 /******************************************************************************
     List Styling
  ******************************************************************************/
-
  #myInput {
     background-image: url('/css/searchicon.png');
     background-position: 10px 12px;
@@ -418,7 +417,6 @@ body {
 /******************************************************************************
     Styling for the Info Section in viewSpecification.html
  ******************************************************************************/
-
 .info-section {
     display: flex;
     justify-content: space-between;
@@ -725,8 +723,11 @@ button[onclick*="deleteRow"]:active {
     white-space: nowrap;
 }
 
-/* --- Improve pagination dropdown appearance --- */
-#pagination-controls select {
+/******************************************************************************
+    Styling for the Pagination Controls
+ ******************************************************************************/
+#pagination-controls select 
+{
     padding: 6px 28px 6px 12px;
     font-size: 16px;
     border: 1.5px solid #F4A261;
@@ -749,24 +750,27 @@ button[onclick*="deleteRow"]:active {
     box-shadow: 0 1px 4px rgba(244,162,97,0.08);
 }
 
-#pagination-controls select:focus {
+#pagination-controls select:focus
+{
     border-color: #E68A3F;
     outline: none;
     box-shadow: 0 0 0 2px #F4A26133;
 }
 
-#pagination-controls select option {
+#pagination-controls select option 
+{
     background: #fff;
     color: #333;
     font-weight: 500;
 }
 
-/* Custom dropdown arrow for select */
-#pagination-controls select::-ms-expand {
+#pagination-controls select::-ms-expand 
+{
     display: none;
 }
 
-#pagination-controls select {
+#pagination-controls select 
+{
     background-image: url("data:image/svg+xml;utf8,<svg fill='none' height='16' viewBox='0 0 20 20' width='16' xmlns='http://www.w3.org/2000/svg'><path d='M5 8l5 5 5-5' stroke='%23F4A261' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>");
     background-repeat: no-repeat;
     background-position: right 12px center;
@@ -776,7 +780,8 @@ button[onclick*="deleteRow"]:active {
 /******************************************************************************
     Styling for the Color Legend on the Core Invoice Model Page
  ******************************************************************************/
-.color-legend {
+.color-legend 
+{
     margin-bottom: 20px;
     padding: 15px;
     background-color: #f9f9f9;
@@ -789,13 +794,15 @@ button[onclick*="deleteRow"]:active {
     font-size: 0.95em;
 }
 
-.color-legend ul {
+.color-legend ul 
+{
     list-style-type: disc;
     padding-left: 20px;
     margin: 0;
 }
 
-.color-legend li {
+.color-legend li 
+{
     margin-bottom: 8px;
     line-height: 1.5;
 }
@@ -803,36 +810,40 @@ button[onclick*="deleteRow"]:active {
 /******************************************************************************
     Styling for the Extension Component table
  ******************************************************************************/
-#extensionComponentTable {
-    table-layout: fixed; /* Enforce fixed layout */
-    width: 100%; /* Ensure the table spans the container */
+#extensionComponentTable 
+{
+    table-layout: fixed;
+    width: 100%;
 }
 
-#extensionComponentTable th, #extensionComponentTable td {
-    min-width: 100px; /* Minimum width for columns */
-    max-width: 300px; /* Maximum width for columns */
-    word-wrap: break-word; /* Ensure text wraps within the column */
-    overflow: hidden; /* Prevent overflow */
-    text-overflow: ellipsis; /* Add ellipsis for overflowing text */
-    white-space: nowrap; /* Prevent wrapping unless necessary */
+#extensionComponentTable th, #extensionComponentTable td 
+{
+    min-width: 100px;
+    max-width: 300px;
+    word-wrap: break-word;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.button-container {
+.button-container 
+{
     display: flex;
-    justify-content: flex-end; /* Align the button to the right */
-    margin-bottom: 10px; /* Add spacing below the button */
+    justify-content: flex-end;
+    margin-bottom: 10px;
 }
 
-#newSpecificationButton {
+#newSpecificationButton 
+{
     padding: 10px 15px;
-    background-color: #28a745; /* Green color */
+    background-color: #28a745;
     color: white;
     border: none;
     border-radius: 5px;
     cursor: pointer;
 }
 
-#newSpecificationButton:hover {
-    background-color: #218838; /* Darker green on hover */
+#newSpecificationButton:hover 
+{
+    background-color: #218838;
 }
-
