@@ -292,14 +292,14 @@
 
                     // Map properties from API response (assuming potential camelCase/PascalCase differences)
                     const mappedEl = {
-                        ID: el.id || el.ID || 'N/A',
+                        ID: el.businessTermID || el.BusinessTermID || 'N/A',
                         Level: el.level || el.Level || 'N/A',
                         Cardinality: el.cardinality || el.Cardinality || 'N/A',
                         "Business Term": el.businessTerm || el.BusinessTerm || el['Business Term'] || 'N/A',
-                        "Usage Note": el.usageNote || el.UsageNote || el['Usage Note'] || 'N/A',
+                        "Usage Note": el.semanticDescription || el.semanticDescription || el['Usage Note'] || 'N/A',
                         Justification: el.justification || el.Justification || 'N/A',
                         "Data Type": el.dataType || el.DataType || el['Data Type'] || 'N/A',
-                        "Type of Extension": el.typeOfExtension || el.TypeOfExtension || el['Type of Extension'] || 'N/A',
+                        "Type of Extension": el.extensionType || el.ExtensionType || el['Type of Extension'] || 'N/A',
                         "Core Conformant/Rules broken": el.coreConformantRulesBroken || el.CoreConformantRulesBroken || el['Core Conformant/Rules broken'] || 'N/A'
                     };
 

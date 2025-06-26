@@ -145,233 +145,285 @@ if (localStorage.userRole === "Admin") {
         Javascript for the table
   ------------------------------------------------------------------------------>
         <script>
-        // Data for "Received and Accepted Quantity"
-        const receivedAcceptedQuantityRows = [
-            {
-                id: "XT-40",
-                level: "1.1",
-                cardinality: "1..1",
-                businessTerm: "Received quantity",
-                usageNote: "The quantity officially received by the Buyer is required",
-                justification: "",
-                dataType: "Quantity",
-                typeOfExtension: "Add new information element",
-                coreConformance: "Core Conformant",
-            },
-            {
-                id: "XT-41",
-                level: "1.1",
-                cardinality: "1..1",
-                businessTerm: "Accepted quantity",
-                usageNote: "Following inspection the quantity accepted by the Buyer is required",
-                justification: "",
-                dataType: "Quantity",
-                typeOfExtension: "Add new information element",
-                coreConformance: "Core Conformant",
-            },
-            {
-                id: "BT-129",
-                level: "1.1",
-                cardinality: "1..1",
-                businessTerm: "Invoiced quantity",
-                usageNote: "",
-                justification: "",
-                dataType: "Quantity",
-                typeOfExtension: "N/A",
-                coreConformance: "Core Conformant",
-            }
-        ];
+            // *** START OF READ-ONLY FLAG ***
+            window.isExtensionReadOnly = true; // Set this page to read-only
+            // *** END OF READ-ONLY FLAG ***
 
-        function updateExtensionTable() {
-            const select = document.getElementById('extensionComponentSelect');
-            const tbody = document.getElementById('extensionTableBody');
+            let isFormDirty = false;
+            let extensionComponentElementsCache = {};
+            let componentsContainer;
 
-            if (select.value === "Received and Accepted Quantity") {
-                tbody.innerHTML = receivedAcceptedQuantityRows.map((row, idx) => `
-                    <tr onclick="toggleRowSelection(this, ${idx})">
-                        <td>${row.id}</td>
-                        <td>${row.level}</td>
-                        <td>${row.cardinality}</td>
-                        <td>${row.businessTerm}</td>
-                        <td>${row.usageNote}</td>
-                        <td>${row.justification}</td>
-                        <td>${row.dataType}</td>
-                        <td>${row.typeOfExtension}</td>
-                        <td>${row.coreConformance}</td>
-                        <td class="centered-cell">
-                            <input type="checkbox" onclick="event.stopPropagation();" />
-                        </td>
-                    </tr>
-                `).join('');
-            } else if (select.value === "") {
-                tbody.innerHTML = `<tr><td colspan="10" class="centered-cell">None selected</td></tr>`;
-            } else {
-                tbody.innerHTML = `<tr><td colspan="10" class="centered-cell">Under development</td></tr>`;
-            }
-        }
+            async function loadExtensionData() {
+                try {
+                    const headersApiUrl = `${AUTH_CONFIG.baseUrl}/extensionmodels/headers?page=1&pageSize=50`;
 
-        // Highlight row and toggle checkbox
-        function toggleRowSelection(row, idx) {
-            const checkbox = row.querySelector('input[type="checkbox"]');
-            checkbox.checked = !checkbox.checked;
-            row.classList.toggle('selected-row', checkbox.checked);
-        }
-        </script>
-        <script>
-    let extensionComponentData = {};
-        let componentsContainer;
-
-        async function loadExtensionData() {
-            try {
-                const response = await fetch('../JSON/extensionComponentModelElements.json');
-                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-                const data = await response.json();
-                
-                const processedData = {};
-                data.forEach(item => {
-                    const componentName = item.Component;
-                    if (!processedData[componentName]) {
-                        processedData[componentName] = { elements: [] };
-                    }
-                    processedData[componentName].elements.push(item);
-                });
-                
-                extensionComponentData = processedData;
-                addNewComponentSection();
-
-            } catch (error) {
-                console.error("Error loading or parsing extension component data:", error);
-                if (componentsContainer) {
-                     componentsContainer.innerHTML = `<p style="color: red;">Error: Could not load extension component data.</p>`;
-                }
-            }
-        }
-
-        function addNewComponentSection() {
-            const sectionId = `section-${Date.now()}`;
-            const section = document.createElement('div');
-            section.className = 'component-section';
-            section.id = sectionId;
-            section.style.border = "1px solid #ddd";
-            section.style.padding = "15px";
-            section.style.marginBottom = "20px";
-            section.style.backgroundColor = "#fff";
-
-            let options = '<option value="">Select an Extension Component</option>';
-            for (const key in extensionComponentData) {
-                options += `<option value="${key}">${key}</option>`;
-            }
-
-            section.innerHTML = `
-    <select class="component-select" onchange="populateComponentTable(this)">${options}</select>
-    <p style="margin-top: 5px;">Select the required Extension Component and view its required elements</p>
-    <div style="overflow-x: auto;">
-        <table class="styled-table" style="width:100%;">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Level</th>
-                    <th>Cardinality</th>
-                    <th>Business Term</th>
-                    <th>Usage Note</th>
-                    <th>Justification</th>
-                    <th>Data Type</th>
-                    <th>Type of Extension</th>
-                    <th>Core Conformant /Rules broken</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr><td colspan="10" style="text-align:center;">Please select a component from the dropdown.</td></tr>
-            </tbody>
-        </table>
-    </div>
-    <button class="view-button" style="margin-top: 10px; background: #ccc; color: #333;" disabled>Clear Selection</button>
-`;
-            componentsContainer.appendChild(section);
-        }
-
-        function populateComponentTable(selectElement) {
-            const selectedValue = selectElement.value;
-            const tableBody = selectElement.closest('.component-section').querySelector('tbody');
-
-            if (!selectedValue) {
-                tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Please select a component from the dropdown.</td></tr>';
-                return;
-            }
-
-            const component = extensionComponentData[selectedValue];
-            tableBody.innerHTML = '';
-
-            component.elements.forEach(el => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${el.ID}</td>
-                    <td>${el.Level}</td>
-                    <td>${el.Cardinality}</td>
-                    <td>${el['Business Term']}<i class="fa-solid fa-circle-question" title="${el['Usage Note']}"></i></td>
-                    <td>${el['Usage Note']}</td>
-                    <td>${el.Justification}</td>
-                    <td>${el['Data Type']}</td>
-                    <td>${el['Type of Extension']}</td>
-                    <td>${el['Core Conformant/Rules broken']}</td>
-                `;
-                tableBody.appendChild(row);
-            });
-        }
-
-        function handleSave(showAlert = true) {
-            const selectedExtensions = [];
-            document.querySelectorAll('.component-section').forEach(section => {
-                const componentName = section.querySelector('.component-select').value;
-                if (componentName) {
-                    const selectedElements = [];
-                    section.querySelectorAll('.element-selector:checked').forEach(checkbox => {
-                        selectedElements.push(checkbox.getAttribute('data-id'));
+                    console.log(`Attempting to fetch Extension Component Headers from API: ${headersApiUrl}`);
+                    const headersResponse = await authenticatedFetch(headersApiUrl, {
+                        method: 'GET',
+                        forceAuth: true
                     });
 
-                    if (selectedElements.length > 0) {
-                         selectedExtensions.push({ componentName, selectedElements });
+                    if (!headersResponse.ok) {
+                        throw new Error(`HTTP error! status: ${headersResponse.status}`);
+                    }
+                    const headersData = await headersResponse.json();
+                    const availableComponents = headersData.items || headersData;
+                    console.log('Available Extension Component Headers:', availableComponents);
+
+                    const initialSectionSelect = document.querySelector('.component-section .component-select');
+                    if (initialSectionSelect) {
+                        let options = '<option value="">Select an Extension Component</option>';
+                        availableComponents.forEach(comp => {
+                            options += `<option value="${comp.id}" ${comp.id === initialSectionSelect.value ? 'selected' : ''}>${comp.name || comp.id}</option>`;
+                        });
+                        initialSectionSelect.innerHTML = options;
+                    }
+
+                    const editingSpecName = localStorage.getItem("selectedSpecification");
+                    let savedExtensions = [];
+                    if (editingSpecName) {
+                        const specifications = JSON.parse(localStorage.getItem("specifications")) || [];
+                        const specToEdit = specifications.find(spec => spec.specName === editingSpecName);
+                        if (specToEdit && specToEdit.extensionComponents) {
+                            savedExtensions = specToEdit.extensionComponents;
+                        }
+                    }
+
+                    if (savedExtensions.length > 0) {
+                        for (const savedExt of savedExtensions) {
+                            await addNewComponentSection(savedExt.componentName, savedExt.selectedElements);
+                        }
+                        if (savedExtensions.length > 0 && document.querySelectorAll('.component-section').length > 1) {
+                            document.querySelector('.component-section:first-child').remove();
+                        }
+                    } else {
+                        if (document.querySelectorAll('.component-section').length === 0) {
+                            addNewComponentSection();
+                        }
+                    }
+
+                } catch (error) {
+                    console.error("Error loading extension component data:", error);
+                    if (componentsContainer) {
+                         componentsContainer.innerHTML = `<p style="color: red;">Error: Could not load extension component data. Please ensure you are logged in and the API is accessible.</p>`;
                     }
                 }
-            });
-
-            const editingSpecId = localStorage.getItem("selectedSpecification");
-            if (!editingSpecId) { alert("Error: No specification selected."); return; }
-
-            let specifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
-            const specIndex = specifications.findIndex(spec => spec.id === editingSpecId);
-
-            if (specIndex > -1) {
-                specifications[specIndex].extensionComponents = selectedExtensions;
-                localStorage.setItem('mySpecifications', JSON.stringify(specifications));
-                if (showAlert) alert("Extension components saved!");
-            } else {
-                alert("Error: Could not find the specification to save to.");
+                applyReadOnlyMode(); // Apply read-only after content is loaded
             }
-        }
 
-        function handleCancel() {
-            if (confirm("Warning! This Specification will be deleted, do you want to proceed?")) {
-                const specIdToDelete = localStorage.getItem("selectedSpecification");
-                if (specIdToDelete) {
-                    let specifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
-                    localStorage.setItem('mySpecifications', JSON.stringify(specifications.filter(spec => spec.id !== specIdToDelete)));
-                    localStorage.removeItem("selectedSpecification");
+            async function addNewComponentSection(preSelectedComponentId = '', preSelectedElementIds = []) {
+                const sectionId = `section-${Date.now()}`;
+                const section = document.createElement('div');
+                section.className = 'component-section';
+                section.id = sectionId;
+
+                const headersApiUrl = `${AUTH_CONFIG.baseUrl}/extensionmodels/headers?page=1&pageSize=50`;
+                let availableComponents = [];
+                try {
+                    const headersResponse = await authenticatedFetch(headersApiUrl, { method: 'GET', forceAuth: true });
+                    const headersData = await headersResponse.json();
+                    availableComponents = headersData.items || headersData;
+                } catch (error) {
+                    console.error("Error re-fetching component headers for new section:", error);
                 }
+
+                let options = '<option value="">Select an Extension Component</option>';
+                availableComponents.forEach(comp => {
+                    options += `<option value="${comp.id}" ${comp.id === preSelectedComponentId ? 'selected' : ''}>${comp.name || comp.id}</option>`;
+                });
+
+                section.innerHTML = `
+                    <select class="component-select" onchange="populateComponentTable(this, [])">${options}</select>
+                    <p style="margin-top: 5px;">Select the required Extension Component and tick the box for all required elements</p>
+                    <table class="styled-table" style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th>ID</th><th>Level</th><th>Cardinality</th><th>Business Term</th><th>Usage Note</th>
+                                <th>Justification</th><th>Data Type</th><th>Type of Extension</th>
+                                <th>Core Conformant /Rules broken</th><th>Included in Spec</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="10" style="text-align:center;">Please select a component from the dropdown.</td></tr>
+                        </tbody>
+                    </table>
+                    <button onclick="document.getElementById('${sectionId}').remove(); isFormDirty=true; updateComponentSections();" class="view-button remove-section-btn" style="margin-top: 10px; background: #dc3545;">Remove Selection</button>
+                `;
+                componentsContainer.appendChild(section);
+
+                if (preSelectedComponentId) {
+                    populateComponentTable(section.querySelector('.component-select'), preSelectedElementIds);
+                }
+                applyReadOnlyMode(); // Apply read-only mode to newly added section
+            }
+
+            function updateComponentSections() {
+                const sections = document.querySelectorAll('.component-section');
+                if (sections.length === 0) {
+                    addNewComponentSection();
+                }
+                applyReadOnlyMode(); // Re-apply read-only mode after section removal/addition
+            }
+
+            async function populateComponentTable(selectElement, selectedIds = []) {
+                const selectedComponentId = selectElement.value;
+                const tableBody = selectElement.closest('.component-section').querySelector('tbody');
+
+                if (!selectedComponentId) {
+                    tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Please select a component.</td></tr>';
+                    return;
+                }
+
+                let componentElements = [];
+                if (extensionComponentElementsCache[selectedComponentId]) {
+                    componentElements = extensionComponentElementsCache[selectedComponentId];
+                    console.log(`Loaded ${selectedComponentId} elements from cache.`);
+                } else {
+                    const elementsApiUrl = `${AUTH_CONFIG.baseUrl}/extensionmodels/elements/${selectedComponentId}`;
+                    console.log(`Fetching elements for component: ${elementsApiUrl}`);
+                    try {
+                        const elementsResponse = await authenticatedFetch(elementsApiUrl, {
+                            method: 'GET',
+                            forceAuth: true
+                        });
+                        if (!elementsResponse.ok) {
+                            throw new Error(`HTTP error! status: ${elementsResponse.status}`);
+                        }
+                        const elementsData = await elementsResponse.json();
+                        componentElements = Array.isArray(elementsData) ? elementsData : (elementsData.items || []);
+                        extensionComponentElementsCache[selectedComponentId] = componentElements;
+                        console.log(`Fetched ${componentElements.length} elements for ${selectedComponentId}.`);
+                    } catch (error) {
+                        console.error(`Error fetching elements for component ${selectedComponentId}:`, error);
+                        tableBody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:red;">Failed to load elements for this component.</td></tr>`;
+                        return;
+                    }
+                }
+
+                tableBody.innerHTML = '';
+                if (componentElements.length === 0) {
+                     tableBody.innerHTML = `<tr><td colspan="10" style="text-align:center;">No elements found for this component.</td></tr>`;
+                     return;
+                }
+
+                componentElements.forEach(el => {
+                    const row = document.createElement('tr');
+                    const isChecked = selectedIds.includes(el.id || el.ID);
+
+                    const mappedEl = {
+                        ID: el.id || el.ID || 'N/A',
+                        Level: el.level || el.Level || 'N/A',
+                        Cardinality: el.cardinality || el.Cardinality || 'N/A',
+                        "Business Term": el.businessTerm || el.BusinessTerm || el['Business Term'] || 'N/A',
+                        "Usage Note": el.usageNote || el.UsageNote || el['Usage Note'] || 'N/A',
+                        Justification: el.justification || el.Justification || 'N/A',
+                        "Data Type": el.dataType || el.DataType || el['Data Type'] || 'N/A',
+                        "Type of Extension": el.typeOfExtension || el.TypeOfExtension || el['Type of Extension'] || 'N/A',
+                        "Core Conformant/Rules broken": el.coreConformantRulesBroken || el.CoreConformantRulesBroken || el['Core Conformant/Rules broken'] || 'N/A'
+                    };
+
+                    row.innerHTML = `
+                        <td>${mappedEl.ID}</td><td>${mappedEl.Level}</td><td>${mappedEl.Cardinality}</td>
+                        <td>${mappedEl.ID}<i class="fa-solid fa-circle-question" title="${mappedEl['Usage Note']}"></i></td>  <td>${mappedEl['Usage Note']}</td><td>${mappedEl.Justification}</td><td>${mappedEl['Data Type']}</td>
+                        <td>${mappedEl['Type of Extension']}</td><td>${mappedEl['Core Conformant/Rules broken']}</td>
+                        <td style="text-align:center;"><input type="checkbox" class="element-selector" data-id="${mappedEl.ID}" ${isChecked ? 'checked' : ''} onchange="isFormDirty=true;"></td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+                isFormDirty = true;
+                applyReadOnlyMode(); // Apply read-only mode to newly populated table
+            }
+
+            function handleSave(showAlert = true) {
+                const selectedExtensions = [];
+                document.querySelectorAll('.component-section').forEach(section => {
+                    const componentName = section.querySelector('.component-select').value;
+                    if (componentName) {
+                        const selectedElements = [];
+                        section.querySelectorAll('.element-selector:checked').forEach(checkbox => {
+                            selectedElements.push(checkbox.getAttribute('data-id'));
+                        });
+                        if (selectedElements.length > 0) {
+                            selectedExtensions.push({ componentName, selectedElements });
+                        }
+                    }
+                });
+
+                const editingSpecName = localStorage.getItem("selectedSpecification");
+                if (!editingSpecName) { alert("Error: No specification selected."); return; }
+
+                let specifications = JSON.parse(localStorage.getItem("specifications")) || [];
+                const specIndex = specifications.findIndex(spec => spec.specName === editingSpecName);
+
+                if (specIndex > -1) {
+                    specifications[specIndex].extensionComponents = selectedExtensions;
+                    localStorage.setItem('specifications', JSON.stringify(specifications));
+                    if (showAlert) alert("Extension components saved!");
+                    isFormDirty = false;
+                } else {
+                    alert("Error: Could not find the specification to save to.");
+                }
+            }
+
+            function handleCancel() {
+                if (isFormDirty && !confirm("You have unsaved changes. Are you sure you want to cancel?")) {
+                    return;
+                }
+                isFormDirty = false;
                 window.location.href = 'mySpecifications.html';
             }
-        }
 
-        function saveAndGoToNextStep() {
-            handleSave(false);
-            window.location.href = 'additionalRequirements.html';
-        }
+            function saveAndGoToNextStep() {
+                handleSave(false);
+                window.location.href = 'additionalRequirements.html';
+            }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            componentsContainer = document.getElementById('components-container');
-            loadExtensionData();
-        });
-</script>
+            // Function to apply read-only state to all relevant elements
+            function applyReadOnlyMode() {
+                if (window.isExtensionReadOnly) {
+                    // Disable all select dropdowns
+                    document.querySelectorAll('.component-select').forEach(select => select.disabled = true);
+                    // Disable all checkboxes
+                    document.querySelectorAll('.element-selector').forEach(checkbox => checkbox.disabled = true);
+                    // Hide/disable action buttons
+                    document.getElementById('addAnotherComponentBtn').style.display = 'none';
+                    document.getElementById('saveBtn').style.display = 'none';
+                    document.getElementById('cancelBtn').style.display = 'none';
+                    document.getElementById('nextStepBtn').style.display = 'none';
+                    // Hide remove section buttons
+                    document.querySelectorAll('.remove-section-btn').forEach(btn => btn.style.display = 'none');
+                    isFormDirty = false; // Cannot have unsaved changes in read-only mode
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const titleElement = document.querySelector('.page-Content h1');
+                const editingSpecName = localStorage.getItem("selectedSpecification");
+                if (titleElement && editingSpecName) {
+                    titleElement.innerHTML = `<i class="fa-solid fa-trailer"></i> Extension Component Data Model for: ${editingSpecName}<span class="read-only-hint">(READ-ONLY)</span>`;
+                } else if (titleElement && window.isExtensionReadOnly) {
+                    // Ensure the read-only hint is always there if the flag is set
+                    titleElement.innerHTML = `<i class="fa-solid fa-trailer"></i> Extension Component Data Model <span class="read-only-hint">(READ-ONLY)</span>`;
+                }
+
+                componentsContainer = document.getElementById('components-container');
+                loadExtensionData(); // Initial load of components for dropdown
+
+                componentsContainer.addEventListener('change', () => { isFormDirty = true; });
+                
+                // Ensure read-only mode is applied on initial load if the flag is set
+                // This call moved to loadExtensionData() and addNewComponentSection() for dynamic content
+                // but keep here for initial static elements like buttons.
+                applyReadOnlyMode();
+            });
+
+            window.addEventListener('beforeunload', (e) => {
+                if (isFormDirty && !window.isExtensionReadOnly) { // Only prompt if not read-only
+                    e.preventDefault();
+                    e.returnValue = '';
+                }
+            });
+        </script>
         <style>
         /* Add this style for row highlighting */
         .selected-row {
