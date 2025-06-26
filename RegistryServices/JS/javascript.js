@@ -1,4 +1,111 @@
 /******************************************************************************
+    Authentication Configuration and Functions
+ ******************************************************************************/
+
+// Authentication configuration
+const AUTH_CONFIG = {
+    baseUrl: 'https://registryservices-staging.azurewebsites.net/api',
+    endpoints: {
+        login: '/auth/login'
+    },
+    tokenKeys: {
+        access: 'access_token'
+    },
+    session: {
+        duration: 60 * 60 * 1000,      // 1 hour
+        warningTime: 5 * 60 * 1000     // 5 minutes warning
+    }
+};
+
+// Simple AuthManager class stub
+class AuthManager {
+    constructor() {
+        this.isAuthenticated = false;
+        this.userRole = null;
+        this.userID = null;
+        this.username = null;
+        this.accessToken = null;
+        this.init();
+    }
+
+    init() {
+        // Try to load from localStorage
+        const token = localStorage.getItem('access_token');
+        const role = localStorage.getItem('userRole');
+        const username = localStorage.getItem('username');
+        
+        if (token && role) {
+            this.accessToken = token;
+            this.userRole = role;
+            this.username = username;
+            this.isAuthenticated = true;
+        }
+    }
+
+    getAuthHeaders() {
+        if (this.accessToken) {
+            return {
+                'Authorization': `Bearer ${this.accessToken}`,
+                'Content-Type': 'application/json'
+            };
+        }
+        return {
+            'Content-Type': 'application/json'
+        };
+    }
+
+    validateTokens() {
+        // Simple validation - in a real app this would check token expiration
+        return this.isAuthenticated;
+    }
+
+    logout() {
+        this.isAuthenticated = false;
+        this.userRole = null;
+        this.userID = null;
+        this.username = null;
+        this.accessToken = null;
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('username');
+    }
+}
+
+// Create global auth manager instance
+const authManager = new AuthManager();
+
+// authenticatedFetch function
+async function authenticatedFetch(url, options = {}) {
+    try {
+        // Prepare headers
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers
+        };
+
+        // Add auth headers if available
+        if (authManager.accessToken) {
+            headers['Authorization'] = `Bearer ${authManager.accessToken}`;
+        }
+
+        // Make the request
+        const response = await fetch(url, {
+            ...options,
+            headers
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        return response;
+    } catch (error) {
+        console.error('API request failed:', error);
+        throw error;
+    }
+}
+
+/******************************************************************************
     Log in/out functionality
     General
  ******************************************************************************/

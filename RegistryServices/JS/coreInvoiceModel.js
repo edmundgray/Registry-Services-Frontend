@@ -1,13 +1,19 @@
 document.addEventListener("DOMContentLoaded", function () {
+    console.log("CoreInvoiceModel.js: DOM Content Loaded");
+    console.log("CoreInvoiceModel.js: Read-only mode:", window.isCoreInvoiceReadOnly);
+    
     const editingSpecId = localStorage.getItem("selectedSpecification");
+    console.log("CoreInvoiceModel.js: Editing spec ID:", editingSpecId);
+    
     let savedCoreIds = [];
 
     if (editingSpecId) {
-        const specifications = JSON.parse(localStorage.getItem("specifications")) || [];
-        const specToEdit = specifications.find(spec => spec.specName === editingSpecId);
+        const specifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
+        const specToEdit = specifications.find(spec => spec.id === editingSpecId);
         if (specToEdit && specToEdit.coreInvoiceModelIds) {
             savedCoreIds = specToEdit.coreInvoiceModelIds;
         }
+        console.log("CoreInvoiceModel.js: Saved core IDs:", savedCoreIds);
     }
 
     async function fetchCoreInvoiceModelsFromAPI() {
@@ -180,14 +186,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 return tr;
             }
 
-            roots.forEach(root => renderRowAndChildren(root, tableBody));
-        })
+            roots.forEach(root => renderRowAndChildren(root, tableBody));        })
         .catch(error => {
-            console.error("Error loading core invoice model data from API or JSON:", error);
-            // Optionally, load from local JSON as a fallback here if needed
-            // fetch("../JSON/coreInvoiceModelElements.json") ...
-            // Or display a user-friendly error message on the page
+            console.error("Error loading core invoice model data from API:", error);
             const tableBody = document.querySelector('#coreInvoiceTable tbody');
-            tableBody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:red;">Failed to load Core Invoice Model data. Please try again later.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:red;">Failed to load Core Invoice Model data from API. Please check your connection and try again later.</td></tr>`;
         });
 });
