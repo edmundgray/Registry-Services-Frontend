@@ -114,12 +114,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (item.children.length > 0) tr.classList.add('has-children-parent-row');
                 if (item.NumericLevel > 1) tr.style.display = 'none';
 
-                const isMandatory = item.Cardinality === '1..1';
-                const isChecked = savedCoreIds.includes(item.ID) || isMandatory;
-
+                // Only include columns that match the table header
                 tr.innerHTML = `
                     <td>${item.ID || 'N/A'}</td>
-                    <td>${item.LevelStr || 'N/A'}</td> <td>${item.Cardinality || 'N/A'}</td>
+                    <td>${item.LevelStr || 'N/A'}</td>
+                    <td>${item.Cardinality || 'N/A'}</td>
                     <td>
                         <span class="semantic-tooltip" title="${item.SemanticDescription || ''}">
                             <i class="fa-solid fa-circle-question"></i>
@@ -129,33 +128,9 @@ document.addEventListener("DOMContentLoaded", function () {
                     <td>${item.UsageNote || 'N/A'}</td>
                     <td>${item.BusinessRules || 'N/A'}</td>
                     <td>${item.DataType || 'N/A'}</td>
-                    `;
-                    
-                    const checkboxCell = document.createElement("td");
-                    if (!isReadOnly) {
-                    checkboxCell.innerHTML = `<input type="checkbox" class="row-selector" data-id="${item.ID}" ${isMandatory || isChecked ? 'checked' : ''} ${isMandatory ? 'disabled' : ''}>`;
-                    } else {
-                        checkboxCell.innerHTML = `<input type="checkbox" class="row-selector" data-id="${item.ID}" ${isChecked ? 'checked' : ''} disabled>`;
-                        checkboxCell.className = "centered-cell";
-                    }
-                    tr.appendChild(checkboxCell);
+                `;
 
-                    const selectCell = document.createElement("td");
-                    if (!isReadOnly) {
-                    selectCell.innerHTML = `
-                        <select class="type-of-change-select">
-                            <option>Type of Change</option>
-                            <option>Add</option>
-                            <option>Remove</option>
-                            <option>Modify</option>
-                            <option value="No Change" ${item.TypeOfChange === 'No Change' ? 'selected' : ''}>No Change</option>
-                        </select>`;
-                } else {
-                    selectCell.innerHTML = `<span>${item.TypeOfChange || 'N/A'}</span>`; // Display text in read-only
-                }
-                tr.appendChild(selectCell);
-
-                // If this item has children, add the Show more button to the last cell
+                // Only add the Actions cell (Show more button) as the last column
                 const btnCell = document.createElement("td");
                 tr.appendChild(btnCell);
 
@@ -164,7 +139,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (item.children.length > 0) 
                 {
                     const showMoreBtn = document.createElement('button');
-                    
                     showMoreBtn.className = 'show-more-btn';
                     showMoreBtn.textContent = 'Show more';
                     showMoreBtn.style.fontSize = '12px';
