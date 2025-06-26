@@ -947,3 +947,33 @@ if (filterInput) {
     });
 }
 // Repeat this pattern for any other event listener attachments for pagination/filter elements
+
+// Helper function to get selectedSpecification ID, defaulting to 1 if not set
+function getSelectedSpecificationId() {
+    const selected = localStorage.getItem("selectedSpecification");
+    // If null or empty string, return 1
+    if (selected === null || selected === "") {
+        return 1;
+    }
+    // If it's a number string, return as number, else return as is
+    const parsed = parseInt(selected, 10);
+    return isNaN(parsed) ? selected : parsed;
+}
+
+// Helper function to get mySpecifications, defaulting to an empty array if not set
+function getMySpecifications() {
+    const specs = localStorage.getItem("mySpecifications");
+    if (specs === null || specs === "") {
+        return [];
+    }
+    try {
+        return JSON.parse(specs);
+    } catch (e) {
+        // If parsing fails, return empty array
+        return [];
+    }
+}
+
+// Example usage:
+// const mySpecs = getMySpecifications();
+// Use mySpecs wherever you previously used localStorage.getItem("mySpecifications")
