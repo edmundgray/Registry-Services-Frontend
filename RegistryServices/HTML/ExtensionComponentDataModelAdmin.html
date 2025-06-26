@@ -119,26 +119,21 @@ if (localStorage.userRole === "Admin") {
 
             <div id="components-container"></div>
 
-            <button type="button" onclick="addNewComponentSection()" class="view-button" style="margin-top: 15px;">Add Another Extension Component</button>
+            <button id="addAnotherComponentBtn" type="button" onclick="addNewComponentSection()" class="view-button" style="margin-top: 15px;">Add Another Extension Component</button>
 
             <hr style="margin: 30px 0;">
 
             <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 10px;">
                 <div>
-                    <button type="button" onclick="handleSave()" class="view-button" style="background:#ccc; color:#333;">Save</button>
-                    <button type="button" onclick="handleCancel()" class="view-button" style="background-color: #F4A261; color: #fff;">Cancel New Specification</button>
+                    <button id="saveBtn" type="button" onclick="handleSave()" class="view-button" style="background:#ccc; color:#333;">Save</button>
+                    <button id="cancelBtn" type="button" onclick="handleCancel()" class="view-button" style="background-color: #F4A261; color: #fff;">Cancel New Specification</button>
                 </div>
                 <div>
-                    <button type="button" onclick="saveAndGoToNextStep()" class="view-button" style="background:#217a36;">Additional Requirements</button>
+                    <button id="nextStepBtn" type="button" onclick="saveAndGoToNextStep()" class="view-button" style="background:#217a36;">Additional Requirements</button>
                 </div>
             </div>
 
-
-            
-            
             <br/>
-            
-            
         </div>
 
 <!----------------------------------------------------------------------------
@@ -233,7 +228,7 @@ if (localStorage.userRole === "Admin") {
                 });
 
                 section.innerHTML = `
-                    <select class="component-select" onchange="populateComponentTable(this, [])">${options}</select>
+                    <select class="component-select">${options}</select>
                     <p style="margin-top: 5px;">Select the required Extension Component and tick the box for all required elements</p>
                     <table class="styled-table" style="width:100%;">
                         <thead>
@@ -251,6 +246,14 @@ if (localStorage.userRole === "Admin") {
                 `;
                 componentsContainer.appendChild(section);
 
+                // Add event listener for dropdown change
+                const select = section.querySelector('.component-select');
+                select.addEventListener('change', function() {
+                    populateComponentTable(this, []);
+                });
+                // Ensure the dropdown is enabled (not disabled)
+                select.disabled = false;
+
                 if (preSelectedComponentId) {
                     populateComponentTable(section.querySelector('.component-select'), preSelectedElementIds);
                 }
@@ -265,6 +268,7 @@ if (localStorage.userRole === "Admin") {
                 applyReadOnlyMode(); // Re-apply read-only mode after section removal/addition
             }
 
+            // Remove the read-only check from populateComponentTable so the dropdown always works
             async function populateComponentTable(selectElement, selectedIds = []) {
                 const selectedComponentId = selectElement.value;
                 const tableBody = selectElement.closest('.component-section').querySelector('tbody');
@@ -308,23 +312,23 @@ if (localStorage.userRole === "Admin") {
 
                 componentElements.forEach(el => {
                     const row = document.createElement('tr');
-                    const isChecked = selectedIds.includes(el.id || el.ID);
+                    const isChecked = selectedIds.includes(el.businessTermID);
 
                     const mappedEl = {
-                        ID: el.id || el.ID || 'N/A',
+                        ID: el.businessTermID || 'N/A',
                         Level: el.level || el.Level || 'N/A',
                         Cardinality: el.cardinality || el.Cardinality || 'N/A',
-                        "Business Term": el.businessTerm || el.BusinessTerm || el['Business Term'] || 'N/A',
+                        "Business Term": el.businessTerm || 'N/A',
                         "Usage Note": el.usageNote || el.UsageNote || el['Usage Note'] || 'N/A',
                         Justification: el.justification || el.Justification || 'N/A',
                         "Data Type": el.dataType || el.DataType || el['Data Type'] || 'N/A',
-                        "Type of Extension": el.typeOfExtension || el.TypeOfExtension || el['Type of Extension'] || 'N/A',
+                        "Type of Extension": el.extensionType || 'N/A',
                         "Core Conformant/Rules broken": el.coreConformantRulesBroken || el.CoreConformantRulesBroken || el['Core Conformant/Rules broken'] || 'N/A'
                     };
 
                     row.innerHTML = `
                         <td>${mappedEl.ID}</td><td>${mappedEl.Level}</td><td>${mappedEl.Cardinality}</td>
-                        <td>${mappedEl.ID}<i class="fa-solid fa-circle-question" title="${mappedEl['Usage Note']}"></i></td>  <td>${mappedEl['Usage Note']}</td><td>${mappedEl.Justification}</td><td>${mappedEl['Data Type']}</td>
+                        <td>${mappedEl["Business Term"]}<i class="fa-solid fa-circle-question" title="${mappedEl['Usage Note']}"></i></td>  <td>${mappedEl['Usage Note']}</td><td>${mappedEl.Justification}</td><td>${mappedEl['Data Type']}</td>
                         <td>${mappedEl['Type of Extension']}</td><td>${mappedEl['Core Conformant/Rules broken']}</td>
                         <td style="text-align:center;"><input type="checkbox" class="element-selector" data-id="${mappedEl.ID}" ${isChecked ? 'checked' : ''} onchange="isFormDirty=true;"></td>
                     `;
@@ -381,8 +385,7 @@ if (localStorage.userRole === "Admin") {
             // Function to apply read-only state to all relevant elements
             function applyReadOnlyMode() {
                 if (window.isExtensionReadOnly) {
-                    // Disable all select dropdowns
-                    document.querySelectorAll('.component-select').forEach(select => select.disabled = true);
+                    // Do NOT disable select dropdowns so user can always change/view components
                     // Disable all checkboxes
                     document.querySelectorAll('.element-selector').forEach(checkbox => checkbox.disabled = true);
                     // Hide/disable action buttons
@@ -396,7 +399,10 @@ if (localStorage.userRole === "Admin") {
                 }
             }
 
-            document.addEventListener('DOMContentLoaded', () => {
+            document.addEventListener("DOMContentLoaded", () => {
+                componentsContainer = document.getElementById('components-container');
+                loadExtensionData(); // Initial load of components for dropdown
+
                 const titleElement = document.querySelector('.page-Content h1');
                 const editingSpecName = localStorage.getItem("selectedSpecification");
                 if (titleElement && editingSpecName) {
@@ -405,9 +411,6 @@ if (localStorage.userRole === "Admin") {
                     // Ensure the read-only hint is always there if the flag is set
                     titleElement.innerHTML = `<i class="fa-solid fa-trailer"></i> Extension Component Data Model <span class="read-only-hint">(READ-ONLY)</span>`;
                 }
-
-                componentsContainer = document.getElementById('components-container');
-                loadExtensionData(); // Initial load of components for dropdown
 
                 componentsContainer.addEventListener('change', () => { isFormDirty = true; });
                 

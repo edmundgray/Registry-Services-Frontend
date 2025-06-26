@@ -169,58 +169,60 @@ document.addEventListener("DOMContentLoaded", function ()
     updateVisibility();
 
     // Populate the country dropdown
+    // Defensive: Only try to populate countryFilter if it exists
     const countryFilter = document.getElementById("countryFilter");
-    const countries = [
-        // European Union (EU)
-        { name: "Belgium", code: "BE" },
-        { name: "Bulgaria", code: "BG" },
-        { name: "Czechia", code: "CZ" },
-        { name: "Denmark", code: "DK" },
-        { name: "Germany", code: "DE" },
-        { name: "Estonia", code: "EE" },
-        { name: "Ireland", code: "IE" },
-        { name: "Greece", code: "EL" },
-        { name: "Spain", code: "ES" },
-        { name: "France", code: "FR" },
-        { name: "Croatia", code: "HR" },
-        { name: "Italy", code: "IT" },
-        { name: "Cyprus", code: "CY" },
-        { name: "Latvia", code: "LV" },
-        { name: "Lithuania", code: "LT" },
-        { name: "Luxembourg", code: "LU" },
-        { name: "Hungary", code: "HU" },
-        { name: "Malta", code: "MT" },
-        { name: "Netherlands", code: "NL" },
-        { name: "Austria", code: "AT" },
-        { name: "Poland", code: "PL" },
-        { name: "Portugal", code: "PT" },
-        { name: "Romania", code: "RO" },
-        { name: "Slovenia", code: "SI" },
-        { name: "Slovakia", code: "SK" },
-        { name: "Finland", code: "FI" },
-        { name: "Sweden", code: "SE" },
+    if (countryFilter) {
+        const countries = [
+            // European Union (EU)
+            { name: "Belgium", code: "BE" },
+            { name: "Bulgaria", code: "BG" },
+            { name: "Czechia", code: "CZ" },
+            { name: "Denmark", code: "DK" },
+            { name: "Germany", code: "DE" },
+            { name: "Estonia", code: "EE" },
+            { name: "Ireland", code: "IE" },
+            { name: "Greece", code: "EL" },
+            { name: "Spain", code: "ES" },
+            { name: "France", code: "FR" },
+            { name: "Croatia", code: "HR" },
+            { name: "Italy", code: "IT" },
+            { name: "Cyprus", code: "CY" },
+            { name: "Latvia", code: "LV" },
+            { name: "Lithuania", code: "LT" },
+            { name: "Luxembourg", code: "LU" },
+            { name: "Hungary", code: "HU" },
+            { name: "Malta", code: "MT" },
+            { name: "Netherlands", code: "NL" },
+            { name: "Austria", code: "AT" },
+            { name: "Poland", code: "PL" },
+            { name: "Portugal", code: "PT" },
+            { name: "Romania", code: "RO" },
+            { name: "Slovenia", code: "SI" },
+            { name: "Slovakia", code: "SK" },
+            { name: "Finland", code: "FI" },
+            { name: "Sweden", code: "SE" },
 
-        // European Free Trade Association (EFTA)
-        { name: "Iceland", code: "IS" },
-        { name: "Norway", code: "NO" },
-        { name: "Liechtenstein", code: "LI" },
-        { name: "Switzerland", code: "CH" }
-    ];
+            // European Free Trade Association (EFTA)
+            { name: "Iceland", code: "IS" },
+            { name: "Norway", code: "NO" },
+            { name: "Liechtenstein", code: "LI" },
+            { name: "Switzerland", code: "CH" }
+        ];
 
-    // Add the default "All Countries" option
-    const defaultOption = document.createElement("option");
-    defaultOption.value = "";
-    defaultOption.textContent = "All Countries";
-    countryFilter.appendChild(defaultOption);
+        // Add the default "All Countries" option
+        const defaultOption = document.createElement("option");
+        defaultOption.value = "";
+        defaultOption.textContent = "All Countries";
+        countryFilter.appendChild(defaultOption);
 
-    // Add the countries as options
-    countries.forEach(country => 
-    {
-        const option = document.createElement("option");
-        option.value = country.code;
-        option.textContent = `${country.name} (${country.code})`;
-        countryFilter.appendChild(option);
-    });
+        // Add the countries as options
+        countries.forEach(country => {
+            const option = document.createElement("option");
+            option.value = country.code;
+            option.textContent = `${country.name} (${country.code})`;
+            countryFilter.appendChild(option);
+        });
+    }
 
 /******************************************************************************
     2/2 Country and Extension Component Dropdown Population
@@ -331,13 +333,18 @@ document.addEventListener("DOMContentLoaded", function ()
         })
         .catch(error => console.error("Error loading JSON:", error));
 
-    // Add event listeners for the filters
-    document.getElementById("searchInput").addEventListener("input", applyFilters);
-    document.getElementById("typeFilter").addEventListener("change", applyFilters);
-    document.getElementById("sectorFilter").addEventListener("change", applyFilters);
-    document.getElementById("countryFilter").addEventListener("change", applyFilters);
+    // Add event listeners for the filters, but only if the elements exist
+    const searchInput = document.getElementById("searchInput");
+    if (searchInput) searchInput.addEventListener("input", applyFilters);
+    const typeFilter = document.getElementById("typeFilter");
+    if (typeFilter) typeFilter.addEventListener("change", applyFilters);
+    const sectorFilter = document.getElementById("sectorFilter");
+    if (sectorFilter) sectorFilter.addEventListener("change", applyFilters);
+    const countryFilter2 = document.getElementById("countryFilter");
+    if (countryFilter2) countryFilter2.addEventListener("change", applyFilters);
     // Comment out Extension Component filter - will be part of Advanced search instead
-    // document.getElementById("extensionComponentFilter").addEventListener("change", applyFilters);    // Populating the table
+    // const extensionComponentFilter = document.getElementById("extensionComponentFilter");
+    // if (extensionComponentFilter) extensionComponentFilter.addEventListener("change", applyFilters);    // Populating the table
     function populateTable(data) 
     {
         const table = document.getElementById("myTable");
@@ -919,3 +926,24 @@ function updateUserStatus() {
 
 // Add this to your HTML where you want to show user status:
 // <div id="userStatus" style="display: none; font-size: 12px; color: #666;"></div>
+
+// Example: Wrap event listener attachments for pagination and filter elements in null checks
+const paginationPrev = document.getElementById('paginationPrev');
+if (paginationPrev) {
+    paginationPrev.addEventListener('click', function() {
+        // ...existing code...
+    });
+}
+const paginationNext = document.getElementById('paginationNext');
+if (paginationNext) {
+    paginationNext.addEventListener('click', function() {
+        // ...existing code...
+    });
+}
+const filterInput = document.getElementById('filterInput');
+if (filterInput) {
+    filterInput.addEventListener('input', function() {
+        // ...existing code...
+    });
+}
+// Repeat this pattern for any other event listener attachments for pagination/filter elements
