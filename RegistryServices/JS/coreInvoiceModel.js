@@ -1,27 +1,18 @@
-/******************************************************************************
-    This will load the JSON file and create a table with the data.
- ******************************************************************************/
-document.addEventListener("DOMContentLoaded", function () 
-{
+document.addEventListener("DOMContentLoaded", function () {
     const editingSpecId = localStorage.getItem("selectedSpecification");
-    let savedCoreIds = []; // This will hold the IDs of saved elements
+    let savedCoreIds = [];
 
     if (editingSpecId) {
-        // We are in "edit" mode
         const specifications = JSON.parse(localStorage.getItem("specifications")) || [];
         const specToEdit = specifications.find(spec => spec.specName === editingSpecId);
-        
         if (specToEdit && specToEdit.coreInvoiceModelIds) {
-            // If the spec exists and has saved IDs, store them
             savedCoreIds = specToEdit.coreInvoiceModelIds;
         }
     }
-    
-    
+
     async function fetchCoreInvoiceModelsFromAPI() {
         try {
             const apiUrl = `${AUTH_CONFIG.baseUrl}/coreinvoicemodels?pageSize=250`; // Use backend base URL
-
             console.log(`Attempting to fetch Core Invoice Models from API: ${apiUrl}`);
 
             const response = await authenticatedFetch(apiUrl, {
@@ -36,17 +27,9 @@ document.addEventListener("DOMContentLoaded", function ()
             const apiData = await response.json();
             console.log('API Response for Core Invoice Models:', apiData);
 
-            // Assuming your backend API returns data in a structure similar to coreInvoiceModelElements.json,
-            // or directly as an array of elements. If it's paginated, you might access apiData.items.
-            // Adjust this line based on your actual API response structure.
-            return Array.isArray(apiData) ? apiData : (apiData.items || []); // Assuming apiData is the array of elements or contains 'items' property
-
+            return Array.isArray(apiData) ? apiData : (apiData.items || []);
         } catch (error) {
             console.error("Error fetching Core Invoice Model data from API:", error);
-            // Fallback to local JSON if API fails, or just display an error
-            // For now, let's simply re-throw to be caught by the main DOMContentLoaded block
-            const tableBody = document.querySelector('#coreInvoiceTable tbody');
-            tableBody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:red;">Failed to load Core Invoice Model data. Please ensure you are logged in and the API is accessible.</td></tr>`;
             throw error;
         }
     }

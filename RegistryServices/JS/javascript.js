@@ -1,339 +1,53 @@
 /******************************************************************************
-    JWT-based Authentication System
-    Replaces the simple localStorage login/logout functionality
- ******************************************************************************/
-
-// Simplified configuration for prototype
-const AUTH_CONFIG = {
-    baseUrl: 'https://registryservices-staging.azurewebsites.net/api',
-    endpoints: {
-        login: '/auth/login'
-        // logout: '/auth/logout'  // Not available yet
-        // refresh: '/auth/refresh'  // Not needed for prototype
-    },
-    tokenKeys: {
-        access: 'access_token'
-    },
-    // Simple session configuration for prototype
-    session: {
-        // Keep session for 1 hour (matches JWT expiration)
-        duration: 60 * 60 * 1000, // 1 hour in milliseconds
-        // Show warning 5 minutes before expiration
-        warningTime: 5 * 60 * 1000 // 5 minutes in milliseconds
-    }
-};
-
-// Authentication state management
-class AuthManager {    constructor() {
-        this.isAuthenticated = false;
-        this.userRole = null;
-        this.userID = null;
-        this.username = null;
-        this.accessToken = null;
-        this.init();
-    }
-
-    init() {
-        // Check for existing tokens on page load
-        this.loadTokensFromStorage();
-        this.validateTokens();
-    }    loadTokensFromStorage() {
-        this.accessToken = localStorage.getItem(AUTH_CONFIG.tokenKeys.access);
-        this.userID = localStorage.getItem('userID');
-        this.username = localStorage.getItem('username');
-        this.userRole = localStorage.getItem('userRole');
-        
-        if (this.accessToken) {
-            try {
-                const payload = this.parseJWT(this.accessToken);
-                this.isAuthenticated = !this.isTokenExpired(payload);
-                
-                // If token is valid but we don't have user data, parse from token
-                if (this.isAuthenticated && !this.userRole) {
-                    this.userRole = payload.role;
-                    this.userID = payload.nameid;
-                    this.username = payload.unique_name;
-                }
-            } catch (error) {
-                console.error('Invalid token format:', error);
-                this.clearTokens();
-            }
-        }
-    }
-
-    parseJWT(token) {
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        return JSON.parse(jsonPayload);
-    }
-
-    isTokenExpired(payload) {
-        const currentTime = Date.now() / 1000;
-        return payload.exp < currentTime;
-    }    async login(username, password) {
-        try {
-            console.log('Attempting login for user:', username);
-            
-            const response = await fetch(`${AUTH_CONFIG.baseUrl}${AUTH_CONFIG.endpoints.login}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'accept': 'text/plain'
-                },
-                body: JSON.stringify({
-                    username: username,
-                    password: password
-                })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-              // Store token and user data (simplified for prototype)
-            this.accessToken = data.token;
-            this.userID = data.userID;
-            this.username = data.username;
-            this.userRole = data.role;
-            this.isAuthenticated = true;
-
-            if (!this.accessToken) {
-                throw new Error('No access token received from server');
-            }
-
-            // Store in localStorage (simplified)
-            localStorage.setItem(AUTH_CONFIG.tokenKeys.access, this.accessToken);
-            localStorage.setItem('userID', this.userID);
-            localStorage.setItem('username', this.username);
-            localStorage.setItem('userRole', this.userRole);
-
-            console.log('Login successful. User:', {
-                id: this.userID,
-                username: this.username,
-                role: this.userRole
-            });
-
-            return { 
-                success: true, 
-                user: { 
-                    id: this.userID,
-                    username: this.username,
-                    role: this.userRole
-                } 
-            };
-
-        } catch (error) {
-            console.error('Login failed:', error);
-            this.clearTokens();
-            return { success: false, error: error.message };
-        }
-    }    async logout() {
-        // Simple logout - just clear tokens (no API call needed for prototype)
-        this.clearTokens();
-        console.log('User logged out');
-    }    clearTokens() {
-        this.isAuthenticated = false;
-        this.userRole = null;
-        this.userID = null;
-        this.username = null;
-        this.accessToken = null;
-        
-        localStorage.removeItem(AUTH_CONFIG.tokenKeys.access);
-        localStorage.removeItem('userID');
-        localStorage.removeItem('username');
-        localStorage.removeItem('userRole');
-    }async refreshAccessToken() {
-        // This API doesn't provide refresh tokens
-        // If needed in the future, implement based on API documentation
-        throw new Error('Token refresh not supported by this API');
-    }    validateTokens() {
-        if (this.accessToken) {
-            try {
-                const payload = this.parseJWT(this.accessToken);
-                const currentTime = Date.now() / 1000;
-                const timeToExpiry = payload.exp - currentTime;
-                
-                if (this.isTokenExpired(payload)) {
-                    console.log('Access token expired, user needs to login again');
-                    this.clearTokens();
-                    updateVisibility();
-                    showMessage('Your session has expired. Please log in again.', 'error');
-                } else if (timeToExpiry < (AUTH_CONFIG.session.warningTime / 1000)) {
-                    // Show warning if token expires in less than 5 minutes
-                    const minutesLeft = Math.floor(timeToExpiry / 60);
-                    console.log(`Token expires in ${minutesLeft} minutes`);
-                    if (minutesLeft > 0) {
-                        showMessage(`Your session will expire in ${minutesLeft} minute(s). Please save your work.`, 'info');
-                    }
-                }
-            } catch (error) {
-                console.error('Token validation failed:', error);
-                this.clearTokens();
-            }
-        }
-    }
-
-    getAuthHeaders() {
-        if (!this.accessToken) {
-            return {};
-        }
-        return {
-            'Authorization': `Bearer ${this.accessToken}`
-        };
-    }
-}
-
-// Initialize auth manager
-const authManager = new AuthManager();
-
-/******************************************************************************
-    Enhanced Authentication Functions
- ******************************************************************************/
-
-// Updated login function for demo purposes (Admin/Password123)
-async function demoLogin() {
-    const result = await authManager.login('Admin', 'Password123');
-    
-    if (result.success) {
-        loggedInStatus = true;
-        updateVisibility();
-        showMessage(`Welcome ${result.user.username}! Role: ${result.user.role}`, 'success');
-    } else {
-        showMessage(`Login failed: ${result.error}`, 'error');
-    }
-}
-
-// Generic login function
-async function loginUser(username, password) {
-    const result = await authManager.login(username, password);
-    
-    if (result.success) {
-        loggedInStatus = true;
-        updateVisibility();
-        return result;
-    } else {
-        throw new Error(result.error);
-    }
-}
-
-// Helper function to show messages to user
-function showMessage(message, type = 'info') {
-    // Create a simple message display
-    const messageEl = document.createElement('div');
-    messageEl.textContent = message;
-    messageEl.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 10px 20px;
-        border-radius: 4px;
-        color: white;
-        z-index: 1000;
-        background-color: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : '#2196F3'};
-    `;
-    
-    document.body.appendChild(messageEl);
-    
-    // Remove after 3 seconds
-    setTimeout(() => {
-        if (messageEl.parentNode) {
-            messageEl.parentNode.removeChild(messageEl);
-        }
-    }, 3000);
-}
-
-// Enhanced fetch function with method-based authentication
-async function authenticatedFetch(url, options = {}) {
-    const method = options.method || 'GET';
-    const requiresAuth = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method.toUpperCase());
-    
-    // For prototype: GETs are public, POST/PUT/DELETE require login
-    const config = {
-        ...options,
-        headers: {
-            'Content-Type': 'application/json',
-            'accept': 'text/plain',
-            ...options.headers
-        }
-    };
-    
-    // Add auth headers only for methods that require authentication
-    if (requiresAuth) {
-        if (!authManager.isAuthenticated) {
-            showMessage('Please log in to perform this action', 'error');
-            throw new Error('Authentication required for this action');
-        }
-        
-        const authHeaders = authManager.getAuthHeaders();
-        config.headers = {
-            ...config.headers,
-            ...authHeaders
-        };
-    }
-
-    try {
-        let response = await fetch(url, config);
-        
-        // Handle different error scenarios
-        if (!response.ok) {
-            if (response.status === 401) {
-                console.warn('Received 401 - authentication required or token expired');
-                authManager.clearTokens();
-                loggedInStatus = false;
-                updateVisibility();
-                showMessage('Session expired. Please log in again.', 'error');
-                throw new Error('Authentication failed - please log in again');
-            } else if (response.status >= 500) {
-                showMessage('Server error. Please try again shortly.', 'error');
-                throw new Error('Server is temporarily unavailable');
-            } else if (response.status === 404) {
-                throw new Error('Requested resource not found');
-            } else {
-                throw new Error(`Request failed with status: ${response.status}`);
-            }
-        }
-        
-        return response;
-        
-    } catch (error) {
-        // Handle network errors (API down)
-        if (error.name === 'TypeError' || error.message.includes('Failed to fetch')) {
-            showMessage('Unable to connect to server. Please check your connection and try again shortly.', 'error');
-            throw new Error('Network error - server may be down');
-        }
-        throw error;
-    }
-}
-
-/******************************************************************************
-    Log in/out functionality (Legacy compatibility)
+    Log in/out functionality
     General
  ******************************************************************************/
-let loggedInStatus = authManager.isAuthenticated;
+let loggedInStatus = !!localStorage.getItem('userRole');
 console.log("Page load: User is " + (loggedInStatus ? "logged in" : "logged out"));
 
-// Updated toggle function to use new authentication system
-async function toggleLogin() {
-    if (authManager.isAuthenticated) {
-        await authManager.logout();
-        loggedInStatus = false;
-        updateVisibility();
-        showMessage('Logged out successfully', 'info');
-        console.log("User logged out");
+function toggleLogin() 
+{
+    loggedInStatus = !loggedInStatus;
+    if (loggedInStatus) {
+        localStorage.setItem('userRole', 'admin'); // Set as admin for testing
     } else {
-        showLoginModal();
+        localStorage.removeItem('userRole');
     }
+    updateVisibility();
+    
+    // Refresh the table to update highlighting
+    if (typeof filteredData !== 'undefined' && filteredData.length > 0) {
+        populateTable(filteredData);
+    }
+    
+    console.log("Button pressed: User is " + (loggedInStatus ? "logged in" : "logged out"));
 }
 
 function updateVisibility() 
 {
-    // Use the new role-based visibility function
-    updateVisibilityWithRoles();
+    document.querySelectorAll(".protected").forEach(item => 
+    {
+        item.style.display = loggedInStatus ? "block" : "none";
+    });
+
+    document.getElementById("loginLogoutButton").innerText = loggedInStatus ? "Logout" : "Login";
+
+    const coreInvoiceModel = document.querySelector("a[href='coreInvoiceModel.html']").parentElement;
+    const extensionComponent = document.querySelector("a[href='ExtensionComponentDataModel.html']").parentElement;
+
+    if (coreInvoiceModel && extensionComponent) 
+    {
+        if (loggedInStatus) 
+        {
+            coreInvoiceModel.classList.add("child-element");
+            extensionComponent.classList.add("child-element");
+        } 
+        else 
+        {
+            coreInvoiceModel.classList.remove("child-element");
+            extensionComponent.classList.remove("child-element");
+        }
+    }
 }
 
 /******************************************************************************
@@ -346,7 +60,6 @@ let filteredData = [];
 document.addEventListener("DOMContentLoaded", function () 
 {
     updateVisibility();
-    createLoginModal();
 
     // Populate the country dropdown
     const countryFilter = document.getElementById("countryFilter");
@@ -406,6 +119,8 @@ document.addEventListener("DOMContentLoaded", function ()
     2/2 Country and Extension Component Dropdown Population
  ******************************************************************************/
 
+    // Comment out Extension Component filter - will be part of Advanced search instead
+    /*
     // Populate the extensionComponentFilter dropdown
     const extensionComponentFilter = document.getElementById("extensionComponentFilter");
 
@@ -413,28 +128,21 @@ document.addEventListener("DOMContentLoaded", function ()
     const defaultExtensionOption = document.createElement("option");
     defaultExtensionOption.value = "";
     defaultExtensionOption.textContent = "All Components";
-    extensionComponentFilter.appendChild(defaultExtensionOption);    // Fetch Extension Components (public GET - no auth needed)
+    extensionComponentFilter.appendChild(defaultExtensionOption);
+
+    // Fetch Extension Components with a single request for all entries
     async function fetchExtensionComponents() {
-        try {
-            const baseUrl = "https://registryservices-staging.azurewebsites.net/api/extensionmodels/headers";
-            const response = await authenticatedFetch(`${baseUrl}?page=1&pageSize=12`, {
-                method: 'GET' // Explicitly specify GET method for clarity
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            console.log("API Response:", data);
-
-            // Return the items directly
-            return data.items;
-        } catch (error) {
-            console.error("Error fetching Extension Components:", error);
-            // Error message already handled by authenticatedFetch
-            throw error;
+        const baseUrl = "https://registryservices-staging.azurewebsites.net/api/extensionmodels/headers";
+        const response = await fetch(`${baseUrl}?page=1&pageSize=12`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
+
+        const data = await response.json();
+        console.log("API Response:", data);
+
+        // Return the items directly
+        return data.items;
     }
 
     // Populate the dropdown with fetched data
@@ -448,34 +156,32 @@ document.addEventListener("DOMContentLoaded", function ()
             });
         })
         .catch(error => console.error("Error fetching Extension Components:", error));
+    */
 
 /***********************************************************************
     Original Data for the table
  ******************************************************************************/
-    let originalData = 
-    [{
-            "Name": "RetailConnect Billing Rules",
-            "Purpose": "Groups invoice lines and adds settlement plans",
-            "Type": "Extension",
-            "Sector": "Other Service Activities",
-            "Country": "NL",
-            "Implementation Date": "2024-11-18",
-            "Preferred Syntax": "UBL",
-            "Governing Entity": "Retail Invoice Group",
-            "Extension Component": "Grouping Invoice Lines by Sublines & Settlement Plans",
-            "Conformance Level": "Party Core Conformant",
-            "View": "View"
-    }];
+    let originalData = [];
+    let filteredData = [];
 
     const rowsPerPageSelect = document.getElementById("rowsPerPage");
     const prevPageButton = document.getElementById("prevPage");
     const nextPageButton = document.getElementById("nextPage");
-    const currentPageSpan = document.getElementById("currentPage");
+    const firstPageButton = document.getElementById("firstPage");
+    const lastPageButton = document.getElementById("lastPage");
+    const pageNumbersDiv = document.getElementById("pageNumbers");
 
     // Rows per page select
     rowsPerPageSelect.addEventListener("change", function () 
     {
         rowsPerPage = parseInt(this.value, 10);
+        currentPage = 1;
+        applyFilters();
+    });
+
+    // First Page Button
+    firstPageButton.addEventListener("click", function () 
+    {
         currentPage = 1;
         applyFilters();
     });
@@ -501,7 +207,13 @@ document.addEventListener("DOMContentLoaded", function ()
         }
     });
 
-    // Fetch the data and populate the table
+    // Last Page Button
+    lastPageButton.addEventListener("click", function () 
+    {
+        const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+        currentPage = totalPages;
+        applyFilters();
+    });    // Fetch the data and populate the table
     fetch("../JSON/mockData.json")
         .then(response => response.json())
         .then(data => 
@@ -517,9 +229,8 @@ document.addEventListener("DOMContentLoaded", function ()
     document.getElementById("typeFilter").addEventListener("change", applyFilters);
     document.getElementById("sectorFilter").addEventListener("change", applyFilters);
     document.getElementById("countryFilter").addEventListener("change", applyFilters);
-    document.getElementById("extensionComponentFilter").addEventListener("change", applyFilters);
-
-    // Populating the table
+    // Comment out Extension Component filter - will be part of Advanced search instead
+    // document.getElementById("extensionComponentFilter").addEventListener("change", applyFilters);    // Populating the table
     function populateTable(data) 
     {
         const table = document.getElementById("myTable");
@@ -528,7 +239,28 @@ document.addEventListener("DOMContentLoaded", function ()
         if (data.length > 0) 
         {
             const headerRow = table.insertRow(0);
-            const headers = Object.keys(data[0]).filter(header => header !== "IDs");
+            
+            // Define the desired column order
+            const columnOrder = [
+                "Modified Date",
+                "Name", 
+                "Purpose", 
+                "Implementation Date",
+                "Type", 
+                "Sector", 
+                "Country", 
+                "Preferred Syntax", 
+                "Registry Status",
+                "Governing Entity", 
+                // "Extension Component", // Commented out - will be part of Advanced search instead
+                "Conformance Level", 
+                "View"
+            ];
+
+            // Filter headers to only include those that exist in data and are in our desired order
+            const headers = columnOrder.filter(header => 
+                data[0].hasOwnProperty(header) || header === "Modified Date"
+            );
 
             headers.forEach(header => 
             {
@@ -544,12 +276,21 @@ document.addEventListener("DOMContentLoaded", function ()
             {
                 const entry = data[i];
                 const row = table.insertRow(-1);
+                  // Add styling for Submitted rows if user is logged in admin
+                const userRole = localStorage.getItem('userRole');
+                if (loggedInStatus && userRole === 'admin' && entry["Registry Status"] === "Submitted") {
+                    row.style.backgroundColor = "#ffeb3b"; // Yellow highlight for submitted rows
+                    row.style.fontWeight = "bold";
+                }
 
                 headers.forEach(header => 
                 {
                     const cell = row.insertCell(-1);
 
-                    if (header === "Sector") {
+                    if (header === "Modified Date") {
+                        // Use Implementation Date as Modified Date for now
+                        cell.textContent = entry["Implementation Date"] || "N/A";
+                    } else if (header === "Sector") {
                         // Map sector codes to full names
                         const sectorMapping = {
                             "A": "Agriculture, Forestry and Fishing",
@@ -592,13 +333,91 @@ document.addEventListener("DOMContentLoaded", function ()
                     }
                 });
             }
-        }
-
-        const totalPages = Math.ceil(data.length / rowsPerPage);
+        }        const totalPages = Math.ceil(data.length / rowsPerPage);
         
-        currentPageSpan.textContent = currentPage;
+        updatePaginationControls(totalPages);
+    }    // Function to update pagination controls with numbered buttons
+    function updatePaginationControls(totalPages) {
+        console.log(`Updating pagination controls: currentPage=${currentPage}, totalPages=${totalPages}`);
+        
+        // Update navigation button states
+        firstPageButton.disabled = currentPage === 1;
         prevPageButton.disabled = currentPage === 1;
         nextPageButton.disabled = currentPage === totalPages;
+        lastPageButton.disabled = currentPage === totalPages;
+
+        // Update page info display
+        const pageInfo = document.getElementById('pageInfo');
+        if (pageInfo && filteredData.length > 0) {
+            const start = (currentPage - 1) * rowsPerPage + 1;
+            const end = Math.min(currentPage * rowsPerPage, filteredData.length);
+            pageInfo.textContent = `Page ${currentPage} of ${totalPages} (${start}-${end} of ${filteredData.length} items)`;
+        }
+
+        // Clear existing page numbers
+        console.log('Clearing existing page numbers');
+        pageNumbersDiv.innerHTML = '';
+
+        if (totalPages <= 1) return;
+
+        // Calculate which page numbers to show
+        let startPage = Math.max(1, currentPage - 2);
+        let endPage = Math.min(totalPages, currentPage + 2);
+
+        // Adjust range if we're near the beginning or end
+        if (currentPage <= 3) {
+            endPage = Math.min(5, totalPages);
+        }
+        if (currentPage >= totalPages - 2) {
+            startPage = Math.max(1, totalPages - 4);
+        }
+
+        // Add first page if not already shown
+        if (startPage > 1) {
+            addPageButton(1);
+            if (startPage > 2) {
+                addEllipsis();
+            }
+        }
+
+        // Add page numbers in range
+        for (let i = startPage; i <= endPage; i++) {
+            addPageButton(i);
+        }
+
+        // Add last page if not already shown
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                addEllipsis();
+            }
+            addPageButton(totalPages);
+        }
+    }    // Function to add a page number button
+    function addPageButton(pageNum) {
+        const button = document.createElement('button');
+        button.className = 'page-number';
+        button.textContent = pageNum;
+        
+        console.log(`Adding page button ${pageNum}, current page is ${currentPage}`);
+        
+        if (pageNum === currentPage) {
+            button.classList.add('active');
+            console.log(`Added active class to page ${pageNum}`);
+        }
+        
+        button.addEventListener('click', () => {
+            console.log(`Page ${pageNum} clicked, changing from page ${currentPage}`);
+            currentPage = pageNum;
+            applyFilters();
+        });
+        
+        pageNumbersDiv.appendChild(button);
+    }// Function to add ellipsis
+    function addEllipsis() {
+        const ellipsis = document.createElement('span');
+        ellipsis.className = 'page-number ellipsis';
+        ellipsis.textContent = '...';
+        pageNumbersDiv.appendChild(ellipsis);
     }
 
     // Apply the filters
@@ -608,7 +427,8 @@ document.addEventListener("DOMContentLoaded", function ()
         const typeFilter = document.getElementById("typeFilter").value;
         const sectorFilter = document.getElementById("sectorFilter").value;
         const countryFilter = document.getElementById("countryFilter").value;
-        const extensionComponentFilter = document.getElementById("extensionComponentFilter").value;
+        // Comment out Extension Component filter - will be part of Advanced search instead
+        // const extensionComponentFilter = document.getElementById("extensionComponentFilter").value;
 
         // Filter the data
         filteredData = originalData.filter(entry => 
@@ -624,10 +444,11 @@ document.addEventListener("DOMContentLoaded", function ()
 
             const matchesType = typeFilter === "" || entry.Type === typeFilter;
             const matchesCountry = countryFilter === "" || entry.Country === countryFilter;
-            const matchesExtensionComponent =
-                extensionComponentFilter === "" || entry["Extension Component"] === extensionComponentFilter;
+            // Comment out Extension Component filter - will be part of Advanced search instead
+            // const matchesExtensionComponent =
+            //     extensionComponentFilter === "" || entry["Extension Component"] === extensionComponentFilter;
 
-            return matchesSearch && matchesType && matchesSector && matchesCountry && matchesExtensionComponent;
+            return matchesSearch && matchesType && matchesSector && matchesCountry;
         });
 
         // Re-populate the table with the new filtered data
@@ -659,93 +480,96 @@ document.addEventListener("DOMContentLoaded", function ()
         alert("Data successfully saved!");
         window.location.href = 'coreInvoiceModel.html'; // Redirect to Core Invoice Model page
     }
+}); // <-- End of DOMContentLoaded
 
-    // Login Modal HTML and functionality
-    function createLoginModal() {
-        const modalHTML = `
-            <div id="loginModal" style="
-                display: none;
-                position: fixed;
-                z-index: 1000;
-                left: 0;
-                top: 0;
-                width: 100%;
-                height: 100%;
-                background-color: rgba(0,0,0,0.5);
+// ----------- CODE FROM MAIN BRANCH (role/access/session management, etc.) ------------
+
+// Login Modal HTML and functionality
+function createLoginModal() {
+    const modalHTML = `
+        <div id="loginModal" style="
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        ">
+            <div style="
+                background-color: white;
+                margin: 15% auto;
+                padding: 20px;
+                border-radius: 8px;
+                width: 300px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             ">
-                <div style="
-                    background-color: white;
-                    margin: 15% auto;
-                    padding: 20px;
-                    border-radius: 8px;
-                    width: 300px;
-                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                ">
-                    <h2>Login</h2>
-                    <form id="loginForm">
-                        <div style="margin-bottom: 15px;">
-                            <label for="username">Username:</label>
-                            <input type="text" id="username" name="username" required style="
-                                width: 100%;
-                                padding: 8px;
-                                margin-top: 5px;
-                                border: 1px solid #ddd;
-                                border-radius: 4px;
-                            ">
-                        </div>
-                        <div style="margin-bottom: 15px;">
-                            <label for="password">Password:</label>
-                            <input type="password" id="password" name="password" required style="
-                                width: 100%;
-                                padding: 8px;
-                                margin-top: 5px;
-                                border: 1px solid #ddd;
-                                border-radius: 4px;
-                            ">
-                        </div>
-                        <div style="text-align: right;">
-                            <button type="button" onclick="closeLoginModal()" style="
-                                background: #ccc;
-                                border: none;
-                                padding: 8px 16px;
-                                margin-right: 10px;
-                                border-radius: 4px;
-                                cursor: pointer;
-                            ">Cancel</button>
-                            <button type="submit" style="
-                                background: #007cba;
-                                color: white;
-                                border: none;
-                                padding: 8px 16px;
-                                border-radius: 4px;
-                                cursor: pointer;
-                            ">Login</button>
-                        </div>
-                    </form>
-                </div>
+                <h2>Login</h2>
+                <form id="loginForm">
+                    <div style="margin-bottom: 15px;">
+                        <label for="username">Username:</label>
+                        <input type="text" id="username" name="username" required style="
+                            width: 100%;
+                            padding: 8px;
+                            margin-top: 5px;
+                            border: 1px solid #ddd;
+                            border-radius: 4px;
+                        ">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label for="password">Password:</label>
+                        <input type="password" id="password" name="password" required style="
+                            width: 100%;
+                            padding: 8px;
+                            margin-top: 5px;
+                            border: 1px solid #ddd;
+                            border-radius: 4px;
+                        ">
+                    </div>
+                    <div style="text-align: right;">
+                        <button type="button" onclick="closeLoginModal()" style="
+                            background: #ccc;
+                            border: none;
+                            padding: 8px 16px;
+                            margin-right: 10px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                        ">Cancel</button>
+                        <button type="submit" style="
+                            background: #007cba;
+                            color: white;
+                            border: none;
+                            padding: 8px 16px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                        ">Login</button>
+                    </div>
+                </form>
             </div>
-        `;
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Add form submission handler
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
         
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
         
-        // Add form submission handler
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            
-            try {
-                await loginUser(username, password);
-                loggedInStatus = true;
-                updateVisibility();
-                closeLoginModal();
-                showMessage('Login successful!', 'success');
-            } catch (error) {
-                showMessage(`Login failed: ${error.message}`, 'error');
-            }        });
-    }
-});
+        try {
+            await loginUser(username, password);
+            loggedInStatus = true;
+            updateVisibility();
+            closeLoginModal();
+            showMessage('Login successful!', 'success');
+        } catch (error) {
+            showMessage(`Login failed: ${error.message}`, 'error');
+        }
+    });
+}
 
 // Simplified role checking for prototype
 function getCurrentUser() {

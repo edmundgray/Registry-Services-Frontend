@@ -111,7 +111,7 @@ if (localStorage.userRole === "Admin") {
         <div class="page-Content">
             <h1>
                 <i class="fa-solid fa-trailer"></i> Extension Component Data Model
-                <span style="color: #b22222; font-size: 0.6em; margin-left: 12px; vertical-align: middle;">ADMIN VIEW (READ-ONLY)</span>
+                <span style="color: #b22222; font-size: 0.6em; margin-left: 12px; vertical-align: middle;">(READ-ONLY)</span>
             </h1>
             <br/>
             <span><b>Select the required Extension Component and view its required elements</b></span>
@@ -232,7 +232,6 @@ if (localStorage.userRole === "Admin") {
                     options += `<option value="${comp.id}" ${comp.id === preSelectedComponentId ? 'selected' : ''}>${comp.name || comp.id}</option>`;
                 });
 
-
                 section.innerHTML = `
                     <select class="component-select" onchange="populateComponentTable(this, [])">${options}</select>
                     <p style="margin-top: 5px;">Select the required Extension Component and tick the box for all required elements</p>
@@ -306,7 +305,6 @@ if (localStorage.userRole === "Admin") {
                      tableBody.innerHTML = `<tr><td colspan="10" style="text-align:center;">No elements found for this component.</td></tr>`;
                      return;
                 }
-
 
                 componentElements.forEach(el => {
                     const row = document.createElement('tr');
@@ -398,7 +396,6 @@ if (localStorage.userRole === "Admin") {
                 }
             }
 
-
             document.addEventListener('DOMContentLoaded', () => {
                 const titleElement = document.querySelector('.page-Content h1');
                 const editingSpecName = localStorage.getItem("selectedSpecification");
@@ -427,5 +424,12 @@ if (localStorage.userRole === "Admin") {
                 }
             });
         </script>
+        <style>
+        /* Add this style for row highlighting */
+        .selected-row {
+            background-color: #d0e7ff !important;
+        }
+        
+        </style>
     </body>
 </html>
