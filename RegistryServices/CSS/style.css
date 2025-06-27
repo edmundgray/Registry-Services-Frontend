@@ -546,6 +546,27 @@ body {
     color: #fff;
 }
 
+.styled-table tbody tr.level-2-green.child-row td,
+.styled-table tbody tr.level-2-green.child-row.has-children-parent-row td {
+    background-color: #b6eac7 !important;
+    color: #000 !important;
+}
+
+.styled-table tbody tr.level-2-bg.child-row td,
+.styled-table tbody tr.level-2-bg.child-row.has-children-parent-row td {
+    background-color: #b6eac7 !important; /* Medium green for level 2 BG */
+    color: #000 !important;
+}
+.styled-table tbody tr.level-1-bg.parent-row td {
+    background-color: #217a36 !important; /* Dark green for level 1 BG */
+    color: #fff !important;
+}
+.styled-table tbody tr.level-3-bg.child-row td,
+.styled-table tbody tr.level-3-bg.child-row.has-children-parent-row td {
+    background-color: #7fd6a7 !important; /* Distinct green for level 3 BG */
+    color: #000 !important;
+}
+
 /******************************************************************************
     Styling for the Tooltip in coreInvoiceModel.html
  ******************************************************************************/
@@ -846,6 +867,23 @@ button[onclick*="deleteRow"]:active {
     background-color: #218838;
 }
 
-.styled-table tbody tr.level-2-green.child-row td {
-    background-color: #d4edda !important; /* A light green color */
+.styled-table tbody tr.level-2-green.child-row td,
+.styled-table tbody tr.level-2-green.child-row.has-children-parent-row td {
+    background-color: #b6eac7 !important;
+    color: #000 !important;
+}
+
+.styled-table tbody tr.level-2-bg.child-row td,
+.styled-table tbody tr.level-2-bg.child-row.has-children-parent-row td {
+    background-color: #b6eac7 !important; /* Medium green for level 2 BG */
+    color: #000 !important;
+}
+.styled-table tbody tr.level-1-bg.parent-row td {
+    background-color: #217a36 !important; /* Dark green for level 1 BG */
+    color: #fff !important;
+}
+.styled-table tbody tr.level-3-bg.child-row td,
+.styled-table tbody tr.level-3-bg.child-row.has-children-parent-row td {
+    background-color: #7fd6a7 !important; /* Distinct green for level 3 BG */
+    color: #000 !important;
 }

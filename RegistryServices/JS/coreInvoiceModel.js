@@ -110,13 +110,17 @@ document.addEventListener("DOMContentLoaded", function () {
             function renderRowAndChildren(item, container, level = 0) 
             {
                 const tr = document.createElement('tr');
-                tr.classList.add(item.NumericLevel === 1 ? 'parent-row' : 'child-row');
-                if (item.children.length > 0) tr.classList.add('has-children-parent-row');
+                // Only add parent-row or child-row if NOT a BT row
+                const isBT = item.ID && item.ID.startsWith('BT');
+                if (!isBT) {
+                    tr.classList.add(item.NumericLevel === 1 ? 'parent-row' : 'child-row');
+                } else {
+                    // For BT rows, always use default row style (no child-row, no parent-row)
+                }
+                if (item.children.length > 0 && !isBT) tr.classList.add('has-children-parent-row');
+                // Hide all child rows (level > 1) by default, regardless of BT/BG
                 if (item.NumericLevel > 1) tr.style.display = 'none';
 
-                if (item.NumericLevel === 2) {
-                tr.classList.add('level-2-green'); // Add a new class for styling
-                }
                 // Only include columns that match the table header
                 tr.innerHTML = `
                     <td>${item.ID || 'N/A'}</td>
@@ -136,6 +140,20 @@ document.addEventListener("DOMContentLoaded", function () {
                 // Only add the Actions cell (Show more button) as the last column
                 const btnCell = document.createElement("td");
                 tr.appendChild(btnCell);
+
+                // Add color classes based on level and ID prefix, but never for BT rows
+                if (!isBT) {
+                    if (item.NumericLevel === 3 && item.ID && item.ID.startsWith('BG')) {
+                        tr.classList.add('level-3-bg');
+                    } else if (item.NumericLevel === 2) {
+                        if (item.ID && item.ID.startsWith('BG')) {
+                            tr.classList.add('level-2-bg');
+                        }
+                    }
+                    if (item.NumericLevel === 1 && item.ID && item.ID.startsWith('BG')) {
+                        tr.classList.add('level-1-bg');
+                    }
+                }
 
                 // Append the parent row first
                 container.appendChild(tr);
