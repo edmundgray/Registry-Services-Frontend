@@ -114,6 +114,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (item.children.length > 0) tr.classList.add('has-children-parent-row');
                 if (item.NumericLevel > 1) tr.style.display = 'none';
 
+                if (item.NumericLevel === 2) {
+                tr.classList.add('level-2-green'); // Add a new class for styling
+                }
                 // Only include columns that match the table header
                 tr.innerHTML = `
                     <td>${item.ID || 'N/A'}</td>
