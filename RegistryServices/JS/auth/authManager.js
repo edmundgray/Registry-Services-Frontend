@@ -1,7 +1,7 @@
 // JS/auth/authManager.js
 // Authentication configuration and AuthManager class for Registry Services
 
-export const AUTH_CONFIG = {
+window.AUTH_CONFIG = {
     baseUrl: 'https://registryservices-staging.azurewebsites.net/api',
     endpoints: {
         login: '/auth/login'
@@ -15,7 +15,7 @@ export const AUTH_CONFIG = {
     }
 };
 
-export class AuthManager {
+window.AuthManager = class {
     constructor() {
         this.isAuthenticated = false;
         this.userRole = null;
@@ -69,7 +69,7 @@ export class AuthManager {
 }
 
 // Helper functions for authentication
-export function getCurrentUser(authManager) {
+function getCurrentUser(authManager) {
     if (!authManager.isAuthenticated) {
         return { role: 'Guest', isAuthenticated: false };
     }
@@ -81,23 +81,23 @@ export function getCurrentUser(authManager) {
     };
 }
 
-export function getAccessLevel(authManager) {
+function getAccessLevel(authManager) {
     const user = getCurrentUser(authManager);
     if (user.role === 'Admin') return 'admin';
     if (user.isAuthenticated) return 'user';
     return 'guest';
 }
 
-export function canAccess(authManager, requiredLevel) {
+function canAccess(authManager, requiredLevel) {
     const userLevel = getAccessLevel(authManager);
     const levels = { guest: 0, user: 1, admin: 2 };
     return levels[userLevel] >= levels[requiredLevel];
 }
 
-export function isAdmin(authManager) {
+function isAdmin(authManager) {
     return getAccessLevel(authManager) === 'admin';
 }
 
-export function isLoggedIn(authManager) {
+function isLoggedIn(authManager) {
     return getAccessLevel(authManager) !== 'guest';
 }
