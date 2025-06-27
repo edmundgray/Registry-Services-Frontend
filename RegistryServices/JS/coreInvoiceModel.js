@@ -134,6 +134,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 const btnCell = document.createElement("td");
                 tr.appendChild(btnCell);
 
+                // Append the parent row first
+                container.appendChild(tr);
+
                 const immediateChildTrs = [];
 
                 if (item.children.length > 0) 
@@ -156,7 +159,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     });
                 }
 
-                container.appendChild(tr);
                 return tr;
             }
 
