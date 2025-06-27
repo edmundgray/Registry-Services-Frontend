@@ -524,8 +524,7 @@ body {
 .styled-table td {
     padding: 12px 15px;
     border: 1px solid #dddddd;
-    min-width: 175px;
-    max-width: 300px;
+    
     word-wrap: break-word;
 }
 
