@@ -329,7 +329,7 @@ if (localStorage.userRole === "Admin") {
                         Level: el.level || el.Level || 'N/A',
                         Cardinality: el.cardinality || el.Cardinality || 'N/A',
                         "Business Term": el.businessTerm || 'N/A',
-                        "Usage Note": el.usageNote || el.UsageNote || el['Usage Note'] || 'N/A',
+                        "Usage Note": el.semanticDescription || el.semanticDescription || el['Usage Note'] || 'N/A',
                         Justification: el.justification || el.Justification || 'N/A',
                         "Data Type": el.dataType || el.DataType || el['Data Type'] || 'N/A',
                         "Type of Extension": el.extensionType || 'N/A',

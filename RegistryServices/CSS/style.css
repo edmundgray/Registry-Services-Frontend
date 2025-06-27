@@ -524,8 +524,6 @@ body {
 .styled-table td {
     padding: 12px 15px;
     border: 1px solid #dddddd;
-    min-width: 175px;
-    max-width: 300px;
     word-wrap: break-word;
 }
 
@@ -846,4 +844,8 @@ button[onclick*="deleteRow"]:active {
 #newSpecificationButton:hover 
 {
     background-color: #218838;
+}
+
+.styled-table tbody tr.level-2-green.child-row td {
+    background-color: #d4edda !important; /* A light green color */
 }
