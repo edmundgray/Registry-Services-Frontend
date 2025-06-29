@@ -6,7 +6,11 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
         <link rel="stylesheet" href="../CSS/style.css">
         
+        <!-- Add authManager.js for global AuthManager and AUTH_CONFIG -->
+        <script src="../JS/auth/authManager.js"></script>
+        <script src="../JS/dataManager.js"></script>
         <script src="../JS/javascript.js"></script>
+        <script src="../JS/specificationPreview.js"></script>
         
         <title>Specification Preview</title>
         <style>
@@ -218,156 +222,12 @@
                 <button type="button" style="padding: 8px 24px;" onclick="cancelSpecificationPreview()">Cancel</button>
             </div>
         </div>
-         <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const editingSpecName = localStorage.getItem("selectedSpecification");
-        const titleElement = document.querySelector('.page-Content h1');
-        if (titleElement && editingSpecName) {
-            titleElement.innerHTML += ` for: ${editingSpecName}`;
-        }
-
-        async function populatePreviewTables() {
-            const selectedSpecName = localStorage.getItem("selectedSpecification");
-            if (!selectedSpecName) {
-                console.error("No specification selected for preview.");
-                return;
-            }
-
-            const specifications = JSON.parse(localStorage.getItem("specifications") || "[]");
-            // Find the spec by 'specName' as it's saved in IdentifyingInformation.html
-            const specToPreview = specifications.find(spec => spec.specName === selectedSpecName);
-
-            if (!specToPreview) {
-                console.error("Specification not found in localStorage.");
-                return;
-            }
-
-            // --- Populate Core Invoice Model Table ---
-            const coreInvoiceTableBody = document.getElementById("previewCoreInvoiceTableBody");
-            coreInvoiceTableBody.innerHTML = ''; // Clear placeholders
-
-            if (specToPreview.coreInvoiceModelIds && specToPreview.coreInvoiceModelIds.length > 0) {
-                try {
-                    const coreDataResponse = await fetch("../JSON/coreInvoiceModelElements.json");
-                    const coreData = await coreDataResponse.json();
-
-                    specToPreview.coreInvoiceModelIds.forEach(id => {
-                        const element = coreData.find(item => item.ID === id);
-                        if (element) {
-                            const row = coreInvoiceTableBody.insertRow();
-                            row.insertCell().textContent = element.ID;
-                            row.insertCell().textContent = element["Business Term"];
-                            row.insertCell().textContent = element["Type of Change"] || 'N/A';
-                        }
-                    });
-                } catch (error) {
-                    console.error("Error loading core invoice model data:", error);
-                    const row = coreInvoiceTableBody.insertRow();
-                    row.insertCell(0).colSpan = 3;
-                    row.cells[0].textContent = "Error loading data.";
-                    row.cells[0].style.textAlign = "center";
-                }
-            } else {
-                const row = coreInvoiceTableBody.insertRow();
-                row.insertCell(0).colSpan = 3;
-                row.cells[0].textContent = "No Core Invoice Model elements selected.";
-                row.cells[0].style.textAlign = "center";
-            }
-
-            // --- Populate Extension Component Table ---
-            const extensionComponentTableBody = document.getElementById("previewExtensionComponentTableBody");
-            extensionComponentTableBody.innerHTML = ''; // Clear placeholders
-
-            if (specToPreview.extensionComponents && specToPreview.extensionComponents.length > 0) {
-                try {
-                    const extensionDataResponse = await fetch("../JSON/extensionComponentModelElements.json");
-                    const extensionData = await extensionDataResponse.json();
-
-                    specToPreview.extensionComponents.forEach(compGroup => {
-                        compGroup.selectedElements.forEach(id => {
-                            const element = extensionData.find(item => item.ID === id);
-                            if (element) {
-                                const row = extensionComponentTableBody.insertRow();
-                                row.insertCell().textContent = element.ID;
-                                row.insertCell().textContent = element["Business Term"];
-                                row.insertCell().textContent = element.Component || 'N/A';
-                            }
-                        });
-                    });
-                } catch (error) {
-                    console.error("Error loading extension component data:", error);
-                     const row = extensionComponentTableBody.insertRow();
-                    row.insertCell(0).colSpan = 3;
-                    row.cells[0].textContent = "Error loading data.";
-                    row.cells[0].style.textAlign = "center";
-                }
-            } else {
-                const row = extensionComponentTableBody.insertCell();
-                row.insertCell(0).colSpan = 3;
-                row.cells[0].textContent = "No Extension Component elements selected.";
-                row.cells[0].style.textAlign = "center";
-            }
-
-            // --- Populate Additional Requirements Table ---
-            const additionalRequirementsTableBody = document.getElementById("previewAdditionalRequirementsTableBody");
-            additionalRequirementsTableBody.innerHTML = ''; // Clear placeholders
-
-            if (specToPreview.additionalRequirements && specToPreview.additionalRequirements.length > 0) {
-                specToPreview.additionalRequirements.forEach(req => {
-                    const row = additionalRequirementsTableBody.insertRow();
-                    row.insertCell().textContent = req.ID || '';
-                    row.insertCell().textContent = req.BusinessTerm || '';
-                    row.insertCell().textContent = req.TypeOfChange || 'N/A';
-                });
-            } else {
-                const row = additionalRequirementsTableBody.insertRow();
-                row.insertCell(0).colSpan = 3;
-                row.cells[0].textContent = "No Additional Requirements added.";
-                row.cells[0].style.textAlign = "center";
-            }
-        }
-
-        populatePreviewTables(); // Call the function to populate tables on load
-    });
-
-    // Function to handle Submit button click
-    function submitSpecificationPreview() {
-        const selectedSpecName = localStorage.getItem("selectedSpecification");
-        if (!selectedSpecName) {
-            alert("Error: No specification selected to submit.");
-            return;
-        }
-
-        let specifications = JSON.parse(localStorage.getItem("specifications") || "[]");
-        // Find the spec using 'specName' as the key to match how it's stored
-        const specIndex = specifications.findIndex(spec => spec.specName === selectedSpecName);
-
-        if (specIndex > -1) {
-            // Update the status using the correct property name "Registry Status"
-            specifications[specIndex]["Registry Status"] = "Submitted";
-            localStorage.setItem('specifications', JSON.stringify(specifications));
-            alert(`Specification '${selectedSpecName}' submitted successfully!`);
-
-            // Clean up after submission
-            localStorage.removeItem("selectedSpecification");
-            localStorage.removeItem("editSpecData"); // Clear any edit flags
-
-            window.location.href = 'mySpecifications.html'; // Redirect to My Specifications page
-        } else {
-            alert("Error: Could not find the specification to submit.");
-        }
-    }
-
-    // Function to handle Cancel button click
-    function cancelSpecificationPreview() {
-        if (confirm("Are you sure you want to cancel and return to My Specifications? This will not delete the specification, but it will remain in its current saved state.")) {
-            // Optional: Clear selected spec if user just wants to navigate away
-            localStorage.removeItem("selectedSpecification");
-            localStorage.removeItem("editSpecData");
-
-            window.location.href = 'mySpecifications.html';
-        }
-    }
-</script>
+        
+        <script>
+            // The specification preview functionality is now handled by specificationPreview.js
+            // This script will automatically initialize the SpecificationPreview class
+            console.log('SpecificationPreview page loaded');
+        </script>
     </body>
+</html>
 </html>

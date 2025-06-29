@@ -6,7 +6,11 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
         <link rel="stylesheet" href="../CSS/style.css">
         
+        <!-- Add authManager.js for global AuthManager and AUTH_CONFIG -->
+        <script src="../JS/auth/authManager.js"></script>
+        <script src="../JS/dataManager.js"></script>
         <script src="../JS/javascript.js"></script>
+        <script src="../JS/governingEntity.js"></script>
         
         <title>Governing Entities</title>
     </head>
@@ -101,219 +105,23 @@
             <div id="usersSection"></div>
             
         </div>
-<script>
-    // This function makes the 'Edit' button work.
-    function startEdit(event) {
-        const button = event.target;
-        const specName = button.getAttribute('data-spec-name');
-        const specParams = button.getAttribute('data-spec-params');
-
-        if (specName) {
-            localStorage.setItem("selectedSpecification", specName);
-            localStorage.setItem("editSpecData", specParams);
-            window.location.href = "IdentifyingInformation.html";
-        } else {
-            alert("Cannot edit: Specification name not found.");
-        }
-    }
-
-    document.addEventListener("DOMContentLoaded", function () {
-        // Parse URL to get entity details
-        const params = new URLSearchParams(window.location.search);
-        const entity = {
-            Created: params.get("Created") || "",
-            GoverningEntity: params.get("GoverningEntity") || "",
-            NoOfUsers: params.get("NoOfUsers") || "",
-            NoOfSpecifications: params.get("NoOfSpecifications") || "",
-            InProgress: params.get("InProgress") || ""
-        };
-
-        // Set the page title
-        document.getElementById("entityTitle").innerHTML =
-            `<i class="fa-solid fa-building"></i> Viewing ${entity.GoverningEntity} Governing Entity`;
-
-        // --- Restoring the "Entity Details" table ---
-        const entityTable = `
-            <table class="styled-table" style="max-width:900px;">
-                <thead>
-                    <tr>
-                        <th>Created</th>
-                        <th>Sector</th>
-                        <th>Country</th>
-                        <th>Primary Contact Name</th>
-                        <th>Primary Contact Information</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>${entity.Created}</td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                    </tr>
-                </tbody>
-            </table>
-        `;
-        document.getElementById("entityDetails").innerHTML = entityTable;
-
-        // --- This is the corrected "Specifications" table ---
-        const specificationsTable = `
-            <h2 style="margin:24px 0 8px 0;font-size:20px;">Specifications</h2>
-            <table class="styled-table" id="specificationsTable" style="font-size:13px;">
-                <thead>
-                    <tr>
-                        <th>Created/Modified</th>
-                        <th>Name</th>
-                        <th>Purpose</th>
-                        <th>Implementation Date</th>
-                        <th>Type</th>
-                        <th>Sector</th>
-                        <th>Country</th>
-                        <th>Preferred Syntax</th>
-                        <th>Conformance level</th>
-                        <th>Registry Status</th>
-                        <th>Last Modified by</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    </tbody>
-            </table>
-        `;
-        document.getElementById("specificationsSection").innerHTML = specificationsTable;
         
-        const tbody = document.querySelector('#specificationsTable tbody');
-        const preRenderedSpecs = [
-            {
-                "specName": "Pre-rendered In Progress Spec",
-                "purpose": "This is an in-progress specification.",
-                "implDate": "2025-07-01",
-                "type": "CIUS",
-                "sector": "Manufacturing",
-                "country": "IE",
-                "preferredSyntax": "UBL",
-                "conformanceLevel": "Core Conformant",
-                "registryStatus": "In Progress",
-                "governingEntity": entity.GoverningEntity, // Associate with the current entity
-                "contactInfo": "contact@example.com",
-                "specId": "PR-IP-001",
-                "specVersion": "1.0",
-                "coreVersion": "3.0",
-                "underlyingSpec": "None",
-                "sourceLink": "http://example.com/pr-ip-001",
-                "coreInvoiceModelIds": ["BT-1", "BT-2"]
-            },
-            {
-                "specName": "Digital Tax Report",
-                "purpose": "Automated tax filing",
-                "implDate": "2024-01-01",
-                "type": "JSON",
-                "sector": "Finance",
-                "country": "DE",
-                "preferredSyntax": "EDIFACT",
-                "conformanceLevel": "Core Conformant",
-                "registryStatus": "Submitted",
-                "governingEntity": entity.GoverningEntity, // Associate with the current entity
-                "contactInfo": "info@example.com",
-                "specId": "PR-SUB-001",
-                "specVersion": "2.0",
-                "coreVersion": "2.0",
-                "underlyingSpec": "Base Spec v1.0",
-                "sourceLink": "http://example.com/pr-sub-001",
-                "coreInvoiceModelIds": ["BT-5", "BG-2"]
-            }
-        ];
-        const allSpecs = JSON.parse(localStorage.getItem("specifications") || "[]");
-        //const entitySpecs = allSpecs.filter(s => s.governingEntity === entity.GoverningEntity);
-        
-        const combinedSpecs = [...allSpecs.filter(s => s.governingEntity === entity.GoverningEntity), ...preRenderedSpecs];
-        
-        // Filter out duplicates if any (e.g., if pre-rendered specs already exist in localStorage)
-        const uniqueSpecs = Array.from(new Map(combinedSpecs.map(spec => [spec.specName, spec])).values());
-
-        tbody.innerHTML = '';
-        uniqueSpecs.forEach(spec => {
-            const tr = document.createElement('tr');
+        <script>
+            // The governing entity functionality is now handled by governingEntity.js
+            // This script will automatically initialize the appropriate class based on the current page
+            console.log('GoverningEntityView page loaded');
             
-            const queryParams = new URLSearchParams({
-                "Name": spec.specName || "",
-                "Governing Entity": spec.governingEntity || "",
-                "Purpose": spec.purpose || "",
-                "Implementation Date": spec.implDate || "",
-                "Sector": spec.sector || "",
-                "Country": spec.country || "",
-                "Preferred Syntax": spec.preferredSyntax || "",
-                "Specification Identifier": spec.specId || "",
-                "Specification Version": spec.specVersion || "",
-                "Contact Information": spec.contactInfo || "",
-                "Core Version": spec.coreVersion || "",
-                "Underlying Specification": spec.underlyingSpec || "",
-                "Specification Source Link": spec.sourceLink || "",
-                "IDs": JSON.stringify(spec.coreInvoiceModelIds || [])
-            }).toString();
-
-
-        let actionButtonHtml = '';
-
-        if (spec.registryStatus === 'In Progress') {
-            actionButtonHtml = `<button class="view-button" onclick="startEdit(event)" data-spec-name="${spec.specName}" data-spec-params='${queryParams}'>Edit</button>`;
-        } else {
-            actionButtonHtml = `<button class="view-button" onclick="window.location.href='viewSpecification.html?${queryParams}'">View</button>`;
-        }
-
-        if (spec.registryStatus === 'Submitted') {
-            tr.classList.add("submitted-row");
-        }
-
-        tr.innerHTML = `
-                <td>${spec.implDate || 'N/A'}</td>
-                <td>${spec.specName || ''}</td>
-                <td>${spec.purpose || ''}</td>
-                <td>${spec.implDate || ''}</td>
-                <td>CIUS</td>
-                <td>${spec.sector || ''}</td>
-                <td>${spec.country || ''}</td>
-                <td>${spec.preferredSyntax || ''}</td>
-                <td>${spec.conformanceLevel || ''}</td>
-                <td>${spec.registryStatus || ''}</td>
-                <td>Admin</td>
-                <td>${actionButtonHtml}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-
-        // --- Restoring the "Users" table ---
-        const usersTable = `
-            <h2 style="margin:24px 0 8px 0;font-size:20px;">Users</h2>
-            <table class="styled-table" style="font-size:13px;max-width:900px;">
-                <thead>
-                    <tr>
-                        <th>Joined</th>
-                        <th>Name</th>
-                        <th>Contact Information</th>
-                        <th>Contributor</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    </tbody>
-            </table>
-        `;
-        document.getElementById("usersSection").innerHTML = usersTable;
-
-        // Admin functionality for 'New Specification' button
-        const userRole = localStorage.getItem("userRole") || "EndUser";
-        if (userRole === "Admin") {
-            document.getElementById("adminNewSpecContainer").innerHTML = `
-                <button class="view-button" id="newSpecBtn">New Specification</button>
-            `;
-            document.getElementById("newSpecBtn").onclick = function() {
-                
-                localStorage.setItem("newSpecGoverningEntity", entity.GoverningEntity);
-                window.location.href = "IdentifyingInformation.html";
-            };
-        }
-    });
-</script>
+            // Make startEdit function available globally for backward compatibility
+            function startEdit(event) {
+                if (window.governingEntityView) {
+                    const button = event.target;
+                    const specName = button.getAttribute('data-spec-name');
+                    const specParams = button.getAttribute('data-spec-params');
+                    window.governingEntityView.startEdit(specName, specParams);
+                } else {
+                    console.error('GoverningEntityView instance not found');
+                }
+            }
+        </script>
     </body>
 </html>
