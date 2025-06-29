@@ -17,6 +17,7 @@
             }
         </script>
         <script src="../JS/javascript.js"></script>
+        <script src="../JS/dataManager.js"></script>
         
         <title>Registry Services</title>
     </head>
@@ -155,8 +156,41 @@ if (localStorage.userRole === "Admin") {
             // *** END OF READ-ONLY FLAG ***
 
             let isFormDirty = false;
+            let dataManager = null;
             let extensionComponentElementsCache = {};
             let componentsContainer;
+
+            // Initialize data manager for read-only mode
+            async function initializeDataManager() {
+                try {
+                    console.log('DEBUG: ExtensionComponentDataModelRead - Initializing data manager');
+                    
+                    dataManager = new SpecificationDataManager();
+                    console.log('DEBUG: ExtensionComponentDataModelRead - Data manager initialized');
+                    console.log('DEBUG: ExtensionComponentDataModelRead - Mode:', dataManager.currentMode);
+                    
+                    if (dataManager.isEditMode() && dataManager.currentSpecId) {
+                        console.log('DEBUG: ExtensionComponentDataModelRead - Loading specification for reading. ID:', dataManager.currentSpecId);
+                        
+                        // Load data from API if not already loaded
+                        if (!dataManager.isDataLoaded) {
+                            await dataManager.loadSpecificationFromAPI(dataManager.currentSpecId);
+                        }
+                        
+                        const workingData = dataManager.workingData || dataManager.loadWorkingDataFromLocalStorage();
+                        if (workingData && workingData.extensionComponentData) {
+                            console.log('DEBUG: ExtensionComponentDataModelRead - Found extension component data:', workingData.extensionComponentData);
+                            return workingData.extensionComponentData;
+                        }
+                    }
+                    
+                    console.log('DEBUG: ExtensionComponentDataModelRead - No existing extension data found');
+                    return [];
+                } catch (error) {
+                    console.error('DEBUG: ExtensionComponentDataModelRead - Error initializing data manager:', error);
+                    return [];
+                }
+            }
 
             async function loadExtensionData() {
                 try {
@@ -185,16 +219,12 @@ if (localStorage.userRole === "Admin") {
                     }
 
                     const editingSpecName = localStorage.getItem("selectedSpecification");
-                    let savedExtensions = [];
-                    if (editingSpecName) {
-                        const specifications = JSON.parse(localStorage.getItem("specifications")) || [];
-                        const specToEdit = specifications.find(spec => spec.specName === editingSpecName);
-                        if (specToEdit && specToEdit.extensionComponents) {
-                            savedExtensions = specToEdit.extensionComponents;
-                        }
-                    }
-
-                    if (savedExtensions.length > 0) {
+                    // Initialize data manager first and get saved extensions
+                    const savedExtensions = await initializeDataManager();
+                    
+                    // Use saved extensions from data manager instead of localStorage
+                    if (savedExtensions && savedExtensions.length > 0) {
+                        console.log('DEBUG: ExtensionComponentDataModelRead - Loading saved extensions:', savedExtensions);
                         for (const savedExt of savedExtensions) {
                             await addNewComponentSection(savedExt.componentName, savedExt.selectedElements);
                         }

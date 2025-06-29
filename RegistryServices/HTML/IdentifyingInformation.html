@@ -17,6 +17,7 @@
             }
         </script>
         <script src="../JS/javascript.js"></script>
+        <script src="../JS/identifyingInformation.js"></script>
         <script src="../JS/dataManager.js"></script>
         
         <title>Registry Services</title>
@@ -384,17 +385,26 @@
             // Initialize data manager and load data
             async function initializeDataManager() {
                 try {
+                    console.log('DEBUG: IdentifyingInformation - Starting initializeDataManager');
+                    console.log('DEBUG: IdentifyingInformation - LocalStorage state:');
+                    console.log('  - editMode:', localStorage.getItem('editMode'));
+                    console.log('  - specificationIdentityId:', localStorage.getItem('specificationIdentityId'));
+                    
                     dataManager = new SpecificationDataManager();
-                    console.log('Data manager initialized. Mode:', dataManager.currentMode);
+                    console.log('DEBUG: IdentifyingInformation - Data manager initialized');
+                    console.log('DEBUG: IdentifyingInformation - Mode:', dataManager.currentMode);
+                    console.log('DEBUG: IdentifyingInformation - CurrentSpecId:', dataManager.currentSpecId);
+                    console.log('DEBUG: IdentifyingInformation - isEditMode():', dataManager.isEditMode());
                     
                     if (dataManager.isEditMode() && dataManager.currentSpecId) {
-                        console.log('Loading specification for editing. ID:', dataManager.currentSpecId);
+                        console.log('DEBUG: IdentifyingInformation - Loading specification for editing. ID:', dataManager.currentSpecId);
                         
                         // Show loading indicator
                         showLoadingIndicator();
                         
                         // Load data from API
                         const formData = await dataManager.loadSpecificationFromAPI(dataManager.currentSpecId);
+                        console.log('DEBUG: IdentifyingInformation - Form data loaded:', formData);
                         
                         // Populate form with loaded data
                         populateForm(formData);
@@ -402,19 +412,25 @@
                         // Hide loading indicator
                         hideLoadingIndicator();
                         
-                        console.log('Form populated with existing data');
+                        console.log('DEBUG: IdentifyingInformation - Form populated with existing data');
                         isFormDirty = false; // Just loaded, so not dirty
                     } else {
-                        console.log('Creating new specification');
+                        console.log('DEBUG: IdentifyingInformation - Creating new specification or missing spec ID');
+                        console.log('DEBUG: IdentifyingInformation - isEditMode:', dataManager.isEditMode());
+                        console.log('DEBUG: IdentifyingInformation - currentSpecId:', dataManager.currentSpecId);
+                        
                         // For new specifications, check if there's any working data
                         const workingData = dataManager.loadWorkingDataFromLocalStorage();
                         if (workingData) {
+                            console.log('DEBUG: IdentifyingInformation - Found working data, populating form');
                             populateForm(workingData);
                             isFormDirty = false;
+                        } else {
+                            console.log('DEBUG: IdentifyingInformation - No working data found');
                         }
                     }
                 } catch (error) {
-                    console.error('Error initializing data manager:', error);
+                    console.error('DEBUG: IdentifyingInformation - Error initializing data manager:', error);
                     hideLoadingIndicator();
                     alert(`Error loading specification: ${error.message}`);
                 }
@@ -444,7 +460,13 @@
             }
 
             function populateForm(data) {
+                console.log('DEBUG: populateForm called with data:', data);
+                
                 const form = document.getElementById('identifyingForm');
+                if (!form) {
+                    console.error('DEBUG: populateForm - Form element not found!');
+                    return;
+                }
                 
                 // Populate all form fields
                 const fieldMappings = {
@@ -464,14 +486,20 @@
                     preferredSyntax: data.preferredSyntax
                 };
 
+                console.log('DEBUG: populateForm - Field mappings:', fieldMappings);
+                
                 Object.keys(fieldMappings).forEach(fieldName => {
                     const field = form.elements[fieldName];
                     if (field && fieldMappings[fieldName] !== undefined) {
+                        const oldValue = field.value;
                         field.value = fieldMappings[fieldName] || '';
+                        console.log(`DEBUG: populateForm - Set ${fieldName}: "${oldValue}" -> "${field.value}"`);
+                    } else if (!field) {
+                        console.warn(`DEBUG: populateForm - Field "${fieldName}" not found in form`);
                     }
                 });
 
-                console.log('Form populated with data:', fieldMappings);
+                console.log('DEBUG: populateForm - Form populated successfully');
             }
 
             function getFormData() {

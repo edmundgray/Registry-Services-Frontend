@@ -18,6 +18,7 @@
             }
         </script>
         <script src="../JS/javascript.js"></script>
+        <script src="../JS/dataManager.js"></script>
         
         <title>Registry Services</title>
         <style>
@@ -127,12 +128,63 @@
 
         <script>
             let isFormDirty = false;
+            let dataManager = null;
             // Cache for storing fetched extension component elements to avoid re-fetching
             let extensionComponentElementsCache = {}; // Changed from extensionComponentData
             let componentsContainer;
 
+            // Initialize data manager
+            async function initializeDataManager() {
+                try {
+                    console.log('DEBUG: ExtensionComponentDataModel - Initializing data manager');
+                    console.log('DEBUG: ExtensionComponentDataModel - LocalStorage state:');
+                    console.log('  - editMode:', localStorage.getItem('editMode'));
+                    console.log('  - specificationIdentityId:', localStorage.getItem('specificationIdentityId'));
+                    
+                    dataManager = new SpecificationDataManager();
+                    console.log('DEBUG: ExtensionComponentDataModel - Data manager initialized');
+                    console.log('DEBUG: ExtensionComponentDataModel - Mode:', dataManager.currentMode);
+                    console.log('DEBUG: ExtensionComponentDataModel - isEditMode():', dataManager.isEditMode());
+                    
+                    if (dataManager.isEditMode() && dataManager.currentSpecId) {
+                        console.log('DEBUG: ExtensionComponentDataModel - Loading specification for editing. ID:', dataManager.currentSpecId);
+                        
+                        // Load data from API if not already loaded
+                        if (!dataManager.isDataLoaded) {
+                            await dataManager.loadSpecificationFromAPI(dataManager.currentSpecId);
+                        }
+                        
+                        // Get the working data (should include extensionComponentData)
+                        const workingData = dataManager.workingData || dataManager.loadWorkingDataFromLocalStorage();
+                        console.log('DEBUG: ExtensionComponentDataModel - Working data:', workingData);
+                        
+                        if (workingData && workingData.extensionComponentData) {
+                            console.log('DEBUG: ExtensionComponentDataModel - Found extension component data:', workingData.extensionComponentData);
+                            return workingData.extensionComponentData;
+                        }
+                    } else {
+                        console.log('DEBUG: ExtensionComponentDataModel - Creating new specification or missing spec ID');
+                        // For new specifications, check if there's any working data
+                        const workingData = dataManager.loadWorkingDataFromLocalStorage();
+                        if (workingData && workingData.extensionComponentData) {
+                            console.log('DEBUG: ExtensionComponentDataModel - Found working extension data');
+                            return workingData.extensionComponentData;
+                        }
+                    }
+                    
+                    console.log('DEBUG: ExtensionComponentDataModel - No existing extension data found');
+                    return [];
+                } catch (error) {
+                    console.error('DEBUG: ExtensionComponentDataModel - Error initializing data manager:', error);
+                    throw error;
+                }
+            }
+
             async function loadExtensionData() {
                 try {
+                    // Initialize data manager first
+                    const savedExtensions = await initializeDataManager();
+                    
                     // Fetch the list of available Extension Components (headers)
                     // Assuming /api/extensionmodels/headers provides a list of {id, name} objects
                     const headersApiUrl = `${AUTH_CONFIG.baseUrl}/extensionmodels/headers?page=1&pageSize=50`; // Adjust page size as needed
@@ -160,18 +212,9 @@
                         initialSectionSelect.innerHTML = options;
                     }
 
-                    // Pre-select any saved extensions when loading for editing
-                    const editingSpecName = localStorage.getItem("selectedSpecification");
-                    let savedExtensions = [];
-                    if (editingSpecName) {
-                        const specifications = JSON.parse(localStorage.getItem("specifications")) || [];
-                        const specToEdit = specifications.find(spec => spec.specName === editingSpecName);
-                        if (specToEdit && specToEdit.extensionComponents) {
-                            savedExtensions = specToEdit.extensionComponents;
-                        }
-                    }
-
-                    if (savedExtensions.length > 0) {
+                    // Use saved extensions from data manager instead of localStorage
+                    if (savedExtensions && savedExtensions.length > 0) {
+                        console.log('DEBUG: ExtensionComponentDataModel - Loading saved extensions:', savedExtensions);
                         // For each saved extension, add a section and populate its table
                         for (const savedExt of savedExtensions) {
                             await addNewComponentSection(savedExt.componentName, savedExt.selectedElements);
@@ -327,6 +370,8 @@
             }
 
             function handleSave(showAlert = true) {
+                console.log('DEBUG: ExtensionComponentDataModel - handleSave called');
+                
                 const selectedExtensions = [];
                 document.querySelectorAll('.component-section').forEach(section => {
                     const componentName = section.querySelector('.component-select').value;
@@ -343,19 +388,34 @@
                     }
                 });
 
-                const editingSpecName = localStorage.getItem("selectedSpecification");
-                if (!editingSpecName) { alert("Error: No specification selected."); return; }
+                console.log('DEBUG: ExtensionComponentDataModel - Selected extensions:', selectedExtensions);
 
-                let specifications = JSON.parse(localStorage.getItem("specifications")) || [];
-                const specIndex = specifications.findIndex(spec => spec.specName === editingSpecName);
+                if (!dataManager) {
+                    console.error('DEBUG: ExtensionComponentDataModel - Data manager not initialized');
+                    alert("Error: Data manager not initialized.");
+                    return;
+                }
 
-                if (specIndex > -1) {
-                    specifications[specIndex].extensionComponents = selectedExtensions;
-                    localStorage.setItem('specifications', JSON.stringify(specifications));
-                    if (showAlert) alert("Extension components saved!");
+                try {
+                    // Update the working data with selected extensions
+                    if (!dataManager.workingData) {
+                        dataManager.workingData = dataManager.loadWorkingDataFromLocalStorage() || {};
+                    }
+                    
+                    dataManager.workingData.extensionComponentData = selectedExtensions;
+                    
+                    // Save to localStorage (working data)
+                    dataManager.saveWorkingDataToLocalStorage();
+                    
+                    console.log('DEBUG: ExtensionComponentDataModel - Extension components saved to working data');
+                    
+                    if (showAlert) {
+                        alert("Extension components saved!");
+                    }
                     isFormDirty = false;
-                } else {
-                    alert("Error: Could not find the specification to save to.");
+                } catch (error) {
+                    console.error('DEBUG: ExtensionComponentDataModel - Error saving:', error);
+                    alert("Error saving extension components: " + error.message);
                 }
             }
 
@@ -364,7 +424,11 @@
                     return;
                 }
                 isFormDirty = false;
-                window.location.href = 'mySpecifications.html';
+                
+                // Use the proper return page logic
+                const returnPage = localStorage.getItem("returnToPage") || "mySpecifications.html";
+                console.log('DEBUG: ExtensionComponentDataModel - Returning to:', returnPage);
+                window.location.href = returnPage;
             }
 
             function saveAndGoToNextStep() {
@@ -372,14 +436,25 @@
                 window.location.href = 'additionalRequirements.html';
             }
 
-            document.addEventListener('DOMContentLoaded', () => {
-                const titleElement = document.querySelector('.page-Content h1');
-                const editingSpecName = localStorage.getItem("selectedSpecification");
-                if (titleElement && editingSpecName) {
-                    titleElement.innerHTML = `<i class="fa-solid fa-trailer"></i> Extension Component Data Model for: ${editingSpecName}`;
-                }
-
+            document.addEventListener('DOMContentLoaded', async () => {
+                console.log('DEBUG: ExtensionComponentDataModel - DOM loaded');
+                
                 componentsContainer = document.getElementById('components-container');
+                
+                // Initialize data manager and update title
+                try {
+                    await initializeDataManager();
+                    
+                    // Update title with specification name if available
+                    const titleElement = document.querySelector('.page-Content h1');
+                    if (titleElement && dataManager && dataManager.workingData && dataManager.workingData.specName) {
+                        titleElement.innerHTML = `<i class="fa-solid fa-trailer"></i> Extension Component Data Model for: ${dataManager.workingData.specName}`;
+                    }
+                } catch (error) {
+                    console.error('DEBUG: ExtensionComponentDataModel - Error in initialization:', error);
+                }
+                
+                // Load extension data
                 loadExtensionData(); // Initial load of components for dropdown
 
                 // Listen for changes anywhere in the container to mark form dirty

@@ -230,8 +230,16 @@ class SpecificationDataManager {
 
     // Initialize for editing an existing specification
     static initializeForEdit(identityID) {
+        console.log('DEBUG: SpecificationDataManager.initializeForEdit called with ID:', identityID);
+        console.log('DEBUG: SpecificationDataManager.initializeForEdit - ID type:', typeof identityID);
+        
         localStorage.setItem('editMode', 'edit');
         localStorage.setItem('specificationIdentityId', identityID.toString());
+        
+        console.log('DEBUG: SpecificationDataManager.initializeForEdit - Stored values:');
+        console.log('  - editMode:', localStorage.getItem('editMode'));
+        console.log('  - specificationIdentityId:', localStorage.getItem('specificationIdentityId'));
+        
         return new SpecificationDataManager();
     }
 

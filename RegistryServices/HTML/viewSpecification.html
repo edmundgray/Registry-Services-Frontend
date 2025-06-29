@@ -582,17 +582,21 @@
             function setupEditButton(spec) {
                 const editButton = document.getElementById("editSpecificationButton");
                 if (editButton) {
-                    // Navigate to the editing workflow
+                    // Use the global editSpecification function for consistency
                     editButton.addEventListener("click", function() {
-                        if (spec.specificationName && spec.identityID) {
-                            localStorage.setItem("selectedSpecification", spec.specificationName);
-                            localStorage.setItem("editSpecificationData", JSON.stringify(spec));
-                            localStorage.setItem("editSpecificationId", spec.identityID.toString());
-                            localStorage.setItem("returnToPage", "viewSpecification.html"); // Set return page
-                            console.log('DEBUG: Navigating to edit mode for specification:', spec.specificationName);
-                            window.location.href = "IdentifyingInformation.html";
+                        if (spec.identityID) {
+                            console.log('DEBUG: viewSpecification - Spec data for editing:', spec);
+                            console.log('DEBUG: viewSpecification - Identity ID:', spec.identityID);
+                            console.log('DEBUG: viewSpecification - Navigating to edit mode for specification:', spec.specificationName);
+                            
+                            // Set return page to viewSpecification
+                            localStorage.setItem("returnToPage", "viewSpecification.html?id=" + spec.identityID);
+                            
+                            // Call the global editSpecification function
+                            editSpecification(spec.identityID);
                         } else {
-                            alert("Cannot edit: Specification data not available.");
+                            console.error('DEBUG: viewSpecification - No identityID found in spec:', spec);
+                            alert("Cannot edit: Specification ID not available.");
                         }
                     });
                 }

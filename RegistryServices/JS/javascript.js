@@ -18,7 +18,8 @@ function toggleLogin()
     }
     updateVisibility();
     
-    if (typeof filteredData !== 'undefined' && filteredData.length > 0) 
+    // Only call populateTable if it exists (on registry pages)
+    if (typeof populateTable === 'function' && typeof filteredData !== 'undefined' && filteredData.length > 0) 
     {
         populateTable(filteredData);
     }
@@ -1398,16 +1399,23 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // Function to initiate editing of an existing specification
 function editSpecification(identityID) {
-    console.log('Initiating edit for specification ID:', identityID);
+    console.log('DEBUG: editSpecification called with ID:', identityID);
+    console.log('DEBUG: editSpecification - ID type:', typeof identityID);
     
     // Use the data manager to set up edit mode
-    SpecificationDataManager.initializeForEdit(identityID);
+    const dataManager = SpecificationDataManager.initializeForEdit(identityID);
+    console.log('DEBUG: editSpecification - Data manager initialized, mode:', dataManager.currentMode);
+    console.log('DEBUG: editSpecification - Stored specificationIdentityId:', localStorage.getItem('specificationIdentityId'));
     
-    // Store the return page based on current location
-    const currentPage = window.location.pathname.split('/').pop();
-    localStorage.setItem("returnToPage", currentPage || "mySpecifications.html");
+    // Store the return page based on current location (if not already set)
+    if (!localStorage.getItem("returnToPage")) {
+        const currentPage = window.location.pathname.split('/').pop();
+        localStorage.setItem("returnToPage", currentPage || "mySpecifications.html");
+    }
+    console.log('DEBUG: editSpecification - Return page set to:', localStorage.getItem("returnToPage"));
     
     // Navigate to IdentifyingInformation.html
+    console.log('DEBUG: editSpecification - Navigating to IdentifyingInformation.html');
     window.location.href = 'IdentifyingInformation.html';
 }
 

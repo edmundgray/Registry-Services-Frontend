@@ -45,6 +45,38 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+    /******************************************************************************
+        Core Invoice Model API Functions (moved from javascript.js)
+     ******************************************************************************/
+    async function fetchCoreInvoiceModels() {
+        try {
+            // Construct the full URL for the GET request
+            const apiUrl = `${AUTH_CONFIG.baseUrl}/coreinvoicemodels`; // Uses the base URL from AUTH_CONFIG
+
+            console.log(`Attempting to fetch data from: ${apiUrl}`);
+
+            // Make the GET request using authenticatedFetch
+            const response = await authenticatedFetch(apiUrl, {
+                method: 'GET'
+            });
+
+            // Check if the response was successful
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            // Parse the JSON response
+            const data = await response.json();
+            console.log('Core Invoice Models API Response:', data);
+            
+            return Array.isArray(data) ? data : (data.items || []);
+
+        } catch (error) {
+            console.error('Error fetching Core Invoice Models:', error);
+            throw error;
+        }
+    }
+
     fetchCoreInvoiceModelsFromAPI()
         .then(data => {
             const tableBody = document.querySelector('#coreInvoiceTable tbody');
