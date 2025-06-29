@@ -22,6 +22,15 @@ This e-invoicing registry application uses **JWT-based authentication** with thr
 - **JWT (JSON Web Token)**: A secure token that proves user identity
 - **Role-based Access**: Different users see different features
 - **Method-based Security**: GET requests are public, POST/PUT/DELETE require login
+- **Modular Architecture**: Authentication works seamlessly with the new modular JavaScript architecture
+
+### Integration with Registry Services Frontend:
+This authentication system is part of the Registry Services frontend's modular architecture. It works together with:
+- **SpecificationDataManager**: For centralized data management
+- **Page-specific modules**: For individual page functionality
+- **Centralized API calls**: Via `authenticatedFetch()` function
+
+> 📚 **Note**: For complete information about the modular architecture and data management, see the [Complete Registry Services Frontend Manual](COMPLETE_AUTHENTICATION_MANUAL.md) and [Refactoring Report](REFACTORING_REPORT.md).
 
 ---
 
@@ -74,6 +83,30 @@ Admin > User > Guest
 ---
 
 ## 🏗️ HTML Integration
+
+### Script Setup (Required)
+
+To use authentication in your page, include the required scripts in this order:
+
+```html
+<!-- Step 1: Authentication manager -->
+<script src="../JS/auth/authManager.js"></script>
+
+<!-- Step 2: Global authentication setup -->
+<script>
+    window.authManager = new AuthManager();
+    function authenticatedFetch(url, options = {}) {
+        const headers = {...(options.headers || {}), ...window.authManager.getAuthHeaders()};
+        return fetch(url, {...options, headers});
+    }
+</script>
+
+<!-- Step 3: Core utilities (includes authentication functions) -->
+<script src="../JS/javascript.js"></script>
+
+<!-- Step 4: Optional - Data manager if working with specifications -->
+<script src="../JS/dataManager.js"></script>
+```
 
 ### CSS Classes for Automatic Visibility
 

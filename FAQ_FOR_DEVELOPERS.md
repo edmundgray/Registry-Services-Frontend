@@ -257,11 +257,30 @@ async function debugApiCall() {
 
 ### Q9: How do I add a new page that requires authentication?
 
-**A:** Follow these steps:
+**A:** Follow these steps with the new modular architecture:
 
-1. **Include the authentication script**:
+1. **Include the required scripts in order**:
 ```html
+<!-- Step 1: Authentication manager -->
+<script src="../JS/auth/authManager.js"></script>
+
+<!-- Step 2: Global auth setup -->
+<script>
+    window.authManager = new AuthManager();
+    function authenticatedFetch(url, options = {}) {
+        const headers = {...(options.headers || {}), ...window.authManager.getAuthHeaders()};
+        return fetch(url, {...options, headers});
+    }
+</script>
+
+<!-- Step 3: Core utilities -->
 <script src="../JS/javascript.js"></script>
+
+<!-- Step 4: Data manager (if using specifications) -->
+<script src="../JS/dataManager.js"></script>
+
+<!-- Step 5: Your page-specific module (optional) -->
+<script src="../JS/yourPageModule.js"></script>
 ```
 
 2. **Add the login modal container**:
@@ -281,13 +300,28 @@ async function debugApiCall() {
 <button id="loginLogoutButton" onclick="toggleLogin()">Login</button>
 ```
 
-5. **Initialize on page load**:
+5. **Initialize on page load with data manager (if needed)**:
 ```javascript
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", async function() {
+    // Initialize authentication UI
     createLoginModal();
     updateVisibility();
     startSessionMonitoring();
+    
+    // Initialize data manager if working with specifications
+    if (typeof SpecificationDataManager !== 'undefined') {
+        const dataManager = new SpecificationDataManager();
+        // Your page-specific initialization
+    }
 });
+```
+
+6. **Use role-based CSS classes for UI elements**:
+```html
+<div class="user-only">Only logged-in users see this</div>
+<div class="admin-only">Only admins see this</div>
+<button class="create-edit-only">Create/Edit Button</button>
+<button class="delete-only">Delete Button</button>
 ```
 
 6. **Use CSS classes for role-based content**:
