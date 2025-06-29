@@ -111,6 +111,32 @@ document.addEventListener("DOMContentLoaded", function () {
             });
             // --- END NEW HIERARCHY BUILDING LOGIC ---
 
+            // Helper function to find parent of an item in the hierarchy
+            function findParentInHierarchy(childItem, allElements) {
+                // Find the parent by looking for the item that contains this child in its children array
+                for (const element of allElements) {
+                    if (element.children && element.children.some(child => child.ID === childItem.ID)) {
+                        return element;
+                    }
+                }
+                return null;
+            }
+
+            // Function to get all mandatory children of a BG parent
+            function getMandatoryChildren(bgParent, allElements) {
+                const mandatoryChildren = [];
+                if (bgParent.children) {
+                    bgParent.children.forEach(child => {
+                        if (child.Cardinality === '1..1' && child.LevelStr === '++') {
+                            mandatoryChildren.push(child.ID);
+                        }
+                        // Recursively check deeper children if needed
+                        mandatoryChildren.push(...getMandatoryChildren(child, allElements));
+                    });
+                }
+                return mandatoryChildren;
+            }
+
             // Recursive row creation
             function renderRowAndChildren(item, container, level = 0) 
             {
@@ -151,7 +177,23 @@ document.addEventListener("DOMContentLoaded", function () {
                     // Editable version: Add "Included in Spec" and "Type of Change" columns
                     const includedCell = document.createElement("td");
                     includedCell.className = "centered-cell";
-                    const isChecked = savedCoreIds.includes(item.ID);
+                    
+                    // Auto-check if cardinality is '1..1' and level is '+', or if previously saved
+                    const shouldAutoCheck = (item.Cardinality === '1..1' && item.LevelStr === '+');
+                    
+                    // Also auto-check if this is a mandatory child of a BG parent
+                    let isMandatoryChild = false;
+                    if (item.Cardinality === '1..1' && item.LevelStr === '++') {
+                        // Find parent in the hierarchy - look through processedElements for parent
+                        const parentElement = findParentInHierarchy(item, processedElements);
+                        if (parentElement && parentElement.ID && parentElement.ID.startsWith('BG') && 
+                            parentElement.LevelStr === '+' && parentElement.Cardinality === '1..1') {
+                            isMandatoryChild = true;
+                        }
+                    }
+                    
+                    const isChecked = savedCoreIds.includes(item.ID) || shouldAutoCheck || isMandatoryChild;
+                    
                     includedCell.innerHTML = `<input type="checkbox" class="row-selector" data-id="${item.ID}" ${isChecked ? 'checked' : ''}>`;
                     tr.appendChild(includedCell);
 
@@ -218,7 +260,84 @@ document.addEventListener("DOMContentLoaded", function () {
                 return tr;
             }
 
-            roots.forEach(root => renderRowAndChildren(root, tableBody));        })
+            roots.forEach(root => renderRowAndChildren(root, tableBody));
+            
+            // Make hierarchy data globally accessible for cascading logic
+            window.coreInvoiceHierarchy = processedElements;
+            window.handleCascadingSelection = function(changedCheckbox) {
+                const itemId = changedCheckbox.getAttribute('data-id');
+                const isChecked = changedCheckbox.checked;
+                
+                // Find the item in the hierarchy
+                const item = processedElements.find(el => el.ID === itemId);
+                if (!item) return;
+                
+                if (itemId && itemId.startsWith('BG') && item.LevelStr === '+') {
+                    // This is a BG parent item
+                    if (isChecked) {
+                        // Auto-check mandatory children (even if BG was already checked)
+                        const mandatoryChildren = getMandatoryChildren(item, processedElements);
+                        mandatoryChildren.forEach(childId => {
+                            const childCheckbox = document.querySelector(`.row-selector[data-id="${childId}"]`);
+                            if (childCheckbox) {
+                                childCheckbox.checked = true;
+                            }
+                        });
+                    } else {
+                        // Uncheck all children (only when BG is manually unchecked via checkbox)
+                        const allChildren = getAllChildren(item);
+                        allChildren.forEach(childId => {
+                            const childCheckbox = document.querySelector(`.row-selector[data-id="${childId}"]`);
+                            if (childCheckbox) {
+                                childCheckbox.checked = false;
+                            }
+                        });
+                    }
+                }
+            };
+            
+            // Helper function to get all children (not just mandatory ones)
+            function getAllChildren(parent) {
+                const allChildren = [];
+                if (parent.children) {
+                    parent.children.forEach(child => {
+                        allChildren.push(child.ID);
+                        allChildren.push(...getAllChildren(child));
+                    });
+                }
+                return allChildren;
+            }
+            
+            // Auto-save mandatory selections (cardinality '1..1' and level '+') if in editable mode
+            if (!isReadOnly) {
+                const autoSelectedIds = [];
+                
+                // First, find primary mandatory items (level '+' with cardinality '1..1')
+                processedElements.forEach(item => {
+                    if (item.Cardinality === '1..1' && item.LevelStr === '+') {
+                        autoSelectedIds.push(item.ID);
+                        
+                        // If this is a BG item, also auto-select its mandatory children
+                        if (item.ID && item.ID.startsWith('BG')) {
+                            const mandatoryChildren = getMandatoryChildren(item, processedElements);
+                            autoSelectedIds.push(...mandatoryChildren);
+                        }
+                    }
+                });
+                
+                // Merge auto-selected with previously saved selections
+                const allSelectedIds = [...new Set([...savedCoreIds, ...autoSelectedIds])];
+                
+                // Update localStorage if there are new auto-selections
+                if (autoSelectedIds.length > 0 && editingSpecId) {
+                    const specifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
+                    const specIndex = specifications.findIndex(spec => spec.id === editingSpecId);
+                    if (specIndex > -1) {
+                        specifications[specIndex].coreInvoiceModelIds = allSelectedIds;
+                        localStorage.setItem('mySpecifications', JSON.stringify(specifications));
+                    }
+                }
+            }        })
         .catch(error => {
             console.error("Error loading core invoice model data from API:", error);
             const tableBody = document.querySelector('#coreInvoiceTable tbody');

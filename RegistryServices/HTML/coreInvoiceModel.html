@@ -199,11 +199,23 @@
                                 // Auto-check if user selects anything other than "No change"
                                 if (selectedValue !== 'No change') {
                                     checkbox.checked = true;
+                                    
+                                    // If this is a BG item, trigger cascading logic for mandatory children
+                                    if (itemId && itemId.startsWith('BG') && window.handleCascadingSelection) {
+                                        window.handleCascadingSelection(checkbox);
+                                    }
                                 }
-                                // Optionally uncheck if user selects "No change" (uncomment if desired)
-                                // else {
-                                //     checkbox.checked = false;
-                                // }
+                                // Note: When changing back to "No change", checkbox remains checked (per requirement #3)
+                            }
+                        }
+                        
+                        // Handle cascading selection for BG items
+                        if (event.target.matches('.row-selector')) {
+                            const checkbox = event.target;
+                            
+                            // Use the global cascading function if available
+                            if (window.handleCascadingSelection) {
+                                window.handleCascadingSelection(checkbox);
                             }
                         }
                     }
