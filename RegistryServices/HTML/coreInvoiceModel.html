@@ -149,7 +149,7 @@
                             <th>Data Type</th>
                             <th>Included in Spec</th>
                             <th>Type of Change</th>
-                            <th></th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -171,17 +171,41 @@
             let isFormDirty = false;
 
             document.addEventListener('DOMContentLoaded', () => {
-                const editingSpecName = localStorage.getItem("selectedSpecification");
-                if (editingSpecName) {
-                    const titleElement = document.querySelector('.page-Content h1');
-                    if (titleElement) {
-                        titleElement.innerHTML = `<i class="fa-solid fa-car"></i> Core Invoice Model for: ${editingSpecName}`;
+                const editingSpecId = localStorage.getItem("selectedSpecification");
+                if (editingSpecId) {
+                    const specifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
+                    const spec = specifications.find(s => s.id === editingSpecId);
+                    if (spec) {
+                        const titleElement = document.querySelector('.page-Content h1');
+                        if (titleElement) {
+                            titleElement.innerHTML = `<i class="fa-solid fa-car"></i> Core Invoice Model for: ${spec.specName || spec.name || 'Unknown'}`;
+                        }
                     }
                 }
 
                 document.querySelector('#coreInvoiceTable').addEventListener('change', (event) => {
-                    if (event.target.matches('.row-selector:not(:disabled)')) {
+                    if (event.target.matches('.row-selector:not(:disabled)') || event.target.matches('.type-of-change-dropdown')) {
                         isFormDirty = true;
+                        
+                        // Auto-check "Included in Spec" when dropdown changes to anything other than "No change"
+                        if (event.target.matches('.type-of-change-dropdown')) {
+                            const dropdown = event.target;
+                            const itemId = dropdown.getAttribute('data-id');
+                            const selectedValue = dropdown.value;
+                            
+                            // Find the corresponding checkbox for this item
+                            const checkbox = document.querySelector(`.row-selector[data-id="${itemId}"]`);
+                            if (checkbox) {
+                                // Auto-check if user selects anything other than "No change"
+                                if (selectedValue !== 'No change') {
+                                    checkbox.checked = true;
+                                }
+                                // Optionally uncheck if user selects "No change" (uncomment if desired)
+                                // else {
+                                //     checkbox.checked = false;
+                                // }
+                            }
+                        }
                     }
                 });
             });
@@ -199,18 +223,26 @@
                     selectedIds.push(checkbox.getAttribute('data-id'));
                 });
 
-                const editingSpecName = localStorage.getItem("selectedSpecification");
-                if (!editingSpecName) {
+                const typeOfChangeValues = {};
+                document.querySelectorAll('.type-of-change-dropdown').forEach(dropdown => {
+                    const id = dropdown.getAttribute('data-id');
+                    const value = dropdown.value;
+                    typeOfChangeValues[id] = value;
+                });
+
+                const editingSpecId = localStorage.getItem("selectedSpecification");
+                if (!editingSpecId) {
                     alert("Error: No specification selected. Please go back to the Identifying Information page.");
                     return;
                 }
 
-                let specifications = JSON.parse(localStorage.getItem("specifications")) || [];
-                const specIndex = specifications.findIndex(spec => spec.specName === editingSpecName);
+                let specifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
+                const specIndex = specifications.findIndex(spec => spec.id === editingSpecId);
 
                 if (specIndex > -1) {
                     specifications[specIndex].coreInvoiceModelIds = selectedIds;
-                    localStorage.setItem('specifications', JSON.stringify(specifications));
+                    specifications[specIndex].coreInvoiceModelTypeOfChange = typeOfChangeValues;
+                    localStorage.setItem('mySpecifications', JSON.stringify(specifications));
                     if (showAlert) {
                         alert("Selections saved!");
                     }

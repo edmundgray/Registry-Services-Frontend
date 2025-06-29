@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", function () {
     console.log("CoreInvoiceModel.js: Editing spec ID:", editingSpecId);
     
     let savedCoreIds = [];
+    let savedTypeOfChange = {};
 
     if (editingSpecId) {
         const specifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
@@ -13,7 +14,11 @@ document.addEventListener("DOMContentLoaded", function () {
         if (specToEdit && specToEdit.coreInvoiceModelIds) {
             savedCoreIds = specToEdit.coreInvoiceModelIds;
         }
+        if (specToEdit && specToEdit.coreInvoiceModelTypeOfChange) {
+            savedTypeOfChange = specToEdit.coreInvoiceModelTypeOfChange;
+        }
         console.log("CoreInvoiceModel.js: Saved core IDs:", savedCoreIds);
+        console.log("CoreInvoiceModel.js: Saved type of change:", savedTypeOfChange);
     }
 
     async function fetchCoreInvoiceModelsFromAPI() {
@@ -64,11 +69,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 NumericLevel: getNumericLevel(item.level || item.Level), // New numeric level for comparison
                 Cardinality: item.cardinality || item.Cardinality || '1..1',
                 SemanticDescription: item.semanticDescription || item.SemanticDescription || item['Semantic Description'] || 'N/A',
-                UsageNote: item.semanticDescription || item.SemanticDescription || item['Usage Note'] || 'N/A', // Fallback to semanticDescription
+                UsageNote: item.usageNote || item.UsageNote || item['Usage Note'] || 'N/A',
                 BusinessRules: item.businessRules || item.BusinessRules || item['Business Rules'] || 'N/A',
                 DataType: item.dataType || item.DataType || item['Data Type'] || 'N/A',
                 ReqID: item.reqId || item.ReqID || item['Req ID'] || 'N/A',
-                TypeOfChange: item.typeOfChange || item.TypeOfChange || 'No Change',
+                TypeOfChange: item.typeOfChange || item.TypeOfChange || 'No change',
                 rowPos: item.rowPos, // Keep rowPos for sorting
                 children: [] // Initialize children array for hierarchy
             }));
@@ -137,9 +142,35 @@ document.addEventListener("DOMContentLoaded", function () {
                     <td>${item.DataType || 'N/A'}</td>
                 `;
 
-                // Only add the Actions cell (Show more button) as the last column
-                const btnCell = document.createElement("td");
-                tr.appendChild(btnCell);
+                // Add the appropriate columns based on whether this is read-only or editable
+                if (isReadOnly) {
+                    // Read-only version: Add Actions cell (Show more button) as the last column
+                    const btnCell = document.createElement("td");
+                    tr.appendChild(btnCell);
+                } else {
+                    // Editable version: Add "Included in Spec" and "Type of Change" columns
+                    const includedCell = document.createElement("td");
+                    includedCell.className = "centered-cell";
+                    const isChecked = savedCoreIds.includes(item.ID);
+                    includedCell.innerHTML = `<input type="checkbox" class="row-selector" data-id="${item.ID}" ${isChecked ? 'checked' : ''}>`;
+                    tr.appendChild(includedCell);
+
+                    const typeOfChangeCell = document.createElement("td");
+                    const savedChangeType = savedTypeOfChange[item.ID] || item.TypeOfChange || 'No change';
+                    typeOfChangeCell.innerHTML = `
+                        <select class="type-of-change-dropdown" data-id="${item.ID}">
+                            <option value="No change" ${savedChangeType === 'No change' ? 'selected' : ''}>No change</option>
+                            <option value="Make definition narrower" ${savedChangeType === 'Make definition narrower' ? 'selected' : ''}>Make definition narrower</option>
+                            <option value="Decrease number of repetitions" ${savedChangeType === 'Decrease number of repetitions' ? 'selected' : ''}>Decrease number of repetitions</option>
+                            <option value="Restrict values in an existing list" ${savedChangeType === 'Restrict values in an existing list' ? 'selected' : ''}>Restrict values in an existing list</option>
+                        </select>
+                    `;
+                    tr.appendChild(typeOfChangeCell);
+
+                    // Add Actions cell (Show more button) as the last column
+                    const btnCell = document.createElement("td");
+                    tr.appendChild(btnCell);
+                }
 
                 // Add color classes based on level and ID prefix, but never for BT rows
                 if (!isBT) {
@@ -166,7 +197,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     showMoreBtn.className = 'show-more-btn';
                     showMoreBtn.textContent = 'Show more';
                     showMoreBtn.style.fontSize = '12px';
-                    btnCell.appendChild(showMoreBtn);
+                    
+                    // Find the correct button cell (last cell in the row)
+                    const cells = tr.querySelectorAll('td');
+                    const buttonCell = cells[cells.length - 1];
+                    buttonCell.appendChild(showMoreBtn);
 
                     item.children.forEach(child => {
                         const childTr = renderRowAndChildren(child, container, level + 1);
