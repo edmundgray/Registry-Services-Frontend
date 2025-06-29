@@ -1,4 +1,11 @@
-# 🚀 Quick Start Card - Authentication System
+# 🚀 Quick Start Card - Registry Services Frontend
+
+## 🏗️ New Modular Architecture
+
+The application now uses a **modular JavaScript architecture** with:
+- **Centralized Data Management** via `SpecificationDataManager`
+- **Page-specific modules** for better maintainability
+- **Consistent authentication** across all pages
 
 ## 🔑 Login Credentials (Demo)
 - **Username**: `Admin`
@@ -9,17 +16,28 @@
 - **User** (logged in) → Create and edit
 - **Admin** (admin role) → Everything + delete
 
-## 🏷️ CSS Classes for HTML
-```html
-<div class="user-only">Shows when logged in</div>
-<div class="admin-only">Shows to admins only</div>
-<button class="create-edit-only">Create/Edit Button</button>
-<button class="delete-only">Delete Button</button>
-```
-
 ## 📡 Essential JavaScript Functions
 
-### Check User Status
+### Data Management (New!)
+```javascript
+// Initialize data manager
+const dataManager = new SpecificationDataManager();
+
+// Check edit mode
+dataManager.isEditMode()
+
+// Load specification
+await dataManager.loadSpecificationFromAPI(specId)
+
+// Save working data
+dataManager.workingData = yourData;
+dataManager.saveWorkingDataToLocalStorage();
+
+// Get all specifications
+await dataManager.getAllSpecifications()
+```
+
+### Authentication (Updated)
 ```javascript
 getCurrentUser()          // Get user info
 isLoggedIn()             // true/false
@@ -27,7 +45,7 @@ isAdmin()                // true/false
 getAccessLevel()         // "guest", "user", or "admin"
 ```
 
-### API Calls
+### API Calls (Enhanced)
 ```javascript
 // Public API call (no login needed)
 await authenticatedFetch('/api/data', { method: 'GET' })
@@ -58,7 +76,56 @@ const newSpec = {
 await createSpecification(newSpec);
 ```
 
-## 🛠️ Common Patterns
+## 🛠️ New Page Modules
+
+### Registry Page
+```javascript
+// Using registryTable.js module
+await loadRegistryData();        // Load specifications
+searchSpecifications(query);     // Search functionality
+filterByStatus(status);         // Filter specifications
+```
+
+### Specification Workflow
+```javascript
+// Each page uses centralized data management
+await initializeDataManager();   // Initialize on page load
+handleSave();                   // Save to working data
+saveAndGoToNextStep();          // Save and navigate
+```
+
+### Governing Entities
+```javascript
+// Using governingEntity.js module
+await loadGoverningEntities();   // Load entities
+await loadEntityDetails(id);     // Load specific entity
+```
+
+## 🔧 Required HTML Setup
+
+### Modern Page Structure
+```html
+<!-- Required scripts in order -->
+<script src="../JS/auth/authManager.js"></script>
+<script>
+    window.authManager = new AuthManager();
+    function authenticatedFetch(url, options = {}) {
+        const headers = {...(options.headers || {}), ...window.authManager.getAuthHeaders()};
+        return fetch(url, {...options, headers});
+    }
+</script>
+<script src="../JS/javascript.js"></script>
+<script src="../JS/dataManager.js"></script>
+<script src="../JS/yourPageModule.js"></script>
+```
+
+### CSS Classes (Still Supported)
+```html
+<div class="user-only">Shows when logged in</div>
+<div class="admin-only">Shows to admins only</div>
+<button class="create-edit-only">Create/Edit Button</button>
+<button class="delete-only">Delete Button</button>
+```
 
 ### Protected Form Submission
 ```javascript

@@ -1,8 +1,50 @@
-# Frequently Asked Questions - JWT Authentication System
+# Frequently Asked Questions - Registry Services Frontend
 
 ## Common Questions from Developers
 
-### Q1: What exactly is happening when I call `authenticatedFetch()`?
+### Q1: What's the difference between the old and new architecture?
+
+**A:** The application has been completely refactored from inline JavaScript to a modular architecture:
+
+**Old Architecture:**
+```html
+<script>
+  // Hundreds of lines of inline JavaScript
+  function saveData() { localStorage.setItem(...) }
+  function loadData() { return JSON.parse(localStorage.getItem(...)) }
+</script>
+```
+
+**New Architecture:**
+```html
+<script src="../JS/auth/authManager.js"></script>
+<script src="../JS/dataManager.js"></script>
+<script src="../JS/pageSpecificModule.js"></script>
+```
+
+### Q2: How do I use the new SpecificationDataManager?
+
+**A:** The SpecificationDataManager is the central hub for all data operations:
+
+```javascript
+// Initialize (do this first in every page)
+const dataManager = new SpecificationDataManager();
+
+// Check if editing existing specification
+if (dataManager.isEditMode()) {
+    console.log('Editing specification ID:', dataManager.currentSpecId);
+    await dataManager.loadSpecificationFromAPI(dataManager.currentSpecId);
+}
+
+// Save working data (replaces direct localStorage usage)
+dataManager.workingData = { specName: 'My Spec', status: 'draft' };
+dataManager.saveWorkingDataToLocalStorage();
+
+// Load working data
+const workingData = dataManager.loadWorkingDataFromLocalStorage();
+```
+
+### Q3: What exactly is happening when I call `authenticatedFetch()`?
 
 **A:** The `authenticatedFetch()` function is a wrapper around the browser's built-in `fetch()` function. Here's what it does step by step:
 
@@ -25,7 +67,44 @@ const response = await authenticatedFetch('/api/data', { method: 'POST' });
 
 ---
 
-### Q2: Why do some functions have `async` and `await`?
+### Q4: What is "working data" and how does it work?
+
+**A:** Working data is a key concept in the new architecture that allows data to persist across multiple pages during specification creation/editing:
+
+**The Problem It Solves:**
+```
+User starts on IdentifyingInformation.html → enters data
+Navigates to CoreInvoiceModel.html → enters more data  
+Navigates to ExtensionComponentDataModel.html → enters more data
+If they go back or refresh, data should still be there
+```
+
+**How It Works:**
+```javascript
+// Each page saves its data to working data
+dataManager.workingData = {
+    // Data from IdentifyingInformation page
+    specName: "My Invoice Spec",
+    sector: "Finance",
+    
+    // Data from CoreInvoiceModel page  
+    coreInvoiceData: [...selected elements...],
+    
+    // Data from ExtensionComponentDataModel page
+    extensionComponentData: [...selected components...]
+};
+
+// Automatically persisted to localStorage
+dataManager.saveWorkingDataToLocalStorage();
+```
+
+**Key Benefits:**
+- **Cross-page persistence**: Data survives page navigation and browser refresh
+- **Edit mode support**: Existing specifications can be loaded and modified
+- **Consistent API**: All pages use the same data management methods
+- **Automatic cleanup**: Working data is cleared after successful submission
+
+### Q5: Why do some functions have `async` and `await`?
 
 **A:** These are for handling asynchronous operations (things that take time, like network requests).
 

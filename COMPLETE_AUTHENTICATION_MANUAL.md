@@ -1,40 +1,136 @@
-# Complete JWT Authentication System Manual for Developers
+# Complete Registry Services Frontend Manual for Developers
 
 ## Table of Contents
 1. [System Overview](#system-overview)
-2. [Quick Start Guide](#quick-start-guide)
-3. [System Architecture](#system-architecture)
-4. [Core Components](#core-components)
-5. [Authentication Flow](#authentication-flow)
-6. [Access Control System](#access-control-system)
-7. [API Integration](#api-integration)
-8. [UI Integration](#ui-integration)
-9. [Error Handling](#error-handling)
-10. [Session Management](#session-management)
-11. [Code Examples](#code-examples)
-12. [Best Practices](#best-practices)
-13. [Troubleshooting](#troubleshooting)
-14. [Testing Guide](#testing-guide)
-15. [Future Enhancements](#future-enhancements)
+2. [New Modular Architecture](#new-modular-architecture)
+3. [Data Management System](#data-management-system)
+4. [Quick Start Guide](#quick-start-guide)
+5. [System Architecture](#system-architecture)
+6. [Core Components](#core-components)
+7. [Authentication Flow](#authentication-flow)
+8. [Access Control System](#access-control-system)
+9. [API Integration](#api-integration)
+10. [UI Integration](#ui-integration)
+11. [Error Handling](#error-handling)
+12. [Session Management](#session-management)
+13. [Code Examples](#code-examples)
+14. [Best Practices](#best-practices)
+15. [Troubleshooting](#troubleshooting)
+16. [Testing Guide](#testing-guide)
+17. [Future Enhancements](#future-enhancements)
 
 ---
 
 ## System Overview
 
-### What is JWT Authentication?
-JWT (JSON Web Token) is a secure way to transmit information between parties. In our system:
-- **Tokens contain user information** (ID, username, role, expiration)
-- **Tokens are signed** to prevent tampering
-- **Tokens expire** for security (1 hour in our prototype)
-- **No server session storage** needed
+### Registry Services Frontend - Complete Solution
+The Registry Services frontend is now a **complete modular application** with:
+- **Centralized Data Management** via SpecificationDataManager
+- **JWT Authentication** with 3-tier access control (Guest, User, Admin)
+- **Modular JavaScript Architecture** with page-specific modules
+- **Working Data Persistence** across multi-page workflows
+- **Consistent API Integration** using authenticatedFetch
+- **Comprehensive Error Handling** and debugging capabilities
 
-### Our Authentication System Features
-✅ **Three Access Levels**: Guest, User, Admin  
-✅ **Method-Based Security**: GET requests are public, POST/PUT/DELETE require login  
-✅ **Automatic Token Validation**: Checks expiration and shows warnings  
-✅ **User-Friendly Error Messages**: Clear feedback for all error scenarios  
-✅ **Session Management**: 1-hour sessions with 5-minute expiration warnings  
-✅ **Role-Based UI**: Elements show/hide based on user permissions  
+### Key Architectural Improvements
+✅ **95% Reduction in Inline JavaScript**: Moved from 2,000+ lines of inline code to modular files  
+✅ **Centralized Data Management**: SpecificationDataManager handles all data operations  
+✅ **Page-Specific Modules**: 7 dedicated JavaScript modules for different functionality  
+✅ **Cross-Page Data Flow**: Working data persists across specification creation workflow  
+✅ **Enhanced Debugging**: Comprehensive logging and error handling throughout  
+✅ **Future-Proof Architecture**: Scalable and maintainable code structure  
+
+---
+
+## New Modular Architecture
+
+### Before vs After
+
+**Old Architecture (Inline JavaScript):**
+```html
+<script>
+  // 200+ lines of inline JavaScript per page
+  function saveData() { localStorage.setItem('data', JSON.stringify(data)); }
+  function loadData() { return JSON.parse(localStorage.getItem('data')); }
+  // Lots more inline code...
+</script>
+```
+
+**New Architecture (Modular):**
+```html
+<!-- Required scripts in order -->
+<script src="../JS/auth/authManager.js"></script>
+<script>
+    window.authManager = new AuthManager();
+    function authenticatedFetch(url, options = {}) {
+        const headers = {...(options.headers || {}), ...window.authManager.getAuthHeaders()};
+        return fetch(url, {...options, headers});
+    }
+</script>
+<script src="../JS/javascript.js"></script>
+<script src="../JS/dataManager.js"></script>
+<script src="../JS/pageSpecificModule.js"></script>
+```
+
+### Page-Specific Modules
+
+| Module | Purpose | Key Features |
+|--------|---------|--------------|
+| `registryTable.js` | Registry listing page | Search, pagination, filtering, specification management |
+| `identifyingInformation.js` | Specification metadata | Form handling, validation, data persistence |
+| `coreInvoiceModel.js` | Core elements selection | Element management, data integration |
+| `additionalRequirements.js` | Requirements management | Dynamic tables, auto-save |
+| `governingEntity.js` | Entity management | Admin operations, entity details |
+| `specificationPreview.js` | Preview and submission | Data aggregation, final submission |
+| `dataManager.js` | Centralized data hub | All data operations, working data concept |
+
+---
+
+## Data Management System
+
+### SpecificationDataManager - The Central Hub
+
+The `SpecificationDataManager` is the heart of the new architecture:
+
+```javascript
+class SpecificationDataManager {
+    constructor()               // Initialize manager
+    isEditMode()               // Check if editing existing spec
+    loadSpecificationFromAPI(specId)  // Load existing specification
+    saveSpecificationData()    // Save specification to API
+    saveNewSpecification()     // Create new specification
+    loadWorkingDataFromLocalStorage() // Load working data
+    saveWorkingDataToLocalStorage()   // Save working data
+    clearWorkingData()         // Clean up after submission
+    getAllSpecifications()     // Get all user's specifications
+}
+```
+
+### Working Data Concept
+
+Working data allows seamless multi-page workflows:
+
+```javascript
+// Page 1: User enters identifying information
+dataManager.workingData = {
+    specName: "My Invoice Spec",
+    sector: "Finance",
+    purpose: "Digitise invoicing"
+};
+dataManager.saveWorkingDataToLocalStorage();
+
+// Page 2: User selects core elements
+dataManager.workingData.coreInvoiceData = [...selectedElements];
+dataManager.saveWorkingDataToLocalStorage();
+
+// Page 3: User adds extension components
+dataManager.workingData.extensionComponentData = [...selectedComponents];
+dataManager.saveWorkingDataToLocalStorage();
+
+// Final page: Submit everything
+await dataManager.saveNewSpecification();
+dataManager.clearWorkingData(); // Clean up
+```  
 
 ---
 

@@ -40,8 +40,25 @@ The authentication system is designed to be **easy to understand and extend**:
 ```
 RegistryServices/
 ├── HTML/                   # Application pages
+│   ├── eInvoicingSpecificationRegistry.html
+│   ├── IdentifyingInformation.html
+│   ├── coreInvoiceModel.html
+│   ├── ExtensionComponentDataModel.html
+│   ├── additionalRequirements.html
+│   ├── specificationPreview.html
+│   ├── governingEntityList.html
+│   └── ... (all pages updated with modular architecture)
 ├── JS/
-│   └── javascript.js      # Main authentication system
+│   ├── javascript.js           # Core utilities and global functions
+│   ├── dataManager.js          # Centralized data management system
+│   ├── registryTable.js        # Registry table functionality
+│   ├── identifyingInformation.js # Identifying Information page logic
+│   ├── coreInvoiceModel.js     # Core Invoice Model functionality
+│   ├── additionalRequirements.js # Additional Requirements management
+│   ├── governingEntity.js      # Governing Entity management
+│   ├── specificationPreview.js # Preview and submission workflow
+│   └── auth/
+│       └── authManager.js      # Centralized authentication system
 ├── CSS/                   # Styling
 ├── JSON/                  # Mock data and configuration
 └── Images/               # Assets
@@ -51,10 +68,14 @@ RegistryServices/
 
 - **JWT Authentication** with real API integration
 - **Role-based access control** (Guest/User/Admin)
+- **Centralized Data Management** with SpecificationDataManager
+- **Modular JavaScript Architecture** with page-specific modules
 - **Session management** with expiration warnings
 - **Method-based security** (GET public, POST/PUT/DELETE protected)
-- **User-friendly error handling**
+- **User-friendly error handling** with comprehensive debugging
 - **Responsive UI** with role-based visibility
+- **Consistent API Integration** using authenticatedFetch
+- **Working Data Persistence** across multi-page workflows
 
 ## 🧪 Testing
 
@@ -90,16 +111,73 @@ const result = await authenticatedFetch('/api/specifications', {
 ## 🔄 Development Workflow
 
 ### Adding New Pages
-1. Include the authentication script: `<script src="../JS/javascript.js"></script>`
-2. Add login modal container: `<div id="loginModal"></div>`
-3. Initialize on page load:
+
+1. **Include required scripts** in the following order:
+   ```html
+   <script src="../JS/auth/authManager.js"></script>
+   <script>
+       window.authManager = new AuthManager();
+       function authenticatedFetch(url, options = {}) {
+           const headers = { ...(options.headers || {}), ...window.authManager.getAuthHeaders() };
+           return fetch(url, { ...options, headers });
+       }
+   </script>
+   <script src="../JS/javascript.js"></script>
+   <script src="../JS/dataManager.js"></script>
+   ```
+
+2. **Create page-specific module** (e.g., `JS/myNewPage.js`)
+
+3. **Initialize data manager** in your page:
    ```javascript
-   document.addEventListener("DOMContentLoaded", function() {
-       createLoginModal();
-       updateVisibility();
-       startSessionMonitoring();
+   let dataManager = null;
+   
+   async function initializeDataManager() {
+       dataManager = new SpecificationDataManager();
+       // Additional initialization logic
+   }
+   
+   document.addEventListener('DOMContentLoaded', async () => {
+       await initializeDataManager();
+       // Page-specific initialization
    });
    ```
+
+4. **Add login modal container**: `<div id="loginModal"></div>`
+
+### Using the Data Management System
+
+The application now uses a centralized `SpecificationDataManager` for all data operations:
+
+```javascript
+// Initialize data manager
+const dataManager = new SpecificationDataManager();
+
+// Check if in edit mode
+if (dataManager.isEditMode()) {
+    const specId = dataManager.currentSpecId;
+    await dataManager.loadSpecificationFromAPI(specId);
+}
+
+// Save working data
+dataManager.workingData = { /* your data */ };
+dataManager.saveWorkingDataToLocalStorage();
+
+// Get all specifications
+const specs = await dataManager.getAllSpecifications();
+```
+
+### Page-Specific Modules
+
+Each major page now has its own JavaScript module:
+
+- **Registry**: `registryTable.js` - Table management, search, filtering
+- **Identifying Info**: `identifyingInformation.js` - Form handling, validation
+- **Core Invoice**: `coreInvoiceModel.js` - Element selection, data persistence
+- **Extension Components**: Integrated with `dataManager.js` for component management
+- **Additional Requirements**: `additionalRequirements.js` - Dynamic table handling
+- **Governing Entities**: `governingEntity.js` - Entity management
+- **Preview**: `specificationPreview.js` - Data aggregation and submission
 
 ### Role-based UI Elements
 ```html
