@@ -588,6 +588,7 @@
                             localStorage.setItem("selectedSpecification", spec.specificationName);
                             localStorage.setItem("editSpecificationData", JSON.stringify(spec));
                             localStorage.setItem("editSpecificationId", spec.identityID.toString());
+                            localStorage.setItem("returnToPage", "viewSpecification.html"); // Set return page
                             console.log('DEBUG: Navigating to edit mode for specification:', spec.specificationName);
                             window.location.href = "IdentifyingInformation.html";
                         } else {

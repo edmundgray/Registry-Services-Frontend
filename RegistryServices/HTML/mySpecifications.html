@@ -592,6 +592,7 @@
             function autofillSpecification(specName) {
                 console.warn('autofillSpecification is deprecated. Use editSpecification(identityID) instead.');
                 localStorage.setItem("selectedSpecification", specName);
+                localStorage.setItem("returnToPage", "mySpecifications.html"); // Set return page
                 window.location.href = "IdentifyingInformation.html";
             }
 

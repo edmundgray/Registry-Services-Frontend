@@ -1403,6 +1403,10 @@ function editSpecification(identityID) {
     // Use the data manager to set up edit mode
     SpecificationDataManager.initializeForEdit(identityID);
     
+    // Store the return page based on current location
+    const currentPage = window.location.pathname.split('/').pop();
+    localStorage.setItem("returnToPage", currentPage || "mySpecifications.html");
+    
     // Navigate to IdentifyingInformation.html
     window.location.href = 'IdentifyingInformation.html';
 }
@@ -1413,6 +1417,9 @@ function createNewSpecification() {
     
     // Use the data manager to set up create mode
     SpecificationDataManager.initializeForCreate();
+    
+    // Store the return page so cancel can navigate back
+    localStorage.setItem("returnToPage", "mySpecifications.html");
     
     // Navigate to IdentifyingInformation.html
     window.location.href = 'IdentifyingInformation.html';
