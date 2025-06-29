@@ -64,14 +64,14 @@
                         <span class="text">Identifying Information</span>
                     </a>
                 </li>
-                <li class="child-element">
-                    <a href="coreInvoiceModel.html">
+                <li>
+                    <a href="coreInvoiceModelRead.html">
                         <span class="icon"><i class="fa-solid fa-car"></i></span>
                         <span class="text">Core Invoice Model</span>
                     </a>
                 </li>
-                <li class="child-element">
-                    <a href="ExtensionComponentDataModel.html">
+                <li>
+                    <a href="ExtensionComponentDataModelRead.html">
                         <span class="icon"><i class="fa-solid fa-trailer"></i></span>
                         <span class="text">Extension Component Data Model</span>
                     </a>
@@ -414,12 +414,9 @@ if (localStorage.userRole === "Admin") {
                 loadExtensionData(); // Initial load of components for dropdown
 
                 const titleElement = document.querySelector('.page-Content h1');
-                const editingSpecName = localStorage.getItem("selectedSpecification");
-                if (titleElement && editingSpecName) {
-                    titleElement.innerHTML = `<i class="fa-solid fa-trailer"></i> Extension Component Data Model for: ${editingSpecName}<span class="read-only-hint">(READ-ONLY)</span>`;
-                } else if (titleElement && window.isExtensionReadOnly) {
-                    // Ensure the read-only hint is always there if the flag is set
-                    titleElement.innerHTML = `<i class="fa-solid fa-trailer"></i> Extension Component Data Model <span class="read-only-hint">(READ-ONLY)</span>`;
+                // For read-only mode, always show the simple title without specification name
+                if (titleElement && window.isExtensionReadOnly) {
+                    titleElement.innerHTML = `<i class="fa-solid fa-trailer"></i> Extension Component Data Model <span style="color: #b22222; font-size: 0.6em; margin-left: 12px; vertical-align: middle;">(READ-ONLY)</span>`;
                 }
 
                 componentsContainer.addEventListener('change', () => { isFormDirty = true; });
