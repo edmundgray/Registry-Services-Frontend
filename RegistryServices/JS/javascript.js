@@ -35,8 +35,8 @@ function updateVisibility()
 
     document.getElementById("loginLogoutButton").innerText = loggedInStatus ? "Logout" : "Login";
 
-    const coreInvoiceModel = document.querySelector("a[href='coreInvoiceModel.html']").parentElement;
-    const extensionComponent = document.querySelector("a[href='ExtensionComponentDataModel.html']").parentElement;
+    const coreInvoiceModel = document.querySelector("a[href='coreInvoiceModelRead.html']").parentElement;
+    const extensionComponent = document.querySelector("a[href='ExtensionComponentDataModelRead.html']").parentElement;
 
     if (coreInvoiceModel && extensionComponent) 
     {
@@ -941,8 +941,8 @@ function updateVisibilityWithRoles() {
     updateUserStatus();
     
     // Update existing navigation elements
-    const coreInvoiceModel = document.querySelector("a[href='coreInvoiceModel.html']")?.parentElement;
-    const extensionComponent = document.querySelector("a[href='ExtensionComponentDataModel.html']")?.parentElement;
+    const coreInvoiceModel = document.querySelector("a[href='coreInvoiceModelRead.html']")?.parentElement;
+    const extensionComponent = document.querySelector("a[href='ExtensionComponentDataModelRead.html']")?.parentElement;
 
     if (coreInvoiceModel && extensionComponent) {
         if (isLoggedIn()) {
