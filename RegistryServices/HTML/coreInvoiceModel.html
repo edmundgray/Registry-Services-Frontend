@@ -173,15 +173,59 @@
             document.addEventListener('DOMContentLoaded', () => {
                 const editingSpecId = localStorage.getItem("selectedSpecification");
                 if (editingSpecId) {
-                    const specifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
-                    const spec = specifications.find(s => s.id === editingSpecId);
+                    // Check both storage locations for specifications
+                    let specifications = JSON.parse(localStorage.getItem("specifications")) || [];
+                    let mySpecifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
+                    
+                    // First try to find in main specifications store
+                    let spec = specifications.find(s => s.specName === editingSpecId);
+                    
+                    // If not found, try mySpecifications store (for backwards compatibility)
+                    if (!spec) {
+                        spec = mySpecifications.find(s => s.id === editingSpecId);
+                    }
+                    
                     if (spec) {
                         const titleElement = document.querySelector('.page-Content h1');
                         if (titleElement) {
-                            titleElement.innerHTML = `<i class="fa-solid fa-car"></i> Core Invoice Model for: ${spec.specName || spec.name || 'Unknown'}`;
+                            const specName = spec.specName || spec.name || editingSpecId;
+                            titleElement.innerHTML = `<i class="fa-solid fa-car"></i> Core Invoice Model for: ${specName}`;
+                        }
+                        
+                        // Load existing selections if they exist
+                        if (spec.coreInvoiceModelIds && spec.coreInvoiceModelIds.length > 0) {
+                            // Wait for the table to be populated by coreInvoiceModel.js
+                            setTimeout(() => {
+                                loadExistingSelections(spec);
+                            }, 500);
                         }
                     }
                 }
+            });
+
+            // Function to load existing selections
+            function loadExistingSelections(spec) {
+                if (spec.coreInvoiceModelIds) {
+                    spec.coreInvoiceModelIds.forEach(id => {
+                        const checkbox = document.querySelector(`input[data-id="${id}"]`);
+                        if (checkbox) {
+                            checkbox.checked = true;
+                        }
+                    });
+                }
+                
+                if (spec.coreInvoiceModelTypeOfChange) {
+                    Object.keys(spec.coreInvoiceModelTypeOfChange).forEach(id => {
+                        const dropdown = document.querySelector(`select[data-id="${id}"]`);
+                        if (dropdown) {
+                            dropdown.value = spec.coreInvoiceModelTypeOfChange[id];
+                        }
+                    });
+                }
+                
+                // Clear the dirty flag since we just loaded saved data
+                isFormDirty = false;
+            }
 
                 document.querySelector('#coreInvoiceTable').addEventListener('change', (event) => {
                     if (event.target.matches('.row-selector:not(:disabled)') || event.target.matches('.type-of-change-dropdown')) {
@@ -248,13 +292,26 @@
                     return;
                 }
 
-                let specifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
-                const specIndex = specifications.findIndex(spec => spec.id === editingSpecId);
+                // Check both storage locations for specifications
+                let specifications = JSON.parse(localStorage.getItem("specifications")) || [];
+                let mySpecifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
+                
+                // First try to find in main specifications store (used by IdentifyingInformation)
+                let specIndex = specifications.findIndex(spec => spec.specName === editingSpecId);
+                let targetArray = specifications;
+                let storageKey = 'specifications';
+                
+                // If not found, try mySpecifications store (for backwards compatibility)
+                if (specIndex === -1) {
+                    specIndex = mySpecifications.findIndex(spec => spec.id === editingSpecId);
+                    targetArray = mySpecifications;
+                    storageKey = 'mySpecifications';
+                }
 
                 if (specIndex > -1) {
-                    specifications[specIndex].coreInvoiceModelIds = selectedIds;
-                    specifications[specIndex].coreInvoiceModelTypeOfChange = typeOfChangeValues;
-                    localStorage.setItem('mySpecifications', JSON.stringify(specifications));
+                    targetArray[specIndex].coreInvoiceModelIds = selectedIds;
+                    targetArray[specIndex].coreInvoiceModelTypeOfChange = typeOfChangeValues;
+                    localStorage.setItem(storageKey, JSON.stringify(targetArray));
                     if (showAlert) {
                         alert("Selections saved!");
                     }
@@ -265,8 +322,15 @@
             }
 
             function saveAndGoToExtensionModel() {
-                handleCoreInvoiceSave(false);
-                window.location.href = 'ExtensionComponentDataModel.html';
+                console.log("saveAndGoToExtensionModel() called");
+                try {
+                    handleCoreInvoiceSave(false);
+                    console.log("Save completed, navigating to ExtensionComponentDataModel.html");
+                    window.location.href = 'ExtensionComponentDataModel.html';
+                } catch (error) {
+                    console.error("Error in saveAndGoToExtensionModel:", error);
+                    alert("Error saving data: " + error.message);
+                }
             }
 
             function handleCancel() {

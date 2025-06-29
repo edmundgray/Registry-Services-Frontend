@@ -6,7 +6,18 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
         <link rel="stylesheet" href="../CSS/style.css">
         
+        <!-- Add authManager.js for global AuthManager and AUTH_CONFIG -->
+        <script src="../JS/auth/authManager.js"></script>
+        <script>
+            // Create a global authManager instance and authenticatedFetch
+            window.authManager = new AuthManager();
+            function authenticatedFetch(url, options = {}) {
+                const headers = { ...(options.headers || {}), ...window.authManager.getAuthHeaders() };
+                return fetch(url, { ...options, headers });
+            }
+        </script>
         <script src="../JS/javascript.js"></script>
+        <script src="../JS/dataManager.js"></script>
         
         <title>Registry Services</title>
 
@@ -357,7 +368,7 @@
                     </div>
                     
                     <div>
-                        <button type="button" onclick="window.location.href='coreInvoiceModel.html'" class="view-button" style="background:#217a36;">Core Invoice Model</button>
+                        <button type="button" onclick="saveAndGoToCoreInvoiceModel()" class="view-button" style="background:#217a36;">Core Invoice Model</button>
                     </div>
                 </div>
             </form>
@@ -368,168 +379,251 @@
   ------------------------------------------------------------------------------>
         <script>
             let isFormDirty = false;
+            let dataManager = null;
 
-            function handleSave() 
-            {
-                const form = document.getElementById('identifyingForm');
-                if (!form.reportValidity()) return;
-
-                const data = 
-                {
-                    "Specification name": form.specName.value,
-                    "Governing Entity": form.governingEntity.value,
-                    "Contact Information": form.contactInfo.value,
-                    "Sector": form.sector.value,
-                    "Sub Sector": form.subSector.value,
-                    "Country": form.country.value,
-                    "Purpose": form.purpose.value,
-                    "Specification Identifier": form.specId.value,
-                    "Specification Version": form.specVersion.value,
-                    "Date of Implementation": form.implDate.value,
-                    "Core Version": form.coreVersion.value,
-                    "Underlying Specification": form.underlyingSpec.value,
-                    "Specification Source Link": form.sourceLink.value,
-                    "Preferred Syntax": form.preferredSyntax.value
-                };
-
-                // Get existing specs or create new array
-                let specs = JSON.parse(localStorage.getItem("specifications") || "[]");
-                const editingSpecId = localStorage.getItem("selectedSpecification");
-
-                if (editingSpecId) {
-                    // If we are editing, find the index of the old specification.
-                    const specIndex = specs.findIndex(spec => spec.specName === editingSpecId);
-                    if (specIndex > -1) {
-                        // If found, replace it with the new data.
-                        specs[specIndex] = data;
-                        alert("Specification updated and saved as In Progress.");
-                    } else {
-                        // If not found (edge case), add as a new spec.
-                        specs.push(data);
-                        alert("Specification saved as In Progress.");
-                    }
-                    } else {
-                        // If we are not editing, just add the new spec.
-                        specs.push(data);
-                        alert("Specification saved as In Progress.");
-                    }
-                
-                    localStorage.setItem("specifications", JSON.stringify(specs));
-
-                    // Clean up the editing flags from localStorage
-                    localStorage.removeItem("selectedSpecification");
-                    localStorage.removeItem("editSpecData");
+            // Initialize data manager and load data
+            async function initializeDataManager() {
+                try {
+                    dataManager = new SpecificationDataManager();
+                    console.log('Data manager initialized. Mode:', dataManager.currentMode);
                     
-                    isFormDirty = false;
+                    if (dataManager.isEditMode() && dataManager.currentSpecId) {
+                        console.log('Loading specification for editing. ID:', dataManager.currentSpecId);
+                        
+                        // Show loading indicator
+                        showLoadingIndicator();
+                        
+                        // Load data from API
+                        const formData = await dataManager.loadSpecificationFromAPI(dataManager.currentSpecId);
+                        
+                        // Populate form with loaded data
+                        populateForm(formData);
+                        
+                        // Hide loading indicator
+                        hideLoadingIndicator();
+                        
+                        console.log('Form populated with existing data');
+                        isFormDirty = false; // Just loaded, so not dirty
+                    } else {
+                        console.log('Creating new specification');
+                        // For new specifications, check if there's any working data
+                        const workingData = dataManager.loadWorkingDataFromLocalStorage();
+                        if (workingData) {
+                            populateForm(workingData);
+                            isFormDirty = false;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error initializing data manager:', error);
+                    hideLoadingIndicator();
+                    alert(`Error loading specification: ${error.message}`);
+                }
             }
 
-            function handleSubmit() {
+            function showLoadingIndicator() {
+                const form = document.getElementById('identifyingForm');
+                const loadingDiv = document.createElement('div');
+                loadingDiv.id = 'loadingIndicator';
+                loadingDiv.innerHTML = `
+                    <div style="text-align: center; padding: 20px; background: rgba(255,255,255,0.9); 
+                         position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1000;">
+                        <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: #007bff;"></i>
+                        <p style="margin-top: 10px;">Loading specification data...</p>
+                    </div>
+                `;
+                loadingDiv.style.position = 'relative';
+                form.style.position = 'relative';
+                form.appendChild(loadingDiv);
+            }
+
+            function hideLoadingIndicator() {
+                const loadingDiv = document.getElementById('loadingIndicator');
+                if (loadingDiv) {
+                    loadingDiv.remove();
+                }
+            }
+
+            function populateForm(data) {
+                const form = document.getElementById('identifyingForm');
+                
+                // Populate all form fields
+                const fieldMappings = {
+                    specName: data.specName,
+                    governingEntity: data.governingEntity,
+                    contactInfo: data.contactInfo,
+                    sector: data.sector,
+                    subSector: data.subSector,
+                    country: data.country,
+                    purpose: data.purpose,
+                    specId: data.specId,
+                    specVersion: data.specVersion,
+                    implDate: data.implDate,
+                    coreVersion: data.coreVersion,
+                    underlyingSpec: data.underlyingSpec,
+                    sourceLink: data.sourceLink,
+                    preferredSyntax: data.preferredSyntax
+                };
+
+                Object.keys(fieldMappings).forEach(fieldName => {
+                    const field = form.elements[fieldName];
+                    if (field && fieldMappings[fieldName] !== undefined) {
+                        field.value = fieldMappings[fieldName] || '';
+                    }
+                });
+
+                console.log('Form populated with data:', fieldMappings);
+            }
+
+            function getFormData() {
+                const form = document.getElementById('identifyingForm');
+                return {
+                    specName: form.specName.value,
+                    governingEntity: form.governingEntity.value,
+                    contactInfo: form.contactInfo.value,
+                    sector: form.sector.value,
+                    subSector: form.subSector.value,
+                    country: form.country.value,
+                    purpose: form.purpose.value,
+                    specId: form.specId.value,
+                    specVersion: form.specVersion.value,
+                    implDate: form.implDate.value,
+                    coreVersion: form.coreVersion.value,
+                    underlyingSpec: form.underlyingSpec.value,
+                    sourceLink: form.sourceLink.value,
+                    preferredSyntax: form.preferredSyntax.value
+                };
+            }
+
+            async function handleSave() {
                 const form = document.getElementById('identifyingForm');
                 if (!form.reportValidity()) return;
 
-                // Gather form data
-                const data = {
-                    "specName": form.specName.value,
-                    "governingEntity": form.governingEntity.value,
-                    "contactInfo": form.contactInfo.value,
-                    "sector": form.sector.value,
-                    "subSector": form.subSector.value,
-                    "country": form.country.value,
-                    "purpose": form.purpose.value,
-                    "specId": form.specId.value,
-                    "specVersion": form.specVersion.value,
-                    "implDate": form.implDate.value,
-                    "coreVersion": form.coreVersion.value,
-                    "underlyingSpec": form.underlyingSpec.value,
-                    "sourceLink": form.sourceLink.value,
-                    "preferredSyntax": form.preferredSyntax.value,
-                    "conformanceLevel": "N/A",
-                    "registryStatus": "Submitted"
-                };
+                try {
+                    const formData = getFormData();
+                    
+                    // Show saving indicator
+                    const saveButton = document.querySelector('button[onclick="handleSave()"]');
+                    const originalText = saveButton.textContent;
+                    saveButton.textContent = 'Saving...';
+                    saveButton.disabled = true;
 
-                // Get existing specs or create new array
-                let specs = JSON.parse(localStorage.getItem("specifications") || "[]");
-                const editingSpecId = localStorage.getItem("selectedSpecification");
+                    // Save to API
+                    const result = await dataManager.saveSpecificationToAPI(formData);
+                    
+                    // Update working data
+                    dataManager.workingData = dataManager.transformApiToFormData(result);
+                    dataManager.saveWorkingDataToLocalStorage();
+                    
+                    // Success feedback
+                    alert(`Specification ${dataManager.isEditMode() ? 'updated' : 'created'} successfully!`);
+                    isFormDirty = false;
 
-                if (editingSpecId) {
-                    // If we are editing, find the index of the old specification.
-                    const specIndex = specs.findIndex(spec => spec.specName === editingSpecId);
-                    if (specIndex > -1) {
-                        // If found, replace it with the new data.
-                        specs[specIndex] = data;
-                        alert("Specification updated and submitted.");
-                    } else {
-                        specs.push(data);
-                        alert("Specification submitted.");
-                    }
-                } else {
-                    specs.push(data);
-                    alert("Specification submitted.");
+                    // Restore button
+                    saveButton.textContent = originalText;
+                    saveButton.disabled = false;
+
+                } catch (error) {
+                    console.error('Error saving specification:', error);
+                    alert(`Error saving specification: ${error.message}`);
+                    
+                    // Restore button
+                    const saveButton = document.querySelector('button[onclick="handleSave()"]');
+                    saveButton.textContent = 'Save';
+                    saveButton.disabled = false;
+                }
+            }
+
+            async function saveAndGoToCoreInvoiceModel() {
+                const form = document.getElementById('identifyingForm');
+                
+                // Validate form before proceeding
+                if (!form.reportValidity()) {
+                    alert("Please fill in all required fields before proceeding to Core Invoice Model.");
+                    return;
                 }
 
-                localStorage.setItem("specifications", JSON.stringify(specs));
-                
-                // Clean up the editing flags from localStorage
-                localStorage.removeItem("selectedSpecification");
-                localStorage.removeItem("editSpecData");
+                try {
+                    const formData = getFormData();
+                    
+                    // Show saving indicator
+                    const button = document.querySelector('button[onclick="saveAndGoToCoreInvoiceModel()"]');
+                    const originalText = button.textContent;
+                    button.textContent = 'Saving...';
+                    button.disabled = true;
 
-                isFormDirty = false;
+                    // Save to API first
+                    const result = await dataManager.saveSpecificationToAPI(formData);
+                    
+                    // Update working data
+                    dataManager.workingData = dataManager.transformApiToFormData(result);
+                    dataManager.saveWorkingDataToLocalStorage();
+                    
+                    // Clear the dirty flag
+                    isFormDirty = false;
+                    
+                    // Navigate to Core Invoice Model
+                    window.location.href = 'coreInvoiceModel.html';
+
+                } catch (error) {
+                    console.error('Error saving specification:', error);
+                    alert(`Error saving specification: ${error.message}`);
+                    
+                    // Restore button
+                    const button = document.querySelector('button[onclick="saveAndGoToCoreInvoiceModel()"]');
+                    button.textContent = originalText;
+                    button.disabled = false;
+                }
             }
 
             function handleCancel() {
-                // Display a confirmation dialog to the user.
-                const userConfirmed = confirm("Warning! This Specification will be deleted, do you want to proceed?");
-                // Proceed only if the user clicks "OK".
-                if (userConfirmed) {
-                    // Check if we are in "Edit" mode by seeing if a specification was selected.
-                    const editingSpecId = localStorage.getItem("selectedSpecification");
-                    if (editingSpecId) {
-                        // If editing, find and remove the specification from the stored array.
-                        let specifications = JSON.parse(localStorage.getItem("specifications") || "[]");
-                        // Create a new array excluding the specification being deleted.
-                        const updatedSpecifications = specifications.filter(spec => spec.id !== editingSpecId);
-                        // Save the updated array back to localStorage.
-                        localStorage.setItem('specifications', JSON.stringify(updatedSpecifications));
-                        // Clean up the edit flag.
-                        localStorage.removeItem("selectedSpecification");
-                    }
-                    // Redirect the user back to their specifications page.
-                    window.location.href = 'mySpecifications.html';
+                if (isFormDirty && !confirm("You have unsaved changes. Are you sure you want to cancel?")) {
+                    return;
                 }
-                // If the user clicks "Cancel" on the confirmation, do nothing.
+                
+                // Clear editing state and return to specifications list
+                if (dataManager) {
+                    dataManager.clearEditingState();
+                }
+                
+                isFormDirty = false;
+                window.location.href = 'mySpecifications.html';
             }
 
-            document.addEventListener('DOMContentLoaded', () => 
-            {
+            // Form change tracking
+            document.addEventListener('DOMContentLoaded', () => {
                 const form = document.getElementById('identifyingForm');
                 const elements = form.querySelectorAll('input, textarea, select');
 
-                elements.forEach(element => 
-                {
-                    element.addEventListener('change', () => 
-                    {
+                elements.forEach(element => {
+                    element.addEventListener('change', () => {
                         isFormDirty = true;
                     });
                 });
+
+                // Initialize data manager after DOM is ready
+                initializeDataManager();
             });
 
-            window.addEventListener('beforeunload', function (e) 
-            {
-                if (isFormDirty) 
-                {
+            // Prevent accidental navigation
+            window.addEventListener('beforeunload', function (e) {
+                if (isFormDirty) {
                     e.preventDefault();
-                    // This is required because most browsers need it to trigger the confirmation dialog
                     e.returnValue = '';
                 }
             });
 
-    document.addEventListener("DOMContentLoaded", function () {
-        let selectedSpec = localStorage.getItem("selectedSpecification");
-
-        if (selectedSpec) {
-            document.getElementById("specName").value = selectedSpec;
-        }
-    });
+            // Add navigation protection for sidebar links
+            document.addEventListener('DOMContentLoaded', function() {
+                document.querySelectorAll('.sidebar a').forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        if (isFormDirty && !link.href.includes('IdentifyingInformation.html')) {
+                            if (!confirm('You have unsaved changes. Are you sure you want to leave this page?')) {
+                                e.preventDefault();
+                            }
+                        }
+                    });
+                });
+            });
         </script>
     </body>
 </html>

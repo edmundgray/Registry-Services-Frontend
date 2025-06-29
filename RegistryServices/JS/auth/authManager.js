@@ -30,22 +30,47 @@ window.AuthManager = class {
         const token = localStorage.getItem('access_token');
         const role = localStorage.getItem('userRole');
         const username = localStorage.getItem('username');
+        const userId = localStorage.getItem('userId');
         
-        if (token && role) {
+        console.log('DEBUG: AuthManager init - loading from localStorage:', {
+            tokenPresent: !!token,
+            tokenPreview: token ? token.substring(0, 30) + '...' : 'Not found',
+            role: role,
+            username: username,
+            userId: userId
+        });
+        
+        if (token && role && username) {
             this.accessToken = token;
             this.userRole = role;
             this.username = username;
+            this.userID = userId ? parseInt(userId) : null;
             this.isAuthenticated = true;
+            
+            console.log('DEBUG: AuthManager initialized with stored credentials');
+        } else {
+            console.log('DEBUG: No valid stored credentials found');
+            this.isAuthenticated = false;
         }
     }
 
     getAuthHeaders() {
+        console.log('DEBUG: getAuthHeaders called. Current state:', {
+            isAuthenticated: this.isAuthenticated,
+            accessTokenPresent: !!this.accessToken,
+            accessTokenPreview: this.accessToken ? this.accessToken.substring(0, 30) + '...' : 'Not set'
+        });
+        
         if (this.accessToken) {
-            return {
+            const headers = {
                 'Authorization': `Bearer ${this.accessToken}`,
                 'Content-Type': 'application/json'
             };
+            console.log('DEBUG: Returning auth headers with token:', this.accessToken.substring(0, 30) + '...');
+            return headers;
         }
+        
+        console.log('DEBUG: No access token available, returning basic headers');
         return {
             'Content-Type': 'application/json'
         };
@@ -57,6 +82,7 @@ window.AuthManager = class {
     }
 
     logout() {
+        console.log('DEBUG: AuthManager logout called');
         this.isAuthenticated = false;
         this.userRole = null;
         this.userID = null;
@@ -65,6 +91,8 @@ window.AuthManager = class {
         localStorage.removeItem('access_token');
         localStorage.removeItem('userRole');
         localStorage.removeItem('username');
+        localStorage.removeItem('userId');
+        console.log('DEBUG: AuthManager logout completed, all data cleared');
     }
 }
 

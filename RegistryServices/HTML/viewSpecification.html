@@ -6,7 +6,24 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
         <link rel="stylesheet" href="../CSS/style.css">
 
+        <!-- Add authManager.js for global AuthManager and AUTH_CONFIG -->
+        <script src="../JS/auth/authManager.js"></script>
+        <script>
+            // Create a global authManager instance and authenticatedFetch
+            window.authManager = new AuthManager();
+            function authenticatedFetch(url, options = {}) {
+                const authHeaders = window.authManager.getAuthHeaders();
+                console.log('DEBUG: authenticatedFetch called with URL:', url);
+                console.log('DEBUG: Auth headers:', authHeaders);
+                
+                const headers = { ...(options.headers || {}), ...authHeaders };
+                console.log('DEBUG: Final headers for request:', headers);
+                
+                return fetch(url, { ...options, headers });
+            }
+        </script>
         <script src="../JS/javascript.js"></script>
+        <script src="../JS/dataManager.js"></script>
 
         <title>Registry Services</title>
         <style>
@@ -310,112 +327,329 @@
         Some exclusive JavaScript for this page
 ------------------------------------------------------------------------------>
         <script>
+            let currentSpecification = null; // Store the current specification data
 
-        
             document.addEventListener("DOMContentLoaded", function () {
-    const params = new URLSearchParams(window.location.search);
+                console.log('ViewSpecification page loaded');
+                
+                // Initialize authentication manager
+                window.authManager.init();
+                
+                // Get specification ID from URL or localStorage
+                const params = new URLSearchParams(window.location.search);
+                const specificationId = params.get('id') || localStorage.getItem('viewSpecificationId');
+                
+                console.log('DEBUG: Specification ID:', specificationId);
+                console.log('DEBUG: URL params:', Object.fromEntries(params.entries()));
+                console.log('DEBUG: Auth state:', {
+                    isAuthenticated: window.authManager.isAuthenticated,
+                    accessToken: window.authManager.accessToken ? 'Present' : 'Not present',
+                    username: window.authManager.username
+                });
+                
+                if (!specificationId) {
+                    console.error('No specification ID provided');
+                    showErrorMessage('Error: No specification ID provided. Please navigate from the My Specifications page.');
+                    return;
+                }
+                
+                if (!window.authManager.isAuthenticated || !window.authManager.accessToken) {
+                    console.error('User not authenticated');
+                    showErrorMessage('Authentication required. Please log in to view specifications.');
+                    return;
+                }
+                
+                // Load the specification from API
+                loadSpecificationById(specificationId);
+            });
 
-    // --- This section populates the top summary table and Identifying Info ---
-    const detailsTableContainer = document.getElementById("detailsTableContainer");
-    const table = document.createElement("table");
-    table.id = "detailsTable";
-    const headerRow = table.insertRow();
-    params.forEach((_, key) => {
-        if (key !== "View" && key !== "IDs") {
-            const th = document.createElement("th");
-            th.textContent = key;
-            headerRow.appendChild(th);
-        }
-    });
-    const dataRow = table.insertRow();
-    params.forEach((value, key) => {
-        if (key !== "View" && key !== "IDs") {
-            const td = dataRow.insertCell();
-            td.textContent = value;
-        }
-    });
-    detailsTableContainer.appendChild(table);
-    document.getElementById("specificationName").textContent = params.get("Name") || "N/A";
-    document.getElementById("governingEntity").textContent = params.get("Governing Entity") || "N/A";
-    document.getElementById("sector").textContent = params.get("Sector") || "N/A";
-    document.getElementById("country").textContent = params.get("Country") || "N/A";
-    document.getElementById("purpose").textContent = params.get("Purpose") || "N/A";
-    document.getElementById("specificationIdentifier").textContent = params.get("Specification Identifier") || "N/A";
-    document.getElementById("specificationVersion").textContent = params.get("Specification Version") || "N/A";
-    document.getElementById("implementationDate").textContent = params.get("Implementation Date") || "N/A";
-    document.getElementById("coreVersion").textContent = params.get("Core Version") || "N/A";
-    document.getElementById("underlyingSpecification").textContent = params.get("Underlying Specification") || "N/A";
-    document.getElementById("specificationSourceLink").textContent = params.get("Specification Source Link") || "N/A";
-    document.getElementById("preferredSyntax").textContent = params.get("Preferred Syntax") || "N/A";
-    // --- End of populating section ---
+            async function loadSpecificationById(specificationId) {
+                try {
+                    console.log('Loading specification by ID:', specificationId);
+                    showLoadingIndicator();
+                    
+                    // First try to get from the user's specifications list
+                    const response = await authenticatedFetch(`${AUTH_CONFIG.baseUrl}/specifications/${specificationId}`, {
+                        method: 'GET',
+                        forceAuth: true
+                    });
 
-    const editButton = document.getElementById("editSpecificationButton");
-    if (editButton) {
-        editButton.addEventListener("click", function() {
-            const specName = params.get("Name");
-            if (specName) {
-                localStorage.setItem("selectedSpecification", specName);
-                localStorage.setItem("editSpecData", params.toString());
-                window.location.href = "IdentifyingInformation.html";
-            } else {
-                alert("Cannot edit: Specification name not found.");
-            }
-        });
-    }
+                    console.log('DEBUG: API Response status:', response.status);
 
-    let ids = [];
-    try {
-        const idsParam = params.get("IDs");
-        ids = idsParam ? (idsParam.startsWith("[") ? JSON.parse(idsParam) : idsParam.split(",")) : [];
-    } catch (error) {
-        console.error("Error parsing IDs parameter:", error);
-    }
+                    if (!response.ok) {
+                        if (response.status === 404) {
+                            throw new Error('Specification not found. It may have been deleted or you may not have permission to view it.');
+                        } else if (response.status === 403) {
+                            throw new Error('Access denied. You do not have permission to view this specification.');
+                        } else {
+                            throw new Error(`Failed to load specification: HTTP ${response.status}`);
+                        }
+                    }
 
-    // --- Universal Logic: Fetch BOTH files, then process the IDs ---
-    Promise.all([
-        fetch("../JSON/coreInvoiceModelElements.json").then(res => res.json()),
-        fetch("../JSON/extensionComponentModelElements.json").then(res => res.json())
-    ])
-    .then(([coreData, extensionData]) => {
-        const coreTableBody = document.querySelector("#coreInvoiceModelTable tbody");
-        const extensionTableBody = document.querySelector("#extensionComponentTable tbody");
-
-        ids.forEach(id => {
-            let coreElement = coreData.find(item => item.ID === id);
-            if (coreElement) {
-                const row = coreTableBody.insertRow();
-                row.insertCell().textContent = coreElement.ID;
-                row.insertCell().textContent = coreElement["Business Term"];
-                row.insertCell().textContent = coreElement["Type of Change"] || 'Core Element';
-            } else {
-                let extensionElement = extensionData.find(item => item.ID === id);
-                if (extensionElement) {
-                    const row = extensionTableBody.insertRow();
-                    row.insertCell().textContent = extensionElement.ID;
-                    row.insertCell().textContent = extensionElement["Business Term"];
-                    row.insertCell().textContent = extensionElement.Component || 'External Component';
-                } else {
-                    console.warn(`ID '${id}' not found in core or extension files.`);
+                    currentSpecification = await response.json();
+                    console.log('DEBUG: Loaded specification:', currentSpecification);
+                    
+                    if (!currentSpecification) {
+                        throw new Error('No specification data received from server');
+                    }
+                    
+                    // Populate the page with specification data
+                    await populateSpecificationData(currentSpecification);
+                    
+                    hideLoadingIndicator();
+                    
+                } catch (error) {
+                    console.error('Error loading specification:', error);
+                    hideLoadingIndicator();
+                    showErrorMessage(`Failed to load specification: ${error.message}`);
                 }
             }
-            });
-    })
-    .catch(error => {
-        console.error("Failed to load specification model data:", error);
-    });
-});
 
-// --- Tab switching logic ---
-function showTab(tabId) {
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.remove('active');
-    });
-    document.querySelectorAll('.tab-button').forEach(button => {
-        button.classList.remove('active');
-    });
-    document.getElementById(tabId).classList.add('active');
-    event.target.classList.add('active');
-}     
+            async function populateSpecificationData(spec) {
+                try {
+                    console.log('Populating specification data:', spec);
+                    
+                    // Create summary table at the top
+                    createSummaryTable(spec);
+                    
+                    // Populate Identifying Information tab
+                    populateIdentifyingInformation(spec);
+                    
+                    // Populate Specification Model tab (Core Invoice Model, Extension Components, Additional Requirements)
+                    await populateSpecificationModel(spec);
+                    
+                    // Populate Supporting Artefacts tab
+                    populateSupportingArtefacts(spec);
+                    
+                    // Set up edit button functionality
+                    setupEditButton(spec);
+                    
+                } catch (error) {
+                    console.error('Error populating specification data:', error);
+                    showErrorMessage(`Error displaying specification: ${error.message}`);
+                }
+            }
+
+            function createSummaryTable(spec) {
+                const detailsTableContainer = document.getElementById("detailsTableContainer");
+                detailsTableContainer.innerHTML = ''; // Clear existing content
+                
+                const table = document.createElement("table");
+                table.id = "detailsTable";
+                table.style.width = "100%";
+                table.style.border = "1px solid #ccc";
+                table.style.borderCollapse = "collapse";
+                
+                // Create header row
+                const headerRow = table.insertRow();
+                const headers = ['Name', 'Purpose', 'Type', 'Sector', 'Country', 'Implementation Date', 'Status'];
+                headers.forEach(header => {
+                    const th = document.createElement("th");
+                    th.textContent = header;
+                    th.style.border = "1px solid #ccc";
+                    th.style.padding = "8px";
+                    th.style.backgroundColor = "#f5f5f5";
+                    headerRow.appendChild(th);
+                });
+                
+                // Create data row
+                const dataRow = table.insertRow();
+                const values = [
+                    spec.specificationName || 'N/A',
+                    spec.purpose || 'N/A',
+                    spec.specificationType || 'N/A',
+                    spec.sector || 'N/A',
+                    spec.country || 'N/A',
+                    spec.dateOfImplementation ? new Date(spec.dateOfImplementation).toLocaleDateString() : 'N/A',
+                    spec.registrationStatus || spec.implementationStatus || 'N/A'
+                ];
+                
+                values.forEach(value => {
+                    const td = dataRow.insertCell();
+                    td.textContent = value;
+                    td.style.border = "1px solid #ccc";
+                    td.style.padding = "8px";
+                });
+                
+                detailsTableContainer.appendChild(table);
+            }
+
+            function populateIdentifyingInformation(spec) {
+                // General Information
+                document.getElementById("specificationName").textContent = spec.specificationName || 'N/A';
+                document.getElementById("governingEntity").textContent = spec.governingEntity || 'N/A';
+                document.getElementById("contactInformation").textContent = spec.contactInformation || 'N/A';
+                document.getElementById("sector").textContent = spec.sector || 'N/A';
+                document.getElementById("country").textContent = spec.country || 'N/A';
+                document.getElementById("purpose").textContent = spec.purpose || 'N/A';
+                
+                // Technical Information
+                document.getElementById("specificationIdentifier").textContent = spec.specificationIdentifier || 'N/A';
+                document.getElementById("specificationVersion").textContent = spec.specificationVersion || 'N/A';
+                document.getElementById("implementationDate").textContent = spec.dateOfImplementation ? 
+                    new Date(spec.dateOfImplementation).toLocaleDateString() : 'N/A';
+                document.getElementById("coreVersion").textContent = spec.coreVersion || 'N/A';
+                document.getElementById("underlyingSpecification").textContent = spec.underlyingSpecificationIdentifier || 'N/A';
+                document.getElementById("specificationSourceLink").textContent = spec.specificationSourceLink || 'N/A';
+                document.getElementById("preferredSyntax").textContent = spec.preferredSyntax || 'N/A';
+            }
+
+            async function populateSpecificationModel(spec) {
+                try {
+                    console.log('DEBUG: Populating specification model with data:', {
+                        specificationCores: spec.specificationCores,
+                        specificationExtensionComponents: spec.specificationExtensionComponents
+                    });
+                    
+                    // Populate Core Invoice Model table
+                    const coreTableBody = document.querySelector("#coreInvoiceModelTable tbody");
+                    coreTableBody.innerHTML = ''; // Clear existing rows
+                    
+                    const coreItems = spec.specificationCores?.items || [];
+                    console.log('DEBUG: Core items found:', coreItems.length);
+                    
+                    if (coreItems.length > 0) {
+                        coreItems.forEach(item => {
+                            const row = coreTableBody.insertRow();
+                            row.insertCell().textContent = item.businessTermID || 'N/A';
+                            row.insertCell().textContent = item.coreBusinessTerm || 'N/A';
+                            row.insertCell().textContent = item.typeOfChange || 'Core Element';
+                        });
+                    } else {
+                        const row = coreTableBody.insertRow();
+                        const cell = row.insertCell();
+                        cell.colSpan = 3;
+                        cell.textContent = 'No Core Invoice Model elements selected';
+                        cell.style.textAlign = 'center';
+                        cell.style.fontStyle = 'italic';
+                        cell.style.color = '#666';
+                    }
+                    
+                    // Populate Extension Component table
+                    const extensionTableBody = document.querySelector("#extensionComponentTable tbody");
+                    extensionTableBody.innerHTML = ''; // Clear existing rows
+                    
+                    const extensionItems = spec.specificationExtensionComponents?.items || [];
+                    console.log('DEBUG: Extension items found:', extensionItems.length);
+                    
+                    if (extensionItems.length > 0) {
+                        extensionItems.forEach(item => {
+                            const row = extensionTableBody.insertRow();
+                            row.insertCell().textContent = item.businessTermID || 'N/A';
+                            row.insertCell().textContent = item.extBusinessTerm || 'N/A';
+                            row.insertCell().textContent = item.extensionComponentID || 'Extension Component';
+                        });
+                    } else {
+                        const row = extensionTableBody.insertRow();
+                        const cell = row.insertCell();
+                        cell.colSpan = 3;
+                        cell.textContent = 'No Extension Component Data Model elements selected';
+                        cell.style.textAlign = 'center';
+                        cell.style.fontStyle = 'italic';
+                        cell.style.color = '#666';
+                    }
+                    
+                    // Populate Additional Requirements table (not yet implemented in API)
+                    const additionalTableBody = document.querySelector("#additionalRequirementsTable tbody");
+                    additionalTableBody.innerHTML = ''; // Clear existing rows
+                    
+                    const row = additionalTableBody.insertRow();
+                    const cell = row.insertCell();
+                    cell.colSpan = 3;
+                    cell.textContent = 'Additional Requirements not yet implemented';
+                    cell.style.textAlign = 'center';
+                    cell.style.fontStyle = 'italic';
+                    cell.style.color = '#666';
+                    
+                } catch (error) {
+                    console.error('Error populating specification model:', error);
+                    showErrorMessage('Error loading specification model data');
+                }
+            }
+
+            function populateSupportingArtefacts(spec) {
+                // Update the links in the Supporting Artefacts tab
+                const specSourceLink = document.querySelector('#supportingArtefacts a[href*="loremipsum"]');
+                if (specSourceLink && spec.specificationSourceLink) {
+                    specSourceLink.href = spec.specificationSourceLink;
+                    specSourceLink.textContent = spec.specificationSourceLink;
+                }
+                
+                // For now, other links remain as placeholders since the API doesn't provide specific URLs
+                // You would update these based on the actual data structure returned by the API
+            }
+
+            function setupEditButton(spec) {
+                const editButton = document.getElementById("editSpecificationButton");
+                if (editButton) {
+                    // Navigate to the editing workflow
+                    editButton.addEventListener("click", function() {
+                        if (spec.specificationName && spec.identityID) {
+                            localStorage.setItem("selectedSpecification", spec.specificationName);
+                            localStorage.setItem("editSpecificationData", JSON.stringify(spec));
+                            localStorage.setItem("editSpecificationId", spec.identityID.toString());
+                            console.log('DEBUG: Navigating to edit mode for specification:', spec.specificationName);
+                            window.location.href = "IdentifyingInformation.html";
+                        } else {
+                            alert("Cannot edit: Specification data not available.");
+                        }
+                    });
+                }
+            }
+
+            // Utility functions for loading states and error handling
+            function showLoadingIndicator() {
+                const detailsContainer = document.getElementById("detailsTableContainer");
+                detailsContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;"><i class="fa-solid fa-spinner fa-spin"></i> Loading specification...</div>';
+            }
+
+            function hideLoadingIndicator() {
+                // Loading indicator will be replaced by actual content in createSummaryTable
+            }
+
+            function showErrorMessage(message) {
+                const detailsContainer = document.getElementById("detailsTableContainer");
+                detailsContainer.innerHTML = `
+                    <div style="background: #fee; border: 1px solid #fcc; border-radius: 5px; padding: 15px; margin: 10px 0; color: #c33;">
+                        <i class="fa-solid fa-exclamation-triangle"></i> <strong>Error:</strong> ${message}
+                    </div>
+                `;
+                
+                // Also clear the tabs since they won't have valid data
+                document.getElementById("specificationName").textContent = 'N/A';
+                document.getElementById("governingEntity").textContent = 'N/A';
+                document.getElementById("sector").textContent = 'N/A';
+                document.getElementById("country").textContent = 'N/A';
+                document.getElementById("purpose").textContent = 'N/A';
+                document.getElementById("specificationIdentifier").textContent = 'N/A';
+                document.getElementById("specificationVersion").textContent = 'N/A';
+                document.getElementById("implementationDate").textContent = 'N/A';
+                document.getElementById("coreVersion").textContent = 'N/A';
+                document.getElementById("underlyingSpecification").textContent = 'N/A';
+                document.getElementById("specificationSourceLink").textContent = 'N/A';
+                document.getElementById("preferredSyntax").textContent = 'N/A';
+                
+                // Clear tables
+                const coreTableBody = document.querySelector("#coreInvoiceModelTable tbody");
+                const extensionTableBody = document.querySelector("#extensionComponentTable tbody");
+                const additionalTableBody = document.querySelector("#additionalRequirementsTable tbody");
+                
+                if (coreTableBody) coreTableBody.innerHTML = '';
+                if (extensionTableBody) extensionTableBody.innerHTML = '';
+                if (additionalTableBody) additionalTableBody.innerHTML = '';
+            }
+
+            // Tab switching logic (separate function to avoid conflicts)
+            function showTab(tabId) {
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.querySelectorAll('.tab-button').forEach(button => {
+                    button.classList.remove('active');
+                });
+                document.getElementById(tabId).classList.add('active');
+                event.target.classList.add('active');
+            }
         </script>
     </body>
 </html>

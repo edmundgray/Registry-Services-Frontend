@@ -33,10 +33,17 @@ function updateVisibility()
         item.style.display = loggedInStatus ? "block" : "none";
     });
 
-    document.getElementById("loginLogoutButton").innerText = loggedInStatus ? "Logout" : "Login";
+    const loginLogoutButton = document.getElementById("loginLogoutButton");
+    if (loginLogoutButton) {
+        loginLogoutButton.innerText = loggedInStatus ? "Logout" : "Login";
+    }
 
-    const coreInvoiceModel = document.querySelector("a[href='coreInvoiceModelRead.html']").parentElement;
-    const extensionComponent = document.querySelector("a[href='ExtensionComponentDataModelRead.html']").parentElement;
+    // Safely check for elements before accessing parentElement
+    const coreInvoiceModelLink = document.querySelector("a[href='coreInvoiceModel.html']");
+    const extensionComponentLink = document.querySelector("a[href='ExtensionComponentDataModel.html']");
+    
+    const coreInvoiceModel = coreInvoiceModelLink ? coreInvoiceModelLink.parentElement : null;
+    const extensionComponent = extensionComponentLink ? extensionComponentLink.parentElement : null;
 
     if (coreInvoiceModel && extensionComponent) 
     {
@@ -500,8 +507,25 @@ document.addEventListener("DOMContentLoaded", function ()
                         button.textContent = "View";
                         button.className = "view-button";
                         button.addEventListener("click", () => {
-                            const queryParams = new URLSearchParams(entry).toString();
-                            window.location.href = `viewSpecification.html?${queryParams}`;
+                            // Use identityID to navigate to viewSpecification.html
+                            const identityID = entry.identityID;
+                            
+                            if (!identityID) {
+                                console.error('No identityID found for specification:', entry);
+                                alert('Error: Cannot view specification - missing ID');
+                                return;
+                            }
+                            
+                            console.log('Viewing specification with ID:', identityID);
+                            
+                            // Store the specification ID for the view page
+                            localStorage.setItem('viewSpecificationId', identityID);
+                            
+                            // Navigate to the view specification page with the ID as a URL parameter
+                            const viewUrl = `viewSpecification.html?id=${identityID}`;
+                            console.log('DEBUG: Navigating to view page:', viewUrl);
+                            
+                            window.location.href = viewUrl;
                         });
 
                         cell.appendChild(button);
@@ -732,7 +756,7 @@ function createLoginModal() {
                 <form id="loginForm">
                     <div style="margin-bottom: 15px;">
                         <label for="username">Username:</label>
-                        <input type="text" id="username" name="username" required style="
+                        <input type="text" id="username" name="username" value="Edmund" required style="
                             width: 100%;
                             padding: 8px;
                             margin-top: 5px;
@@ -742,7 +766,7 @@ function createLoginModal() {
                     </div>
                     <div style="margin-bottom: 15px;">
                         <label for="password">Password:</label>
-                        <input type="password" id="password" name="password" required style="
+                        <input type="password" id="password" name="password" value="Password123" required style="
                             width: 100%;
                             padding: 8px;
                             margin-top: 5px;
@@ -838,6 +862,237 @@ function createLoginModal() {
         // Return empty string if not found
         return "";
     }
+
+// Authentication functions for testing
+async function loginUser(username, password) {
+    console.log('DEBUG: Attempting login with username:', username);
+    
+    try {
+        // Make actual API call to login endpoint
+        const loginUrl = `${AUTH_CONFIG.baseUrl}/auth/login`;
+        console.log('DEBUG: Making login API call to:', loginUrl);
+        
+        const loginResponse = await fetch(loginUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: username,
+                password: password
+            })
+        });
+        
+        console.log('DEBUG: Login API response status:', loginResponse.status);
+        console.log('DEBUG: Login API response headers:', Object.fromEntries(loginResponse.headers.entries()));
+        
+        if (!loginResponse.ok) {
+            const errorText = await loginResponse.text();
+            console.error('DEBUG: Login API error response:', errorText);
+            throw new Error(`Login failed: ${loginResponse.status} - ${errorText}`);
+        }
+        
+        const loginData = await loginResponse.json();
+        console.log('DEBUG: Login API response data:', loginData);
+        
+        // Extract token and user info from response - handle multiple possible field names
+        const accessToken = loginData.token || loginData.accessToken || loginData.access_token || loginData.authToken;
+        const userRole = loginData.role || loginData.userRole || loginData.roles || 'User';
+        const userId = loginData.id || loginData.userId || loginData.user_id || loginData.userID;
+        
+        if (!accessToken) {
+            console.error('DEBUG: No access token found in login response. Available fields:', Object.keys(loginData));
+            throw new Error('Login response did not contain an access token');
+        }
+        
+        console.log('DEBUG: Real login successful!');
+        console.log('DEBUG: Token received (first 30 chars):', accessToken.substring(0, 30) + '...');
+        console.log('DEBUG: User role:', userRole);
+        console.log('DEBUG: User ID:', userId);
+        
+        // IMPORTANT: Clear any old authentication data first
+        window.authManager.logout();
+        localStorage.clear(); // Clear all old data
+        
+        // Set up the auth manager with real data from API
+        window.authManager.isAuthenticated = true;
+        window.authManager.username = username;
+        window.authManager.userRole = userRole;
+        window.authManager.userID = userId;
+        window.authManager.accessToken = accessToken;
+        
+        // Store in localStorage with the correct keys
+        localStorage.setItem('access_token', accessToken);
+        localStorage.setItem('userRole', userRole);
+        localStorage.setItem('username', username);
+        if (userId) {
+            localStorage.setItem('userId', userId.toString());
+        }
+        
+        console.log('DEBUG: Auth manager updated with real token');
+        console.log('DEBUG: Token stored in localStorage:', localStorage.getItem('access_token').substring(0, 30) + '...');
+        console.log('DEBUG: Auth manager verification:', {
+            isAuthenticated: window.authManager.isAuthenticated,
+            accessToken: window.authManager.accessToken ? window.authManager.accessToken.substring(0, 30) + '...' : 'Not set',
+            username: window.authManager.username,
+            userRole: window.authManager.userRole
+        });
+        
+        return {
+            success: true,
+            username: username,
+            role: userRole,
+            token: accessToken
+        };
+        
+    } catch (error) {
+        console.error('DEBUG: Login failed:', error);
+        
+        // For development/testing fallback - only if API call fails due to network issues
+        if (error.message.includes('fetch') || error.message.includes('Failed to fetch') || error.message.includes('network')) {
+            console.warn('DEBUG: API seems unavailable, falling back to test mode');
+            
+            // Only allow test credentials in fallback mode
+            if ((username === 'Edmund' && password === 'Password123') || 
+                (username === 'Admin' && password === 'Password123')) {
+                
+                console.log('DEBUG: Using test fallback login');
+                
+                // Clear any old authentication data first
+                window.authManager.logout();
+                localStorage.clear();
+                
+                // Set up the auth manager with test data
+                const testToken = `test-token-for-${username.toLowerCase()}-${Date.now()}`;
+                
+                window.authManager.isAuthenticated = true;
+                window.authManager.username = username;
+                window.authManager.userRole = 'Admin';
+                window.authManager.userID = username === 'Edmund' ? 1 : 2;
+                window.authManager.accessToken = testToken;
+                
+                // Store in localStorage
+                localStorage.setItem('access_token', testToken);
+                localStorage.setItem('userRole', 'Admin');
+                localStorage.setItem('username', username);
+                
+                console.log('DEBUG: Test token stored:', testToken.substring(0, 30) + '...');
+                
+                return {
+                    success: true,
+                    username: username,
+                    role: 'Admin',
+                    token: testToken
+                };
+            }
+        }
+        
+        // Re-throw the original error if not a network issue or invalid credentials
+        throw error;
+    }
+}
+
+// Admin login function for testing
+async function adminLogin() {
+    console.log('DEBUG: Admin login as Admin/Admin');
+    try {
+        const result = await loginUser('Admin', 'Password123');
+        console.log('DEBUG: Login result:', result);
+        
+        // Force refresh the auth manager to ensure it has the latest token
+        window.authManager.init();
+        
+        loggedInStatus = true;
+        updateVisibility();
+        updateUserDisplay();
+        showMessage('Admin login successful! Logged in as Admin (Admin)', 'success');
+        
+        // Trigger specification reload if on mySpecifications page
+        if (typeof window.reloadSpecificationsAfterLogin === 'function') {
+            setTimeout(() => window.reloadSpecificationsAfterLogin(), 200);
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('DEBUG: Admin login failed:', error);
+        showMessage(`Admin login failed: ${error.message}`, 'error');
+        return false;
+    }
+}
+
+// Demo login function for easy testing
+async function demoLogin() {
+    console.log('DEBUG: Demo login as Edmund/Admin');
+    try {
+        const result = await loginUser('Edmund', 'Password123');
+        console.log('DEBUG: Login result:', result);
+        
+        // Force refresh the auth manager to ensure it has the latest token
+        window.authManager.init();
+        
+        loggedInStatus = true;
+        updateVisibility();
+        updateUserDisplay();
+        showMessage('Demo login successful! Logged in as Edmund (Admin)', 'success');
+        
+        // Trigger specification reload if on mySpecifications page
+        if (typeof window.reloadSpecificationsAfterLogin === 'function') {
+            setTimeout(() => window.reloadSpecificationsAfterLogin(), 200);
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('DEBUG: Demo login failed:', error);
+        showMessage(`Demo login failed: ${error.message}`, 'error');
+        return false;
+    }
+}
+
+// Function to show user-friendly messages
+function showMessage(message, type = 'info') {
+    console.log(`${type.toUpperCase()}: ${message}`);
+    
+    // Create or update message display
+    let messageDiv = document.getElementById('userMessage');
+    if (!messageDiv) {
+        messageDiv = document.createElement('div');
+        messageDiv.id = 'userMessage';
+        messageDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 10000; max-width: 400px; padding: 15px; border-radius: 5px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
+        document.body.appendChild(messageDiv);
+    }
+    
+    // Set color based on type
+    const colors = {
+        success: 'background: #d4edda; color: #155724; border: 1px solid #c3e6cb;',
+        error: 'background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;',
+        info: 'background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb;'
+    };
+    
+    messageDiv.style.cssText += colors[type] || colors.info;
+    messageDiv.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span>${message}</span>
+            <button onclick="document.getElementById('userMessage').remove()" style="background: none; border: none; font-size: 18px; cursor: pointer; margin-left: 10px;">&times;</button>
+        </div>
+    `;
+    
+    // Auto-hide after 5 seconds for success/info messages
+    if (type !== 'error') {
+        setTimeout(() => {
+            const msgDiv = document.getElementById('userMessage');
+            if (msgDiv && msgDiv.parentNode) {
+                msgDiv.remove();
+            }
+        }, 5000);
+    }
+}
+
+function closeLoginModal() {
+    const modal = document.getElementById('loginModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
 
 // Simplified role checking for prototype
 function getCurrentUser() {
@@ -1035,7 +1290,10 @@ async function fetchCoreInvoiceModels() {
 
 // You can call this function when your page loads or when a user action triggers it
 document.addEventListener("DOMContentLoaded", function() {
-    fetchCoreInvoiceModels();
+    // Only fetch core invoice models on pages that need them
+    if (window.location.pathname.includes('coreInvoiceModel.html')) {
+        fetchCoreInvoiceModels();
+    }
 });
 
 // Check if user can perform write operations
@@ -1092,17 +1350,28 @@ function debounce(func, wait) {
         clearTimeout(timeout);
         timeout = setTimeout(later, wait);
     };
-}    // Add event listener for New Specification button
+}
+
+// Add event listener for New Specification button
+document.addEventListener("DOMContentLoaded", function() {
     const newSpecificationButton = document.getElementById("newSpecificationButton");
+    console.log("New Specification button found:", newSpecificationButton);
+    
     if (newSpecificationButton) {
         newSpecificationButton.addEventListener("click", function() {
+            console.log("New Specification button clicked, logged in status:", loggedInStatus);
             if (loggedInStatus) {
-                window.location.href = "IdentifyingInformation.html";
+                console.log("Creating new specification");
+                createNewSpecification();
             } else {
                 alert("Please log in to create a new specification.");
             }
         });
+        console.log("Event listener attached to New Specification button");
+    } else {
+        console.error("New Specification button not found!");
     }
+});
 
 // Fallback function to estimate total pages when API doesn't provide total count
     function estimateTotalPages() {
@@ -1122,3 +1391,40 @@ function debounce(func, wait) {
         // Default fallback
         return Math.max(1, currentPage);
     }
+
+/******************************************************************************
+    Specification Editing Workflow Functions
+ ******************************************************************************/
+
+// Function to initiate editing of an existing specification
+function editSpecification(identityID) {
+    console.log('Initiating edit for specification ID:', identityID);
+    
+    // Use the data manager to set up edit mode
+    SpecificationDataManager.initializeForEdit(identityID);
+    
+    // Navigate to IdentifyingInformation.html
+    window.location.href = 'IdentifyingInformation.html';
+}
+
+// Function to initiate creation of a new specification
+function createNewSpecification() {
+    console.log('Initiating creation of new specification');
+    
+    // Use the data manager to set up create mode
+    SpecificationDataManager.initializeForCreate();
+    
+    // Navigate to IdentifyingInformation.html
+    window.location.href = 'IdentifyingInformation.html';
+}
+
+// Function to check current editing mode (for debugging)
+function getCurrentEditingMode() {
+    const mode = localStorage.getItem('editMode');
+    const specId = localStorage.getItem('specificationIdentityId');
+    return {
+        mode: mode || 'create',
+        specificationId: specId,
+        isEditing: mode === 'edit' && specId
+    };
+}

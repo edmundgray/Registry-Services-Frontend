@@ -6,7 +6,30 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
         <link rel="stylesheet" href="../CSS/style.css">
         
+        <!-- Add authManager.js for global AuthManager and AUTH_CONFIG -->
+        <script src="../JS/auth/authManager.js"></script>
+        <script>
+            // Create a global authManager instance and authenticatedFetch
+            window.authManager = new AuthManager();
+            function authenticatedFetch(url, options = {}) {
+                const authHeaders = window.authManager.getAuthHeaders();
+                console.log('DEBUG: authenticatedFetch called with URL:', url);
+                console.log('DEBUG: Auth headers:', authHeaders);
+                console.log('DEBUG: AuthManager state:', {
+                    isAuthenticated: window.authManager.isAuthenticated,
+                    accessToken: window.authManager.accessToken ? 'Present' : 'Not present',
+                    username: window.authManager.username,
+                    userRole: window.authManager.userRole
+                });
+                
+                const headers = { ...(options.headers || {}), ...authHeaders };
+                console.log('DEBUG: Final headers for request:', headers);
+                
+                return fetch(url, { ...options, headers });
+            }
+        </script>
         <script src="../JS/javascript.js"></script>
+        <script src="../JS/dataManager.js"></script>
         
         <title>Registry Services</title>
 
@@ -71,7 +94,7 @@
                     </a>
                 </li>
                 <li class="protected">
-                    <a href="#">
+                    <a href="#" onclick="createNewSpecification()">
                         <span class="icon"><i class="fa-solid fa-file-medical"></i></span>
                         <span class="text">Add New Specification</span>
                     </a>
@@ -121,17 +144,39 @@
   ------------------------------------------------------------------------------>
         <div class="page-Content">
             <h1><i class="fa-solid fa-folder"></i> My Specifications</h1>
+            
+            <!-- User info display -->
+            <div id="userInfo" style="background: #e3f2fd; padding: 10px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #2196f3;">
+                <small><strong>Current User:</strong> <span id="currentUserDisplay">Loading...</span></small>
+            </div>
+            
+            <!-- Testing section -->
+            <div id="testingSection" style="background: #fff3cd; padding: 10px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #ffc107;">
+                <small><strong>Testing:</strong> 
+                    <button onclick="demoLogin()" style="padding: 5px 10px; margin: 0 5px; background: #28a745; color: white; border: none; border-radius: 3px; cursor: pointer;">
+                        Demo Login (Edmund)
+                    </button>
+                    <button onclick="adminLogin()" style="padding: 5px 10px; margin: 0 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer;">
+                        Admin Login
+                    </button>
+                    <button onclick="window.authManager.logout(); updateVisibility(); updateUserDisplay();" style="padding: 5px 10px; margin: 0 5px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;">
+                        Logout
+                    </button>
+                </small>
+            </div>
+            
             <br/>
 
-            <div><button onclick="window.location.href='IdentifyingInformation.html';">Add New Specification</button></div>
+            <div><button onclick="createNewSpecification();">Add New Specification</button></div>
 
             <br/>
 <!----------------------------------------------------------------------------
         1/2 In Progress Specifications
   ------------------------------------------------------------------------------>
             <h2>In Progress</h2>
-            <table>
+            <table id="inProgressTable">
                 <!-- 1st row is for the column names -->
+                <thead>
                 <tr>
                     <th>Name</th>
                     <th>Purpose</th>
@@ -145,38 +190,10 @@
                     <th>Conformance Level</th>
                     <th>Actions</th>
                 </tr>
-                <!-- 2nd row is mock data -->
-                <tr>
-                    <td>a mock specification</td>
-                    <td>probably something important</td>
-                    <td>XML</td>
-                    <td>Finance</td>
-                    <td>Ireland</td>
-                    <td>2025-07-01</td>
-                    <td>UBL</td>
-                    <td>National Revenue Office</td>
-                    <td>Yes</td>
-                    <td>High</td>
-                    <td>
-                    <button type="button" onclick="autofillSpecification('a mock specification')" class="view-button">Edit</button>
-                    </td>
-                </tr>
-                <!-- more mock data -->
-                <tr>
-                    <td>Mr.InProgress</td>
-                    <td>Life changing</td>
-                    <td>JSON</td>
-                    <td>Taxation</td>
-                    <td>UK</td>
-                    <td>2026-01-15</td>
-                    <td>JSON-Schema</td>
-                    <td>HMRC</td>
-                    <td>No</td>
-                    <td>Medium</td>
-                    <td>
-                        <button type="button" onclick="autofillSpecification('Mr.InProgress')" class="view-button">Edit</button>
-                    </td>
-                </tr>
+                </thead>
+                <tbody id="draftTableBody">
+                <!-- This will be populated dynamically with API data -->
+                </tbody>
             </table>
 
             <br/><br/>
@@ -184,8 +201,9 @@
         2/2 Submitted Specifications
   ------------------------------------------------------------------------------>
             <h2>Submitted</h2>
-            <table>
+            <table id="submittedTable">
                 <!-- 1st row is for the column names -->
+                <thead>
                 <tr>
                     <th>Name</th>
                     <th>Purpose</th>
@@ -199,51 +217,480 @@
                     <th>Conformance Level</th>
                     <th>Actions</th>
                 </tr>
-                <!-- 2nd row is mock data -->
-                <tr>
-                    <td>Super Finished Specification</td>
-                    <td>Standardized invoicing format</td>
-                    <td>XML</td>
-                    <td>Finance</td>
-                    <td>Ireland</td>
-                    <td>2025-07-01</td>
-                    <td>UBL</td>
-                    <td>National Revenue Office</td>
-                    <td>Yes</td>
-                    <td>High</td>
-                    <td>
-                        <button type="button" onclick="window.location.href='#'" class="view-button">View</button>
-                    </td>
-                </tr>
-                <!-- more mock data -->
-                <tr>
-                    <td>Digital Tax Report</td>
-                    <td>Automated tax filing</td>
-                    <td>JSON</td>
-                    <td>Taxation</td>
-                    <td>UK</td>
-                    <td>2026-01-15</td>
-                    <td>JSON-Schema</td>
-                    <td>HMRC</td>
-                    <td>No</td>
-                    <td>Medium</td>
-                    <td>
-                        <button type="button" onclick="window.location.href='#'" class="view-button">View</button>
-                    </td>
-                </tr>
+                </thead>
+                <tbody id="submittedTableBody">
+                <!-- This will be populated dynamically with API data -->
+                </tbody>
             </table>
         </div>
         </div>
         
 <!----------------------------------------------------------------------------
-        Javascript for Autofilling the identifying Information page
+        JavaScript for Specification Management
   ------------------------------------------------------------------------------>
         <script>
-            function autofillSpecification(specName) 
-            {
+            // Note: Edit and Create functions are now handled by the global functions:
+            // - editSpecification(identityID) - defined in javascript.js
+            // - createNewSpecification() - defined in javascript.js
+            // These functions use the SpecificationDataManager for proper API integration
+            
+            // Global variables for specification data
+            let mySpecifications = [];
+            let isLoadingSpecifications = false;
+
+            // Load specifications from API
+            async function loadMySpecifications() {
+                if (isLoadingSpecifications) return;
+                isLoadingSpecifications = true;
+                
+                try {
+                    console.log('Loading specifications from API...');
+                    
+                    // Show loading indicator
+                    showLoadingIndicator();
+                    
+                    // Determine API endpoint based on user role
+                    const currentUser = getCurrentUser(window.authManager);
+                    const isAdmin = currentUser.role === 'Admin' || currentUser.role === 'admin';
+                    const endpoint = isAdmin ? '/specifications/all' : '/specifications/by-user-group';
+                    const apiUrl = `${AUTH_CONFIG.baseUrl}${endpoint}?PageSize=1000`;
+                    
+                    console.log('DEBUG: User role:', currentUser.role);
+                    console.log('DEBUG: Is Admin:', isAdmin);
+                    console.log('DEBUG: API endpoint:', endpoint);
+                    console.log('DEBUG: API URL being called:', apiUrl);
+                    
+                    const response = await authenticatedFetch(apiUrl, {
+                        method: 'GET',
+                        forceAuth: true
+                    });
+
+                    console.log('DEBUG: API Response status:', response.status);
+                    console.log('DEBUG: API Response headers:', Object.fromEntries(response.headers.entries()));
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const apiData = await response.json();
+                    console.log('DEBUG: Raw API Response:', apiData);
+                    console.log('DEBUG: API Response type:', typeof apiData);
+                    console.log('DEBUG: Is Array?', Array.isArray(apiData));
+
+                    // Handle different response formats
+                    mySpecifications = Array.isArray(apiData) ? apiData : (apiData.items || []);
+                    console.log('DEBUG: Total specifications found:', mySpecifications.length);
+                    
+                    // Debug specification statuses
+                    if (mySpecifications.length > 0) {
+                        console.log('DEBUG: Sample specification structure:', mySpecifications[0]);
+                        
+                        const statusCounts = {};
+                        const implementationStatusCounts = {};
+                        const registrationStatusCounts = {};
+                        
+                        mySpecifications.forEach(spec => {
+                            // Count implementation statuses
+                            const implStatus = spec.implementationStatus || 'undefined';
+                            implementationStatusCounts[implStatus] = (implementationStatusCounts[implStatus] || 0) + 1;
+                            
+                            // Count registration statuses
+                            const regStatus = spec.registrationStatus || 'undefined';
+                            registrationStatusCounts[regStatus] = (registrationStatusCounts[regStatus] || 0) + 1;
+                            
+                            // Count overall status combinations
+                            const statusKey = `impl:${implStatus}, reg:${regStatus}`;
+                            statusCounts[statusKey] = (statusCounts[statusKey] || 0) + 1;
+                        });
+                        
+                        console.log('DEBUG: Implementation Status counts:', implementationStatusCounts);
+                        console.log('DEBUG: Registration Status counts:', registrationStatusCounts);
+                        console.log('DEBUG: Combined Status counts:', statusCounts);
+                    }
+                    
+                    // Render the tables with real data
+                    renderSpecificationTables();
+                    
+                    hideLoadingIndicator();
+                    
+                } catch (error) {
+                    console.error('Error loading specifications:', error);
+                    hideLoadingIndicator();
+                    
+                    // Show error message and clear any existing mock data
+                    showErrorMessage(`Failed to load specifications from API: ${error.message}`);
+                    
+                    // Clear the tables to show empty state instead of mock data
+                    clearTables();
+                    
+                    // Re-throw the error to indicate failure
+                    throw error;
+                }
+                
+                isLoadingSpecifications = false;
+            }
+
+            // Render specification tables with real data
+            function renderSpecificationTables() {
+                const inProgressSpecs = mySpecifications.filter(spec => 
+                    spec.implementationStatus === 'In Progress' || 
+                    spec.registrationStatus === 'Draft' ||
+                    spec.registrationStatus === 'In Progress'
+                );
+                
+                const submittedSpecs = mySpecifications.filter(spec => 
+                    spec.implementationStatus === 'Submitted' || 
+                    spec.registrationStatus === 'Submitted' ||
+                    spec.registrationStatus === 'Published'
+                );
+
+                console.log('DEBUG: Filtered In Progress specifications:', inProgressSpecs.length);
+                console.log('DEBUG: In Progress specs:', inProgressSpecs.map(s => ({
+                    name: s.specificationName,
+                    implStatus: s.implementationStatus,
+                    regStatus: s.registrationStatus,
+                    identityID: s.identityID
+                })));
+                
+                console.log('DEBUG: Filtered Submitted specifications:', submittedSpecs.length);
+                console.log('DEBUG: Submitted specs:', submittedSpecs.map(s => ({
+                    name: s.specificationName,
+                    implStatus: s.implementationStatus,
+                    regStatus: s.registrationStatus,
+                    identityID: s.identityID
+                })));
+
+                renderInProgressTable(inProgressSpecs);
+                renderSubmittedTable(submittedSpecs);
+            }
+
+            // Render In Progress specifications table
+            function renderInProgressTable(specifications) {
+                console.log('DEBUG: Rendering In Progress table with', specifications.length, 'specifications');
+                
+                const tableBody = document.getElementById('draftTableBody');
+                if (!tableBody) {
+                    console.error('Draft table body not found');
+                    return;
+                }
+
+                if (specifications.length === 0) {
+                    console.log('DEBUG: No In Progress specifications, showing empty message');
+                    tableBody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: #666;">No specifications in progress</td></tr>';
+                    return;
+                }
+
+                console.log('DEBUG: Rendering', specifications.length, 'In Progress specifications to table');
+                tableBody.innerHTML = specifications.map(spec => `
+                    <tr>
+                        <td>${spec.specificationName || 'N/A'}</td>
+                        <td>${spec.purpose || 'N/A'}</td>
+                        <td>${spec.specificationType || 'N/A'}</td>
+                        <td>${spec.sector || 'N/A'}</td>
+                        <td>${spec.country || 'N/A'}</td>
+                        <td>${formatDate(spec.dateOfImplementation)}</td>
+                        <td>${spec.preferredSyntax || 'N/A'}</td>
+                        <td>${spec.governingEntity || 'N/A'}</td>
+                        <td>${hasExtensionComponents(spec) ? 'Yes' : 'No'}</td>
+                        <td>${spec.conformanceLevel || 'N/A'}</td>
+                        <td>
+                            <button type="button" onclick="editSpecification(${spec.identityID})" class="view-button">Edit</button>
+                        </td>
+                    </tr>
+                `).join('');
+                
+                console.log('DEBUG: In Progress table HTML updated');
+            }
+
+            // Render Submitted specifications table
+            function renderSubmittedTable(specifications) {
+                console.log('DEBUG: Rendering Submitted table with', specifications.length, 'specifications');
+                
+                const tableBody = document.getElementById('submittedTableBody');
+                if (!tableBody) {
+                    console.error('Submitted table body not found');
+                    return;
+                }
+
+                if (specifications.length === 0) {
+                    console.log('DEBUG: No Submitted specifications, showing empty message');
+                    tableBody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: #666;">No submitted specifications</td></tr>';
+                    return;
+                }
+
+                console.log('DEBUG: Rendering', specifications.length, 'Submitted specifications to table');
+                tableBody.innerHTML = specifications.map(spec => `
+                    <tr>
+                        <td>${spec.specificationName || 'N/A'}</td>
+                        <td>${spec.purpose || 'N/A'}</td>
+                        <td>${spec.specificationType || 'N/A'}</td>
+                        <td>${spec.sector || 'N/A'}</td>
+                        <td>${spec.country || 'N/A'}</td>
+                        <td>${formatDate(spec.dateOfImplementation)}</td>
+                        <td>${spec.preferredSyntax || 'N/A'}</td>
+                        <td>${spec.governingEntity || 'N/A'}</td>
+                        <td>${hasExtensionComponents(spec) ? 'Yes' : 'No'}</td>
+                        <td>${spec.conformanceLevel || 'N/A'}</td>
+                        <td>
+                            <button type="button" onclick="viewSpecification(${spec.identityID})" class="view-button">View</button>
+                        </td>
+                    </tr>
+                `).join('');
+                
+                console.log('DEBUG: Submitted table HTML updated');
+            }
+
+            // Utility functions
+            function formatDate(dateString) {
+                if (!dateString) return 'N/A';
+                try {
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString();
+                } catch (e) {
+                    return 'N/A';
+                }
+            }
+
+            function hasExtensionComponents(spec) {
+                return spec.specificationExtensionComponents && 
+                       spec.specificationExtensionComponents.items && 
+                       spec.specificationExtensionComponents.items.length > 0;
+            }
+
+            function viewSpecification(identityID) {
+                console.log('Viewing specification with ID:', identityID);
+                
+                if (!identityID) {
+                    console.error('No identityID provided for viewing specification');
+                    alert('Error: No specification ID provided');
+                    return;
+                }
+                
+                // Store the specification ID for the view page
+                localStorage.setItem('viewSpecificationId', identityID);
+                
+                // Navigate to the view specification page with the ID as a URL parameter
+                const viewUrl = `viewSpecification.html?id=${identityID}`;
+                console.log('DEBUG: Navigating to view page:', viewUrl);
+                
+                window.location.href = viewUrl;
+            }
+
+            // Loading and error display functions
+            function showLoadingIndicator() {
+                const pageContent = document.querySelector('.page-Content');
+                let loadingDiv = document.getElementById('loadingIndicator');
+                
+                if (!loadingDiv) {
+                    loadingDiv = document.createElement('div');
+                    loadingDiv.id = 'loadingIndicator';
+                    loadingDiv.innerHTML = `
+                        <div style="text-align: center; padding: 20px; background: rgba(255,255,255,0.9); margin: 20px 0; border-radius: 5px;">
+                            <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: #007bff;"></i>
+                            <p style="margin-top: 10px;">Loading your specifications...</p>
+                        </div>
+                    `;
+                    pageContent.appendChild(loadingDiv);
+                }
+            }
+
+            function hideLoadingIndicator() {
+                const loadingDiv = document.getElementById('loadingIndicator');
+                if (loadingDiv) {
+                    loadingDiv.remove();
+                }
+            }
+
+            function showErrorMessage(message) {
+                const pageContent = document.querySelector('.page-Content');
+                let errorDiv = document.getElementById('errorMessage');
+                
+                if (!errorDiv) {
+                    errorDiv = document.createElement('div');
+                    errorDiv.id = 'errorMessage';
+                    errorDiv.style.cssText = 'background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin: 20px 0; border: 2px solid #f5c6cb; font-weight: bold;';
+                    pageContent.appendChild(errorDiv);
+                }
+                
+                errorDiv.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center;">
+                            <i class="fa-solid fa-exclamation-triangle" style="margin-right: 10px; font-size: 18px;"></i>
+                            <div>
+                                <strong>Error:</strong> ${message}
+                                <br><small>Please check your connection and try refreshing the page, or contact support if the issue persists.</small>
+                            </div>
+                        </div>
+                        <div>
+                            <button onclick="retryLoadSpecifications()" style="padding: 8px 15px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer; margin-left: 15px;">
+                                <i class="fa-solid fa-refresh"></i> Retry
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                // Don't auto-hide error messages - user should acknowledge them
+            }
+
+            // Function to retry loading specifications
+            function retryLoadSpecifications() {
+                console.log('Retrying to load specifications...');
+                
+                // Clear the error message
+                const errorDiv = document.getElementById('errorMessage');
+                if (errorDiv) {
+                    errorDiv.remove();
+                }
+                
+                // Reset loading state and try again
+                isLoadingSpecifications = false;
+                mySpecifications = [];
+                
+                if (typeof loggedInStatus !== 'undefined' && loggedInStatus) {
+                    loadMySpecifications().catch(error => {
+                        console.error('Retry failed:', error);
+                        // Error handling is already done in loadMySpecifications
+                    });
+                } else {
+                    showErrorMessage('Please log in to view your specifications.');
+                }
+            }
+
+            // Function to update user display
+            function updateUserDisplay() {
+                const userInfoElement = document.getElementById('currentUserDisplay');
+                if (!userInfoElement) return;
+                
+                const currentUser = getCurrentUser(window.authManager);
+                
+                if (currentUser.isAuthenticated) {
+                    const displayName = currentUser.username || 'Unknown User';
+                    const role = currentUser.role || 'User';
+                    userInfoElement.innerHTML = `${displayName} (${role})`;
+                    console.log('DEBUG: User display updated:', { displayName, role });
+                } else {
+                    userInfoElement.innerHTML = 'Not logged in';
+                    console.log('DEBUG: User not authenticated');
+                }
+            }
+
+            // Clear tables when API fails
+            function clearTables() {
+                const draftTableBody = document.getElementById('draftTableBody');
+                const submittedTableBody = document.getElementById('submittedTableBody');
+                
+                if (draftTableBody) {
+                    draftTableBody.innerHTML = '';
+                }
+                
+                if (submittedTableBody) {
+                    submittedTableBody.innerHTML = '';
+                }
+            }
+
+            // Legacy function - kept for backward compatibility if needed
+            function autofillSpecification(specName) {
+                console.warn('autofillSpecification is deprecated. Use editSpecification(identityID) instead.');
                 localStorage.setItem("selectedSpecification", specName);
                 window.location.href = "IdentifyingInformation.html";
-            }  
+            }
+
+            // Initialize when page loads
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('MySpecifications page loaded, fetching data...');
+                
+                // Debug: Show current user information
+                const currentUser = getCurrentUser(window.authManager);
+                console.log('DEBUG: Current user info:', currentUser);
+                console.log('DEBUG: Auth manager state:', {
+                    isAuthenticated: window.authManager.isAuthenticated,
+                    userRole: window.authManager.userRole,
+                    username: window.authManager.username,
+                    userID: window.authManager.userID,
+                    accessToken: window.authManager.accessToken ? 'Present' : 'Not present'
+                });
+                
+                // Update user display
+                updateUserDisplay();
+                
+                // Check if user is logged in before loading data
+                if (typeof loggedInStatus !== 'undefined' && loggedInStatus) {
+                    loadMySpecifications().catch(error => {
+                        console.error('Failed to load specifications on page load:', error);
+                        // Error handling is already done in loadMySpecifications
+                    });
+                } else {
+                    console.log('User not logged in, showing login message');
+                    // If user is not logged in, clear tables and show login message
+                    clearTables();
+                    showErrorMessage('Please log in to view your specifications.');
+                }
+            });
+
+            // Refresh specifications when user logs in
+            if (typeof updateVisibility === 'function') {
+                const originalUpdateVisibility = updateVisibility;
+                updateVisibility = function() {
+                    originalUpdateVisibility();
+                    
+                    // Update user display whenever visibility changes
+                    updateUserDisplay();
+                    
+                    // If user just logged in, load specifications
+                    if (loggedInStatus && mySpecifications.length === 0 && !isLoadingSpecifications) {
+                        // Clear any existing error messages
+                        const errorDiv = document.getElementById('errorMessage');
+                        if (errorDiv) {
+                            errorDiv.remove();
+                        }
+                        
+                        console.log('DEBUG: User logged in, triggering specification load');
+                        setTimeout(() => {
+                            loadMySpecifications().catch(error => {
+                                console.error('Failed to load specifications after login:', error);
+                                // Error handling is already done in loadMySpecifications
+                            });
+                        }, 100); // Small delay to ensure auth state is fully updated
+                    } else if (!loggedInStatus) {
+                        // User logged out, clear data and show login message
+                        mySpecifications = [];
+                        clearTables();
+                        showErrorMessage('Please log in to view your specifications.');
+                    }
+                };
+            }
+            
+            // Function to manually trigger specification reload after login
+            function reloadSpecificationsAfterLogin() {
+                console.log('DEBUG: Manual reload triggered after login');
+                console.log('DEBUG: Auth manager state at reload:', {
+                    isAuthenticated: window.authManager.isAuthenticated,
+                    accessToken: window.authManager.accessToken ? 'Present' : 'Not present',
+                    username: window.authManager.username,
+                    role: window.authManager.userRole
+                });
+                
+                if (window.authManager.isAuthenticated && window.authManager.accessToken) {
+                    // Clear any existing error messages
+                    const errorDiv = document.getElementById('errorMessage');
+                    if (errorDiv) {
+                        errorDiv.remove();
+                    }
+                    
+                    // Reset specifications and reload
+                    mySpecifications = [];
+                    isLoadingSpecifications = false;
+                    
+                    loadMySpecifications().catch(error => {
+                        console.error('Failed to reload specifications:', error);
+                    });
+                } else {
+                    console.warn('Cannot reload specifications - user not properly authenticated');
+                }
+            }
+            
+            // Make the reload function globally accessible
+            window.reloadSpecificationsAfterLogin = reloadSpecificationsAfterLogin;
         </script>
     </body>
 </html>

@@ -103,10 +103,13 @@
   ------------------------------------------------------------------------------>
         <div class="page-Content">
             <h1><i class="fa-solid fa-house"></i> eInvoicing Specification Registry</h1>
-            <br/>
-            <div class="button-container">
-                <button id="newSpecificationButton">New Specification</button>
+            
+            <!-- User info display -->
+            <div id="userInfo" style="background: #e3f2fd; padding: 10px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #2196f3;">
+                <small><strong>Current User:</strong> <span id="currentUserDisplay">Loading...</span></small>
             </div>
+            
+            <br/>
 
             <div class="filter-container">
                 <input type="text" id="searchInput" placeholder="Search..." />
@@ -179,5 +182,58 @@
                 <span id="pageInfo"></span>
             </div>
         </div>
+
+        <script>
+            // Function to update user display
+            function updateUserDisplay() {
+                const userInfoElement = document.getElementById('currentUserDisplay');
+                if (!userInfoElement) return;
+                
+                const currentUser = getCurrentUser(window.authManager);
+                
+                if (currentUser.isAuthenticated) {
+                    const displayName = currentUser.username || 'Unknown User';
+                    const role = currentUser.role || 'User';
+                    userInfoElement.innerHTML = `${displayName} (${role})`;
+                    console.log('DEBUG: User display updated:', { displayName, role });
+                } else {
+                    userInfoElement.innerHTML = 'Not logged in';
+                    console.log('DEBUG: User not authenticated');
+                }
+            }
+
+            // Initialize user display when page loads
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('eInvoicingSpecificationRegistry page loaded');
+                
+                // Initialize authentication manager
+                window.authManager.init();
+                
+                // Update user display
+                updateUserDisplay();
+                
+                // Debug: Show current user information
+                const currentUser = getCurrentUser(window.authManager);
+                console.log('DEBUG: Current user info:', currentUser);
+                console.log('DEBUG: Auth manager state:', {
+                    isAuthenticated: window.authManager.isAuthenticated,
+                    userRole: window.authManager.userRole,
+                    username: window.authManager.username,
+                    userID: window.authManager.userID,
+                    accessToken: window.authManager.accessToken ? 'Present' : 'Not present'
+                });
+            });
+
+            // Update user display when authentication state changes
+            if (typeof updateVisibility === 'function') {
+                const originalUpdateVisibility = updateVisibility;
+                updateVisibility = function() {
+                    originalUpdateVisibility();
+                    
+                    // Update user display whenever visibility changes
+                    updateUserDisplay();
+                };
+            }
+        </script>
     </body>
 </html>
