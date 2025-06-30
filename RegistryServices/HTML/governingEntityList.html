@@ -45,18 +45,15 @@
             <table id="waitingApprovalTable" class="styled-table">
                 <thead>
                     <tr>
-                        <th>Created</th>
-                        <th>Governing Entity</th>
-                        <th>Primary User</th>
-                        <!-- <th>No. of Specifications</th>
-                        <th>In Progress</th> -->
-                        <th>Action</th>
-                        <th>Deny</th>
+                        <th style="width: 120px;">Created</th>
+                        <th style="width: 240px;">Governing Entity</th>
+                        <th style="width: 300px;">Description</th>
+                        <th style="width: 120px;">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="7" style="text-align: center; font-style: italic;">No pending entities</td>
+                        <td colspan="4" style="text-align: center; font-style: italic;">No pending entities</td>
                     </tr>
                 </tbody>
             </table>
@@ -79,21 +76,19 @@
                 </tbody>
             </table>
 
-            
-
-    <div id="pagination-controls">
-        <label for="rowsPerPage">Show</label>
-        <select id="rowsPerPage">
-            <option value="10">10</option>
-            <option value="15">15</option>
-            <option value="20">20</option>
-        </select>
-        <span>rows</span>
-        <button id="prevPage" disabled>«</button>
-        <span id="currentPage">1</span>
-        <button id="nextPage" disabled>»</button>
-    </div>
-</div>
+            <div id="pagination-controls">
+                <label for="rowsPerPage">Show</label>
+                <select id="rowsPerPage">
+                    <option value="10">10</option>
+                    <option value="15">15</option>
+                    <option value="20">20</option>
+                </select>
+                <span>rows</span>
+                <button id="prevPage" disabled>«</button>
+                <span id="currentPage">1</span>
+                <button id="nextPage" disabled>»</button>
+            </div>
+        </div>
 
     <script>
         // The governing entity functionality is now handled by governingEntity.js
@@ -111,5 +106,6 @@
             window.sidebarManager.initializeSidebar(window.authManager);
         });
     </script>
+
     </body>
 </html>
