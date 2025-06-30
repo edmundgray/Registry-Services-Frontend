@@ -1092,15 +1092,16 @@ function closeLoginModal() {
 
 // Simplified role checking for prototype
 function getCurrentUser() {
-    if (!authManager.isAuthenticated) {
+    // Use window.authManager to ensure we're accessing the global auth manager
+    if (!window.authManager || !window.authManager.isAuthenticated) {
         return { role: 'Guest', isAuthenticated: false };
     }
     
     return {
-        id: authManager.userID,
-        username: authManager.username,
-        role: authManager.userRole || 'User',
-        isAuthenticated: authManager.isAuthenticated
+        id: window.authManager.userID,
+        username: window.authManager.username,
+        role: window.authManager.userRole || 'User',
+        isAuthenticated: window.authManager.isAuthenticated
     };
 }
 
@@ -1348,7 +1349,9 @@ function debounce(func, wait) {
     };
 }
 
+// LEGACY CODE - Commented out as New Specification button is now handled by dynamic sidebar
 // Add event listener for New Specification button
+/*
 document.addEventListener("DOMContentLoaded", function() {
     const newSpecificationButton = document.getElementById("newSpecificationButton");
     console.log("New Specification button found:", newSpecificationButton);
@@ -1368,6 +1371,7 @@ document.addEventListener("DOMContentLoaded", function() {
         console.error("New Specification button not found!");
     }
 });
+*/
 
 // Fallback function to estimate total pages when API doesn't provide total count
     function estimateTotalPages() {

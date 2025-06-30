@@ -128,6 +128,8 @@ class SidebarManager {
         const loginText = isLoggedIn ? 'Logout' : 'Login';
         const loginAction = isLoggedIn ? 'logout()' : 'showLoginForm()';
         
+        console.log('DEBUG: Generating login button - isLoggedIn:', isLoggedIn, 'action:', loginAction);
+        
         sidebarHTML += `
                     <li id="loginLogoutItem">
                         <a href="#" onclick="${loginAction}">
@@ -168,17 +170,30 @@ class SidebarManager {
 
 // Global functions for login/logout actions
 function showLoginForm() {
-    const modal = document.getElementById('loginModal');
+    console.log('showLoginForm called');
+    let modal = document.getElementById('loginModal');
     if (modal) {
+        console.log('Modal found, showing it');
         modal.style.display = 'block';
     } else {
+        console.log('Modal not found, creating it');
         createLoginModal();
+        // Get the modal reference after creation
+        modal = document.getElementById('loginModal');
+    }
+    
+    // Focus on the username field if modal exists
+    if (modal) {
+        const usernameField = modal.querySelector('#username');
+        if (usernameField) {
+            setTimeout(() => usernameField.focus(), 100);
+        }
     }
 }
 
 function createLoginModal() {
     const modalHTML = `
-        <div id="loginModal" class="modal" style="display: block;">
+        <div id="loginModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
                     <h2>Login</h2>
@@ -214,6 +229,13 @@ function createLoginModal() {
         </div>`;
 
     document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Show the modal after it's been added to the DOM
+    const modal = document.getElementById('loginModal');
+    if (modal) {
+        modal.style.display = 'block';
+        console.log('Modal created and shown');
+    }
 }
 
 function closeLoginModal() {
@@ -284,6 +306,7 @@ function performLogin(username, role) {
 }
 
 function logout() {
+    console.log('logout called');
     // Clear AuthManager
     window.authManager.logout();
     
@@ -305,3 +328,43 @@ function logout() {
 
 // Create global sidebar manager instance
 window.sidebarManager = new SidebarManager();
+console.log('SidebarManager initialized:', window.sidebarManager);
+
+// Test function for debugging
+window.testLogin = function() {
+    console.log('Test login function called');
+    showLoginForm();
+};
+
+// Reset function to clear all localStorage and test fresh state
+window.resetAuth = function() {
+    console.log('Clearing all authentication data');
+    
+    // Clear localStorage
+    const authKeys = ['access_token', 'userRole', 'username', 'userId'];
+    authKeys.forEach(key => {
+        if (localStorage.getItem(key)) {
+            console.log(`Removing ${key} from localStorage`);
+            localStorage.removeItem(key);
+        }
+    });
+    
+    // Reset AuthManager
+    window.authManager.logout();
+    
+    // Update sidebar
+    window.sidebarManager.updateSidebar(window.authManager);
+    
+    // Update user display if available
+    if (typeof updateUserDisplay === 'function') {
+        updateUserDisplay();
+    }
+    
+    // Update legacy visibility if available
+    if (typeof updateVisibility === 'function') {
+        updateVisibility();
+    }
+    
+    console.log('Authentication reset complete - user should now see "Login" button');
+    alert('Authentication reset! You should now see a "Login" button in the sidebar.');
+};
