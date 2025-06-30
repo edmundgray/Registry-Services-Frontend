@@ -159,7 +159,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 const mandatoryChildren = [];
                 if (bgParent.children) {
                     bgParent.children.forEach(child => {
-                        if (child.Cardinality === '1..1' && child.LevelStr === '++') {
+                        if (child.Cardinality === '1..1' && child.LevelStr.startsWith('++')) {
                             mandatoryChildren.push(child.ID);
                         }
                         // Recursively check deeper children if needed
@@ -226,7 +226,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     
                     const isChecked = savedCoreIds.includes(item.ID) || shouldAutoCheck || isMandatoryChild;
                     
-                    includedCell.innerHTML = `<input type="checkbox" class="row-selector" data-id="${item.ID}" ${isChecked ? 'checked' : ''}>`;
+                    includedCell.innerHTML = `<input type="checkbox" class="row-selector" data-id="${item.ID}" ${isChecked ? 'checked' : ''} ${isChecked && !isReadOnly ? 'disabled' : ''}>`;
                     tr.appendChild(includedCell);
 
                     const typeOfChangeCell = document.createElement("td");
@@ -296,34 +296,66 @@ document.addEventListener("DOMContentLoaded", function () {
             
             // Make hierarchy data globally accessible for cascading logic
             window.coreInvoiceHierarchy = processedElements;
+
+            const checkChildrenRecursive = (currentElement) => {
+                currentElement.children.forEach(child => {
+                    const childCheckbox = document.querySelector(`.row-selector[data-id="${child.ID}"]`);
+                    // Check only if not already checked or disabled (mandatory elements remain checked)
+                    if (childCheckbox && !childCheckbox.checked) {
+                        childCheckbox.checked = true;
+                    }
+                    // If the child is mandatory (1..1 and '++' level, or primary mandatory), disable it
+                    const isMandatoryElement = (child.Cardinality === '1..1' && child.LevelStr === '+') ||
+                                               (child.Cardinality === '1..1' && child.LevelStr.startsWith('++'));
+                    if (isMandatoryElement && !window.isCoreInvoiceReadOnly) {
+                        childCheckbox.disabled = true;
+                    }
+                    if (child.children.length > 0) {
+                        checkChildrenRecursive(child);
+                    }
+                });
+            };
+
+            const uncheckChildrenRecursive = (currentElement) => {
+                currentElement.children.forEach(child => {
+                    const childCheckbox = document.querySelector(`.row-selector[data-id="${child.ID}"]`);
+                    // Only uncheck if not disabled (i.e., not mandatory auto-selected)
+                    if (childCheckbox && childCheckbox.checked && !childCheckbox.disabled) {
+                        childCheckbox.checked = false;
+                    }
+                    if (child.children.length > 0) {
+                        uncheckChildrenRecursive(child);
+                    }
+                });
+            };
+
             window.handleCascadingSelection = function(changedCheckbox) {
                 const itemId = changedCheckbox.getAttribute('data-id');
                 const isChecked = changedCheckbox.checked;
-                
-                // Find the item in the hierarchy
                 const item = processedElements.find(el => el.ID === itemId);
                 if (!item) return;
-                
-                if (itemId && itemId.startsWith('BG') && item.LevelStr === '+') {
-                    // This is a BG parent item
+
+                // A. Handle Parent (BG) selection -> cascading down
+                if (item.ID.startsWith('BG')) {
                     if (isChecked) {
-                        // Auto-check mandatory children (even if BG was already checked)
-                        const mandatoryChildren = getMandatoryChildren(item, processedElements);
-                        mandatoryChildren.forEach(childId => {
-                            const childCheckbox = document.querySelector(`.row-selector[data-id="${childId}"]`);
-                            if (childCheckbox) {
-                                childCheckbox.checked = true;
-                            }
-                        });
+                        checkChildrenRecursive(item);
                     } else {
-                        // Uncheck all children (only when BG is manually unchecked via checkbox)
-                        const allChildren = getAllChildren(item);
-                        allChildren.forEach(childId => {
-                            const childCheckbox = document.querySelector(`.row-selector[data-id="${childId}"]`);
-                            if (childCheckbox) {
-                                childCheckbox.checked = false;
-                            }
-                        });
+                        uncheckChildrenRecursive(item);
+                    }
+                }
+
+                // B. Handle Child (BT or BG) selection -> cascading up
+                if (isChecked) {
+                    let current = item;
+                    let parentItem = findParentInHierarchy(current, processedElements);
+
+                    while (parentItem) {
+                        const parentCheckbox = document.querySelector(`.row-selector[data-id="${parentItem.ID}"]`);
+                        if (parentCheckbox && !parentCheckbox.checked) {
+                            parentCheckbox.checked = true;
+                        }
+                        current = parentItem;
+                        parentItem = findParentInHierarchy(current, processedElements);
                     }
                 }
             };
@@ -388,7 +420,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // Get all selected checkboxes
         const selectedCheckboxes = document.querySelectorAll('input[type="checkbox"]:checked');
-        const selectedIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+        const selectedIds = Array.from(selectedCheckboxes).map(cb => cb.getAttribute('data-id'));
         
         // Get all type of change values
         const typeOfChangeInputs = document.querySelectorAll('select[id^="typeOfChange_"]');
