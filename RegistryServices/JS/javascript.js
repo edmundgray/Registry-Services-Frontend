@@ -1413,6 +1413,37 @@ function editSpecification(identityID) {
     }
     console.log('DEBUG: editSpecification - Return page set to:', localStorage.getItem("returnToPage"));
     
+    // Set breadcrumb context for edit workflow
+    if (window.breadcrumbManager) {
+        // Determine source based on current page
+        const currentPage = window.location.pathname.split('/').pop();
+        let source = 'mySpecs'; // Default
+        
+        if (currentPage === 'eInvoicingSpecificationRegistry.html' || 
+            currentPage === 'viewSpecification.html') {
+            // Check if we came from registry or have registry context
+            const existingContext = window.breadcrumbManager.getContext();
+            if (existingContext && existingContext.source === 'registry') {
+                source = 'registry';
+            } else if (document.referrer.includes('eInvoicingSpecificationRegistry.html')) {
+                source = 'registry';
+            } else if (currentPage === 'eInvoicingSpecificationRegistry.html') {
+                source = 'registry';
+            }
+        }
+        
+        const editContext = {
+            source: source,
+            action: 'edit',
+            currentPage: 'IdentifyingInformation.html',
+            specId: identityID,
+            specIdentityId: identityID
+        };
+        
+        console.log('DEBUG: editSpecification - Setting breadcrumb context:', editContext);
+        window.breadcrumbManager.setContext(editContext);
+    }
+    
     // Navigate to IdentifyingInformation.html
     console.log('DEBUG: editSpecification - Navigating to IdentifyingInformation.html');
     window.location.href = 'IdentifyingInformation.html';

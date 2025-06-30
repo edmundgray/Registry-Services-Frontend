@@ -251,6 +251,15 @@ function goToSpecificationPreview()
     // Auto-save before proceeding
     saveTable();
     
+    // Update breadcrumb context for next page
+    if (window.breadcrumbManager) {
+        const context = window.breadcrumbManager.getContext();
+        if (context) {
+            context.currentPage = 'specificationPreview.html';
+            window.breadcrumbManager.updateContext(context);
+        }
+    }
+    
     window.location.href = "specificationPreview.html";
 }
 

@@ -1008,3 +1008,69 @@ button[onclick*="deleteRow"]:active {
 .demo-button:hover {
     background-color: #e8956b;
 }
+
+/******************************************************************************
+    Breadcrumb Styling
+ ******************************************************************************/
+.breadcrumb-container {
+    margin-bottom: 15px;
+    font-size: 0.9em;
+    color: #666;
+    padding: 8px 0;
+    border-bottom: 1px solid #e0e0e0;
+    display: none; /* Hidden by default, shown when breadcrumbs exist */
+}
+
+.breadcrumb-item {
+    display: inline;
+    color: #007bff;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.breadcrumb-item:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+.breadcrumb-separator {
+    margin: 0 8px;
+    color: #999;
+    font-weight: normal;
+}
+
+.breadcrumb-current {
+    color: #333;
+    font-weight: 500;
+    display: inline;
+}
+
+/* Mobile responsiveness for breadcrumbs */
+@media (max-width: 768px) {
+    .breadcrumb-container {
+        font-size: 0.8em;
+        margin-bottom: 10px;
+        padding: 6px 0;
+    }
+    
+    .breadcrumb-separator {
+        margin: 0 6px;
+    }
+    
+    .page-Content {
+        margin-left: 60px;
+        padding: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .breadcrumb-container {
+        font-size: 0.75em;
+    }
+    
+    .page-Content {
+        margin-left: 0;
+        padding: 10px;
+    }
+}

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Simple Breadcrumb Test</title>
+    <link rel="stylesheet" href="../CSS/style.css">
+    <script src="../JS/breadcrumbManager.js"></script>
+</head>
+<body>
+    <div style="padding: 20px;">
+        <div id="breadcrumbContainer" class="breadcrumb-container">
+            <!-- Breadcrumb will be generated here -->
+        </div>
+        
+        <h1>Simple Breadcrumb Test</h1>
+        
+        <div style="margin: 20px 0;">
+            <button onclick="testBasicBreadcrumb()">Test Basic Breadcrumb</button>
+            <button onclick="testRegistryView()">Test Registry > View</button>
+            <button onclick="testMySpecsEdit()">Test My Specs > Edit</button>
+            <button onclick="clearBreadcrumbs()">Clear</button>
+        </div>
+        
+        <div id="debug" style="background: #f5f5f5; padding: 10px; margin: 10px 0; border: 1px solid #ddd;"></div>
+    </div>
+
+    <script>
+        function updateDebug(message) {
+            document.getElementById('debug').innerHTML += message + '<br>';
+        }
+
+        function testBasicBreadcrumb() {
+            updateDebug('=== Testing Basic Breadcrumb ===');
+            
+            if (typeof window.breadcrumbManager === 'undefined') {
+                updateDebug('ERROR: breadcrumbManager not found!');
+                return;
+            }
+            
+            updateDebug('breadcrumbManager found');
+            
+            // Set a basic context
+            const context = {
+                source: 'registry',
+                action: 'view',
+                currentPage: 'viewSpecification.html',
+                specId: 'TEST_SPEC_001'
+            };
+            
+            updateDebug('Setting context: ' + JSON.stringify(context));
+            
+            try {
+                window.breadcrumbManager.setContext(context);
+                updateDebug('Context set successfully');
+                
+                const savedContext = window.breadcrumbManager.getContext();
+                updateDebug('Retrieved context: ' + JSON.stringify(savedContext));
+                
+            } catch (error) {
+                updateDebug('ERROR: ' + error.message);
+            }
+        }
+
+        function testRegistryView() {
+            updateDebug('=== Testing Registry View ===');
+            localStorage.setItem('selectedSpecification', 'REGISTRY_TEST_001');
+            
+            const context = {
+                source: 'registry',
+                action: 'view',
+                currentPage: 'viewSpecification.html',
+                specId: 'REGISTRY_TEST_001'
+            };
+            
+            window.breadcrumbManager.setContext(context);
+            updateDebug('Registry view context set');
+        }
+
+        function testMySpecsEdit() {
+            updateDebug('=== Testing My Specs Edit ===');
+            localStorage.setItem('selectedSpecification', 'MYSPECS_TEST_001');
+            
+            const context = {
+                source: 'mySpecs',
+                action: 'edit',
+                currentPage: 'coreInvoiceModel.html',
+                specId: 'MYSPECS_TEST_001'
+            };
+            
+            window.breadcrumbManager.setContext(context);
+            updateDebug('My Specs edit context set');
+        }
+
+        function clearBreadcrumbs() {
+            updateDebug('=== Clearing Breadcrumbs ===');
+            if (window.breadcrumbManager) {
+                window.breadcrumbManager.clearContext();
+                updateDebug('Breadcrumbs cleared');
+            }
+            document.getElementById('debug').innerHTML = '';
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDebug('Page loaded');
+            updateDebug('BreadcrumbManager available: ' + (typeof window.breadcrumbManager !== 'undefined'));
+            
+            if (window.breadcrumbManager) {
+                updateDebug('Initializing breadcrumb manager...');
+                window.breadcrumbManager.init();
+            }
+            
+            const container = document.getElementById('breadcrumbContainer');
+            updateDebug('Breadcrumb container found: ' + !!container);
+            if (container) {
+                updateDebug('Container innerHTML: "' + container.innerHTML + '"');
+                updateDebug('Container display style: ' + getComputedStyle(container).display);
+            }
+        });
+    </script>
+</body>
+</html>

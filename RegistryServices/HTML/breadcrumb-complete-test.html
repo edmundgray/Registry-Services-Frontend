@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Complete Breadcrumb Test</title>
+    <link rel="stylesheet" href="../CSS/style.css">
+    <script src="../JS/breadcrumbManager.js"></script>
+    <style>
+        .test-container {
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-section {
+            background: #f9f9f9;
+            padding: 15px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .debug-output {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        button {
+            margin: 5px;
+            padding: 8px 15px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <!-- This will test breadcrumb rendering -->
+        <div id="breadcrumbContainer" class="breadcrumb-container" style="border: 2px solid red; min-height: 30px;">
+            <!-- Breadcrumb will appear here -->
+        </div>
+        
+        <h1>Complete Breadcrumb System Test</h1>
+        
+        <div class="test-section">
+            <h3>Test Scenarios</h3>
+            <button onclick="testRegistryView()">Registry → View Spec</button>
+            <button onclick="testRegistryEdit()">Registry → Edit Spec (Step 1)</button>
+            <button onclick="testMySpecsEdit()">My Specs → Edit Spec (Step 2)</button>
+            <button onclick="testNewSpec()">New Spec Workflow</button>
+            <button onclick="testWorkflowStep()">Advance to Step 3</button>
+            <button onclick="clearAll()">Clear All</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>Manual Context Setting</h3>
+            <label>Source: <select id="manualSource">
+                <option value="registry">Registry</option>
+                <option value="mySpecs">My Specs</option>
+            </select></label>
+            <label>Action: <select id="manualAction">
+                <option value="view">View</option>
+                <option value="edit">Edit</option>
+                <option value="new">New</option>
+            </select></label>
+            <label>Page: <select id="manualPage">
+                <option value="viewSpecification.html">View Specification</option>
+                <option value="IdentifyingInformation.html">Identifying Information</option>
+                <option value="coreInvoiceModel.html">Core Invoice Model</option>
+                <option value="ExtensionComponentDataModel.html">Extension Component</option>
+                <option value="additionalRequirements.html">Additional Requirements</option>
+                <option value="specificationPreview.html">Specification Preview</option>
+            </select></label>
+            <button onclick="setManualContext()">Set Context</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>Debug Output</h3>
+            <div id="debugOutput" class="debug-output"></div>
+            <button onclick="clearDebug()">Clear Debug</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>Storage Inspector</h3>
+            <button onclick="inspectStorage()">Inspect Storage</button>
+            <div id="storageOutput" style="background: #ecf0f1; padding: 10px; margin-top: 10px; font-family: monospace; font-size: 12px;"></div>
+        </div>
+    </div>
+
+    <script>
+        let debugCount = 0;
+        
+        function debug(message) {
+            debugCount++;
+            const timestamp = new Date().toLocaleTimeString();
+            const output = document.getElementById('debugOutput');
+            output.textContent += `[${debugCount}] ${timestamp}: ${message}\n`;
+            output.scrollTop = output.scrollHeight;
+            console.log(`Breadcrumb Test [${debugCount}]:`, message);
+        }
+
+        function clearDebug() {
+            document.getElementById('debugOutput').textContent = '';
+            debugCount = 0;
+        }
+
+        function clearAll() {
+            if (window.breadcrumbManager) {
+                window.breadcrumbManager.clearContext();
+            }
+            localStorage.clear();
+            sessionStorage.clear();
+            document.getElementById('breadcrumbContainer').innerHTML = '';
+            debug('All data and breadcrumbs cleared');
+        }
+
+        function testRegistryView() {
+            debug('=== Testing Registry → View Spec ===');
+            localStorage.setItem('selectedSpecification', 'REG_SPEC_001');
+            
+            const context = {
+                source: 'registry',
+                action: 'view',
+                currentPage: 'viewSpecification.html',
+                specId: 'REG_SPEC_001',
+                specIdentityId: 'REG_SPEC_001'
+            };
+            
+            debug('Setting context: ' + JSON.stringify(context, null, 2));
+            
+            if (window.breadcrumbManager) {
+                window.breadcrumbManager.setContext(context);
+                debug('Context set successfully');
+                inspectStorage();
+            } else {
+                debug('ERROR: breadcrumbManager not available');
+            }
+        }
+
+        function testRegistryEdit() {
+            debug('=== Testing Registry → Edit Spec (Step 1) ===');
+            localStorage.setItem('selectedSpecification', 'REG_EDIT_001');
+            
+            const context = {
+                source: 'registry',
+                action: 'edit',
+                currentPage: 'IdentifyingInformation.html',
+                specId: 'REG_EDIT_001',
+                specIdentityId: 'REG_EDIT_001'
+            };
+            
+            debug('Setting context: ' + JSON.stringify(context, null, 2));
+            window.breadcrumbManager.setContext(context);
+            inspectStorage();
+        }
+
+        function testMySpecsEdit() {
+            debug('=== Testing My Specs → Edit Spec (Step 2) ===');
+            localStorage.setItem('selectedSpecification', 'MY_SPEC_001');
+            
+            const context = {
+                source: 'mySpecs',
+                action: 'edit',
+                currentPage: 'coreInvoiceModel.html',
+                specId: 'MY_SPEC_001',
+                specIdentityId: 'MY_SPEC_001'
+            };
+            
+            debug('Setting context: ' + JSON.stringify(context, null, 2));
+            window.breadcrumbManager.setContext(context);
+            inspectStorage();
+        }
+
+        function testNewSpec() {
+            debug('=== Testing New Spec Workflow ===');
+            localStorage.setItem('selectedSpecification', 'new');
+            
+            const context = {
+                source: 'mySpecs',
+                action: 'new',
+                currentPage: 'IdentifyingInformation.html',
+                specId: 'new'
+            };
+            
+            debug('Setting context: ' + JSON.stringify(context, null, 2));
+            window.breadcrumbManager.setContext(context);
+            inspectStorage();
+        }
+
+        function testWorkflowStep() {
+            debug('=== Testing Workflow Step Advancement ===');
+            const existingContext = window.breadcrumbManager.getContext();
+            if (existingContext) {
+                existingContext.currentPage = 'ExtensionComponentDataModel.html';
+                debug('Advancing to: ' + existingContext.currentPage);
+                window.breadcrumbManager.setContext(existingContext);
+                inspectStorage();
+            } else {
+                debug('No existing context found - run another test first');
+            }
+        }
+
+        function setManualContext() {
+            debug('=== Setting Manual Context ===');
+            const source = document.getElementById('manualSource').value;
+            const action = document.getElementById('manualAction').value;
+            const currentPage = document.getElementById('manualPage').value;
+            
+            const context = {
+                source: source,
+                action: action,
+                currentPage: currentPage,
+                specId: 'MANUAL_TEST_001',
+                specIdentityId: 'MANUAL_TEST_001'
+            };
+            
+            debug('Manual context: ' + JSON.stringify(context, null, 2));
+            window.breadcrumbManager.setContext(context);
+            inspectStorage();
+        }
+
+        function inspectStorage() {
+            debug('=== Storage Inspection ===');
+            const storageOutput = document.getElementById('storageOutput');
+            
+            let output = 'LocalStorage:\n';
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                output += `  ${key}: ${localStorage.getItem(key)}\n`;
+            }
+            
+            output += '\nSessionStorage:\n';
+            for (let i = 0; i < sessionStorage.length; i++) {
+                const key = sessionStorage.key(i);
+                output += `  ${key}: ${sessionStorage.getItem(key)}\n`;
+            }
+            
+            const breadcrumbContext = window.breadcrumbManager ? window.breadcrumbManager.getContext() : null;
+            output += '\nCurrent Breadcrumb Context:\n';
+            output += JSON.stringify(breadcrumbContext, null, 2);
+            
+            storageOutput.textContent = output;
+            debug('Storage inspection complete');
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            debug('Page loaded - DOM ready');
+            
+            // Check if breadcrumbManager is available
+            if (typeof window.breadcrumbManager !== 'undefined') {
+                debug('BreadcrumbManager found - initializing...');
+                window.breadcrumbManager.init();
+                
+                // Check if container exists
+                const container = document.getElementById('breadcrumbContainer');
+                debug('Breadcrumb container found: ' + !!container);
+                if (container) {
+                    debug('Container classes: ' + container.className);
+                    debug('Container initial content: "' + container.innerHTML + '"');
+                }
+            } else {
+                debug('ERROR: BreadcrumbManager not found!');
+            }
+            
+            // Set up initial test
+            setTimeout(() => {
+                debug('Running initial test...');
+                testRegistryView();
+            }, 100);
+        });
+    </script>
+</body>
+</html>

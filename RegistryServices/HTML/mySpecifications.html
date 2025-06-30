@@ -29,6 +29,7 @@
             }
         </script>
         <script src="../JS/sidebarManager.js"></script>
+        <script src="../JS/breadcrumbManager.js"></script>
         <script src="../JS/javascript.js"></script>
         <script src="../JS/dataManager.js"></script>
         
@@ -510,6 +511,18 @@
                 console.warn('autofillSpecification is deprecated. Use editSpecification(identityID) instead.');
                 localStorage.setItem("selectedSpecification", specName);
                 localStorage.setItem("returnToPage", "mySpecifications.html"); // Set return page
+                
+                // Set breadcrumb context for new specification workflow
+                if (window.breadcrumbManager) {
+                    const context = {
+                        source: 'mySpecs',
+                        action: 'new',
+                        currentPage: 'IdentifyingInformation.html',
+                        specId: 'new'
+                    };
+                    window.breadcrumbManager.setContext(context);
+                }
+                
                 window.location.href = "IdentifyingInformation.html";
             }
 
@@ -522,6 +535,11 @@
                 
                 // Initialize dynamic sidebar
                 window.sidebarManager.initializeSidebar(window.authManager);
+                
+                // Initialize breadcrumb system (clear any existing context on this page)
+                if (window.breadcrumbManager) {
+                    window.breadcrumbManager.clearContext();
+                }
                 
                 // Debug: Show current user information
                 const currentUser = getCurrentUser(window.authManager);
