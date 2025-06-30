@@ -869,25 +869,208 @@ button[onclick*="deleteRow"]:active {
     background-color: #218838;
 }
 
-.styled-table tbody tr.level-2-green.child-row td,
-.styled-table tbody tr.level-2-green.child-row.has-children-parent-row td {
-    background-color: #b6eac7 !important;
-    color: #000 !important;
+/******************************************************************************
+    Login Modal Styling
+ ******************************************************************************/
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
 }
 
-.styled-table tbody tr.level-2-bg.child-row td,
-.styled-table tbody tr.level-2-bg.child-row.has-children-parent-row td {
-    background-color: #b6eac7 !important; /* Medium green for level 2 BG */
-    color: #000 !important;
-    padding-left: 13.5px !important;
+.modal-content {
+    background-color: #fff;
+    margin: 10% auto;
+    padding: 0;
+    border-radius: 8px;
+    width: 400px;
+    max-width: 90%;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
-.styled-table tbody tr.level-1-bg.parent-row td {
-    background-color: #217a36 !important; /* Dark green for level 1 BG */
-    color: #fff !important;
+
+.modal-header {
+    background-color: #000033;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
-.styled-table tbody tr.level-3-bg.child-row td,
-.styled-table tbody tr.level-3-bg.child-row.has-children-parent-row td {
-    background-color: #7fd6a7 !important; /* Distinct green for level 3 BG */
-    color: #000 !important;
-    padding-left: 13.5px !important;
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.close {
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.close:hover {
+    opacity: 0.7;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #333;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #000033;
+    box-shadow: 0 0 5px rgba(0, 0, 51, 0.3);
+}
+
+.form-group button {
+    background-color: #000033;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-right: 10px;
+}
+
+.form-group button:hover {
+    background-color: #000055;
+}
+
+.form-group button[type="button"] {
+    background-color: #666;
+}
+
+.form-group button[type="button"]:hover {
+    background-color: #888;
+}
+
+.error-message {
+    color: #d32f2f;
+    font-size: 14px;
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #ffebee;
+    border-left: 4px solid #d32f2f;
+    border-radius: 4px;
+}
+
+.demo-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.demo-section h4 {
+    margin-bottom: 10px;
+    color: #666;
+    font-size: 14px;
+}
+
+.demo-button {
+    background-color: #F4A261;
+    color: white;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    margin: 5px 5px 5px 0;
+}
+
+.demo-button:hover {
+    background-color: #e8956b;
+}
+
+/******************************************************************************
+    Breadcrumb Styling
+ ******************************************************************************/
+.breadcrumb-container {
+    margin-bottom: 15px;
+    font-size: 0.9em;
+    color: #666;
+    padding: 8px 0;
+    border-bottom: 1px solid #e0e0e0;
+    display: none; /* Hidden by default, shown when breadcrumbs exist */
+}
+
+.breadcrumb-item {
+    display: inline;
+    color: #007bff;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.breadcrumb-item:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+.breadcrumb-separator {
+    margin: 0 8px;
+    color: #999;
+    font-weight: normal;
+}
+
+.breadcrumb-current {
+    color: #333;
+    font-weight: 500;
+    display: inline;
+}
+
+/* Mobile responsiveness for breadcrumbs */
+@media (max-width: 768px) {
+    .breadcrumb-container {
+        font-size: 0.8em;
+        margin-bottom: 10px;
+        padding: 6px 0;
+    }
+    
+    .breadcrumb-separator {
+        margin: 0 6px;
+    }
+    
+    .page-Content {
+        margin-left: 60px;
+        padding: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .breadcrumb-container {
+        font-size: 0.75em;
+    }
+    
+    .page-Content {
+        margin-left: 0;
+        padding: 10px;
+    }
 }

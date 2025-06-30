@@ -2,33 +2,28 @@
     Log in/out functionality
     General
  ******************************************************************************/
-let loggedInStatus = !!localStorage.getItem('userRole');
-console.log("Page load: User is " + (loggedInStatus ? "logged in" : "logged out"));
+let loggedInStatus = false; // Will be updated by updateVisibility()
+console.log("Page load: User authentication will be checked by AuthManager");
 
 function toggleLogin() 
 {
-    loggedInStatus = !loggedInStatus;
-    if (loggedInStatus) 
-    {
-        localStorage.setItem('userRole', 'admin');
-    } 
-    else 
-    {
-        localStorage.removeItem('userRole');
-    }
-    updateVisibility();
+    // Check if user is currently logged in
+    const isLoggedIn = window.authManager && window.authManager.isAuthenticated;
     
-    // Only call populateTable if it exists (on registry pages)
-    if (typeof populateTable === 'function' && typeof filteredData !== 'undefined' && filteredData.length > 0) 
-    {
-        populateTable(filteredData);
+    if (isLoggedIn) {
+        // User is logged in, so logout
+        logout();
+    } else {
+        // User is not logged in, show login form
+        showLoginForm();
     }
-    
-    console.log("Button pressed: User is " + (loggedInStatus ? "logged in" : "logged out"));
 }
 
 function updateVisibility() 
 {
+    // Update loggedInStatus to be compatible with new auth system
+    loggedInStatus = window.authManager && window.authManager.isAuthenticated;
+    
     document.querySelectorAll(".protected").forEach(item => 
     {
         item.style.display = loggedInStatus ? "block" : "none";
@@ -1097,15 +1092,16 @@ function closeLoginModal() {
 
 // Simplified role checking for prototype
 function getCurrentUser() {
-    if (!authManager.isAuthenticated) {
+    // Use window.authManager to ensure we're accessing the global auth manager
+    if (!window.authManager || !window.authManager.isAuthenticated) {
         return { role: 'Guest', isAuthenticated: false };
     }
     
     return {
-        id: authManager.userID,
-        username: authManager.username,
-        role: authManager.userRole || 'User',
-        isAuthenticated: authManager.isAuthenticated
+        id: window.authManager.userID,
+        username: window.authManager.username,
+        role: window.authManager.userRole || 'User',
+        isAuthenticated: window.authManager.isAuthenticated
     };
 }
 
@@ -1353,7 +1349,9 @@ function debounce(func, wait) {
     };
 }
 
+// LEGACY CODE - Commented out as New Specification button is now handled by dynamic sidebar
 // Add event listener for New Specification button
+/*
 document.addEventListener("DOMContentLoaded", function() {
     const newSpecificationButton = document.getElementById("newSpecificationButton");
     console.log("New Specification button found:", newSpecificationButton);
@@ -1373,6 +1371,7 @@ document.addEventListener("DOMContentLoaded", function() {
         console.error("New Specification button not found!");
     }
 });
+*/
 
 // Fallback function to estimate total pages when API doesn't provide total count
     function estimateTotalPages() {
@@ -1413,6 +1412,37 @@ function editSpecification(identityID) {
         localStorage.setItem("returnToPage", currentPage || "mySpecifications.html");
     }
     console.log('DEBUG: editSpecification - Return page set to:', localStorage.getItem("returnToPage"));
+    
+    // Set breadcrumb context for edit workflow
+    if (window.breadcrumbManager) {
+        // Determine source based on current page
+        const currentPage = window.location.pathname.split('/').pop();
+        let source = 'mySpecs'; // Default
+        
+        if (currentPage === 'eInvoicingSpecificationRegistry.html' || 
+            currentPage === 'viewSpecification.html') {
+            // Check if we came from registry or have registry context
+            const existingContext = window.breadcrumbManager.getContext();
+            if (existingContext && existingContext.source === 'registry') {
+                source = 'registry';
+            } else if (document.referrer.includes('eInvoicingSpecificationRegistry.html')) {
+                source = 'registry';
+            } else if (currentPage === 'eInvoicingSpecificationRegistry.html') {
+                source = 'registry';
+            }
+        }
+        
+        const editContext = {
+            source: source,
+            action: 'edit',
+            currentPage: 'IdentifyingInformation.html',
+            specId: identityID,
+            specIdentityId: identityID
+        };
+        
+        console.log('DEBUG: editSpecification - Setting breadcrumb context:', editContext);
+        window.breadcrumbManager.setContext(editContext);
+    }
     
     // Navigate to IdentifyingInformation.html
     console.log('DEBUG: editSpecification - Navigating to IdentifyingInformation.html');

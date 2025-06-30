@@ -316,6 +316,19 @@ function populateTable(data) {
                         
                         // Store the specification ID for the view page
                         localStorage.setItem('viewSpecificationId', identityID);
+                        localStorage.setItem('selectedSpecification', identityID);
+                        
+                        // Set breadcrumb context for viewing from registry
+                        if (window.breadcrumbManager) {
+                            const context = {
+                                source: 'registry',
+                                action: 'view',
+                                currentPage: 'viewSpecification.html',
+                                specId: identityID,
+                                specIdentityId: identityID
+                            };
+                            window.breadcrumbManager.setContext(context);
+                        }
                         
                         // Navigate to the view specification page with the ID as a URL parameter
                         const viewUrl = `viewSpecification.html?id=${identityID}`;

@@ -30,6 +30,16 @@ function handleSaveAndRedirect() {
 
     // Redirect if both confirmations are approved
     alert("Data successfully saved!");
+    
+    // Update breadcrumb context for next page
+    if (window.breadcrumbManager) {
+        const context = window.breadcrumbManager.getContext();
+        if (context) {
+            context.currentPage = 'coreInvoiceModel.html';
+            window.breadcrumbManager.updateContext(context);
+        }
+    }
+    
     window.location.href = 'coreInvoiceModel.html';
 }
 
