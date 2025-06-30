@@ -2,33 +2,28 @@
     Log in/out functionality
     General
  ******************************************************************************/
-let loggedInStatus = !!localStorage.getItem('userRole');
-console.log("Page load: User is " + (loggedInStatus ? "logged in" : "logged out"));
+let loggedInStatus = false; // Will be updated by updateVisibility()
+console.log("Page load: User authentication will be checked by AuthManager");
 
 function toggleLogin() 
 {
-    loggedInStatus = !loggedInStatus;
-    if (loggedInStatus) 
-    {
-        localStorage.setItem('userRole', 'admin');
-    } 
-    else 
-    {
-        localStorage.removeItem('userRole');
-    }
-    updateVisibility();
+    // Check if user is currently logged in
+    const isLoggedIn = window.authManager && window.authManager.isAuthenticated;
     
-    // Only call populateTable if it exists (on registry pages)
-    if (typeof populateTable === 'function' && typeof filteredData !== 'undefined' && filteredData.length > 0) 
-    {
-        populateTable(filteredData);
+    if (isLoggedIn) {
+        // User is logged in, so logout
+        logout();
+    } else {
+        // User is not logged in, show login form
+        showLoginForm();
     }
-    
-    console.log("Button pressed: User is " + (loggedInStatus ? "logged in" : "logged out"));
 }
 
 function updateVisibility() 
 {
+    // Update loggedInStatus to be compatible with new auth system
+    loggedInStatus = window.authManager && window.authManager.isAuthenticated;
+    
     document.querySelectorAll(".protected").forEach(item => 
     {
         item.style.display = loggedInStatus ? "block" : "none";
