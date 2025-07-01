@@ -408,69 +408,8 @@ document.addEventListener("DOMContentLoaded", function () {
             tableBody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:red;">Failed to load Core Invoice Model data from API. Please check your connection and try again later.</td></tr>`;
         });
 
-    // Define global functions for the buttons
-    window.handleCoreInvoiceSave = function() {
-        console.log("Saving Core Invoice Model data...");
-        
-        const editingSpecId = localStorage.getItem("selectedSpecification");
-        if (!editingSpecId) {
-            alert("No specification selected for editing.");
-            return;
-        }
-
-        // Get all selected checkboxes
-        const selectedCheckboxes = document.querySelectorAll('input[type="checkbox"]:checked');
-        const selectedIds = Array.from(selectedCheckboxes).map(cb => cb.getAttribute('data-id'));
-        
-        // Get all type of change values
-        const typeOfChangeInputs = document.querySelectorAll('select[id^="typeOfChange_"]');
-        const typeOfChangeData = {};
-        typeOfChangeInputs.forEach(input => {
-            const id = input.id.replace('typeOfChange_', '');
-            if (input.value) {
-                typeOfChangeData[id] = input.value;
-            }
-        });
-
-        // Load existing specifications
-        const specifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
-        const specIndex = specifications.findIndex(spec => spec.id === editingSpecId);
-        
-        if (specIndex > -1) {
-            // Update existing specification
-            specifications[specIndex].coreInvoiceModelIds = selectedIds;
-            specifications[specIndex].coreInvoiceModelTypeOfChange = typeOfChangeData;
-            specifications[specIndex].lastModified = new Date().toISOString();
-            
-            localStorage.setItem('mySpecifications', JSON.stringify(specifications));
-            console.log("Core Invoice Model data saved successfully", {
-                selectedIds: selectedIds,
-                typeOfChange: typeOfChangeData
-            });
-            
-            alert("Core Invoice Model data saved successfully!");
-        } else {
-            alert("Error: Could not find specification to update.");
-        }
-    };
-
-    window.handleCancel = function() {
-        console.log("Canceling Core Invoice Model editing...");
-        // Navigate back without saving
-        window.location.href = "mySpecifications.html";
-    };
-
-    window.saveAndGoToExtensionModel = function() {
-        console.log("Saving Core Invoice Model and navigating to Extension Component Data Model...");
-        
-        // First save the current data
-        window.handleCoreInvoiceSave();
-        
-        // Then navigate to Extension Component Data Model
-        setTimeout(() => {
-            console.log("Navigating to ExtensionComponentDataModel.html");
-            window.location.href = "ExtensionComponentDataModel.html";
-        }, 500); // Small delay to ensure save completes
-    };
+    // Note: Save functions are now handled in coreInvoiceModel.html
+    // This file only handles table population and UI interactions
+    console.log("CoreInvoiceModel.js: Table population and UI setup complete");
 
 });
