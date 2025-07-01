@@ -482,7 +482,24 @@
 
                 } catch (error) {
                     console.error('Error saving specification:', error);
-                    alert(`Error saving specification: ${error.message}`);
+                    
+                    // Provide more user-friendly error messages
+                    let errorMessage = 'Error saving specification: ';
+                    if (error.message.includes('Failed to fetch')) {
+                        errorMessage += 'Unable to connect to the server. Please check your internet connection and try again.';
+                    } else if (error.message.includes('HTTP error! status: 401')) {
+                        errorMessage += 'Authentication failed. Please log in again.';
+                    } else if (error.message.includes('HTTP error! status: 403')) {
+                        errorMessage += 'You don\'t have permission to perform this action.';
+                    } else if (error.message.includes('HTTP error! status: 500')) {
+                        errorMessage += 'Server error. Please try again later or contact support.';
+                    } else if (error.message.includes('Unexpected end of JSON input')) {
+                        errorMessage += 'Server returned an invalid response. The data may have been saved successfully. Please refresh the page to check.';
+                    } else {
+                        errorMessage += error.message;
+                    }
+                    
+                    alert(errorMessage);
                     
                     // Restore button
                     const saveButton = document.querySelector('button[onclick="handleSave()"]');
@@ -524,7 +541,24 @@
 
                 } catch (error) {
                     console.error('Error saving specification:', error);
-                    alert(`Error saving specification: ${error.message}`);
+                    
+                    // Provide more user-friendly error messages
+                    let errorMessage = 'Error saving specification: ';
+                    if (error.message.includes('Failed to fetch')) {
+                        errorMessage += 'Unable to connect to the server. Please check your internet connection and try again.';
+                    } else if (error.message.includes('HTTP error! status: 401')) {
+                        errorMessage += 'Authentication failed. Please log in again.';
+                    } else if (error.message.includes('HTTP error! status: 403')) {
+                        errorMessage += 'You don\'t have permission to perform this action.';
+                    } else if (error.message.includes('HTTP error! status: 500')) {
+                        errorMessage += 'Server error. Please try again later or contact support.';
+                    } else if (error.message.includes('Unexpected end of JSON input')) {
+                        errorMessage += 'Server returned an invalid response. The data may have been saved successfully. Please refresh the page to check.';
+                    } else {
+                        errorMessage += error.message;
+                    }
+                    
+                    alert(errorMessage);
                     
                     // Restore button
                     const button = document.querySelector('button[onclick="saveAndGoToCoreInvoiceModel()"]');

@@ -20,6 +20,7 @@
         <script src="../JS/sidebarManager.js"></script>
         <script src="../JS/breadcrumbManager.js"></script>
         <script src="../JS/javascript.js"></script>
+        <script src="../JS/dataManager.js"></script>
         <script src="../JS/coreInvoiceModel.js"></script>
         
         <title>Registry Services</title>
@@ -104,106 +105,166 @@
         </div>
         <script>
             let isFormDirty = false;
+            let dataManager = null;
             // Make isFormDirty globally accessible for breadcrumb manager
             window.isFormDirty = false;
 
-            document.addEventListener('DOMContentLoaded', () => {
-                const editingSpecId = localStorage.getItem("selectedSpecification");
-                if (editingSpecId) {
-                    // Check both storage locations for specifications
-                    let specifications = JSON.parse(localStorage.getItem("specifications")) || [];
-                    let mySpecifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
+            // Initialize data manager and load data
+            async function initializeDataManager() {
+                try {
+                    console.log('DEBUG: CoreInvoiceModel - Starting initializeDataManager');
+                    console.log('DEBUG: CoreInvoiceModel - LocalStorage state:');
+                    console.log('  - editMode:', localStorage.getItem('editMode'));
+                    console.log('  - specificationIdentityId:', localStorage.getItem('specificationIdentityId'));
                     
-                    // First try to find in main specifications store
-                    let spec = specifications.find(s => s.specName === editingSpecId);
+                    dataManager = new SpecificationDataManager();
+                    console.log('DEBUG: CoreInvoiceModel - Data manager initialized');
+                    console.log('DEBUG: CoreInvoiceModel - Mode:', dataManager.currentMode);
+                    console.log('DEBUG: CoreInvoiceModel - CurrentSpecId:', dataManager.currentSpecId);
+                    console.log('DEBUG: CoreInvoiceModel - isEditMode():', dataManager.isEditMode());
                     
-                    // If not found, try mySpecifications store (for backwards compatibility)
-                    if (!spec) {
-                        spec = mySpecifications.find(s => s.id === editingSpecId);
-                    }
-                    
-                    if (spec) {
-                        const titleElement = document.querySelector('.page-Content h1');
-                        if (titleElement) {
-                            const specName = spec.specName || spec.name || editingSpecId;
-                            titleElement.innerHTML = `<i class="fa-solid fa-car"></i> Core Invoice Model for: ${specName}`;
+                    if (dataManager.isEditMode() && dataManager.currentSpecId) {
+                        console.log('DEBUG: CoreInvoiceModel - Loading specification for editing. ID:', dataManager.currentSpecId);
+                        
+                        // Load data from API if not already loaded
+                        if (!dataManager.isDataLoaded) {
+                            await dataManager.loadSpecificationFromAPI(dataManager.currentSpecId);
                         }
                         
-                        // Load existing selections if they exist
-                        if (spec.coreInvoiceModelIds && spec.coreInvoiceModelIds.length > 0) {
-                            // Wait for the table to be populated by coreInvoiceModel.js
-                            setTimeout(() => {
-                                loadExistingSelections(spec);
-                            }, 500);
+                        const workingData = dataManager.workingData || dataManager.loadWorkingDataFromLocalStorage();
+                        console.log('DEBUG: CoreInvoiceModel - Working data loaded:', workingData);
+                        
+                        // Update page title if we have a spec name
+                        if (workingData && workingData.specName) {
+                            const pageTitle = document.querySelector('h1');
+                            if (pageTitle) {
+                                pageTitle.innerHTML = `<i class="fa-solid fa-trailer"></i> Core Invoice Model - ${workingData.specName}`;
+                            }
                         }
+                        
+                        // Load any existing core invoice model selections
+                        if (workingData && workingData.coreInvoiceModelData) {
+                            loadExistingSelections(workingData.coreInvoiceModelData);
+                        }
+                        
+                        return workingData;
+                    } else {
+                        console.log('DEBUG: CoreInvoiceModel - Creating new specification or missing spec ID');
+                        console.log('DEBUG: CoreInvoiceModel - isEditMode:', dataManager.isEditMode());
+                        console.log('DEBUG: CoreInvoiceModel - currentSpecId:', dataManager.currentSpecId);
+                        
+                        // For new specifications, check if there's any working data
+                        const workingData = dataManager.loadWorkingDataFromLocalStorage();
+                        if (workingData) {
+                            console.log('DEBUG: CoreInvoiceModel - Found working data');
+                            // Update page title if we have a spec name
+                            if (workingData.specName) {
+                                const pageTitle = document.querySelector('h1');
+                                if (pageTitle) {
+                                    pageTitle.innerHTML = `<i class="fa-solid fa-trailer"></i> Core Invoice Model - ${workingData.specName}`;
+                                }
+                            }
+                            
+                            // Load any existing core invoice model selections
+                            if (workingData.coreInvoiceModelData) {
+                                loadExistingSelections(workingData.coreInvoiceModelData);
+                            }
+                        } else {
+                            console.log('DEBUG: CoreInvoiceModel - No working data found');
+                        }
+                        
+                        return workingData;
                     }
+                } catch (error) {
+                    console.error('DEBUG: CoreInvoiceModel - Error initializing data manager:', error);
+                    alert(`Error loading specification: ${error.message}`);
                 }
-            });
+            }
 
-            // Function to load existing selections
-            function loadExistingSelections(spec) {
-                if (spec.coreInvoiceModelIds) {
-                    spec.coreInvoiceModelIds.forEach(id => {
+            function loadExistingSelections(coreInvoiceModelData) {
+                console.log('DEBUG: CoreInvoiceModel - Loading existing selections:', coreInvoiceModelData);
+                
+                if (Array.isArray(coreInvoiceModelData)) {
+                    // Handle array format
+                    coreInvoiceModelData.forEach(id => {
                         const checkbox = document.querySelector(`input[data-id="${id}"]`);
                         if (checkbox) {
                             checkbox.checked = true;
                         }
                     });
+                } else if (coreInvoiceModelData.selectedIds) {
+                    // Handle object format with selectedIds
+                    coreInvoiceModelData.selectedIds.forEach(id => {
+                        const checkbox = document.querySelector(`input[data-id="${id}"]`);
+                        if (checkbox) {
+                            checkbox.checked = true;
+                        }
+                    });
+                    
+                    // Handle type of change values if available
+                    if (coreInvoiceModelData.typeOfChangeValues) {
+                        Object.keys(coreInvoiceModelData.typeOfChangeValues).forEach(id => {
+                            const dropdown = document.querySelector(`select[data-id="${id}"]`);
+                            if (dropdown) {
+                                dropdown.value = coreInvoiceModelData.typeOfChangeValues[id];
+                            }
+                        });
+                    }
                 }
+            }
+
+            document.addEventListener('DOMContentLoaded', async () => {
+                console.log('DEBUG: CoreInvoiceModel - DOM loaded, initializing data manager');
                 
-                if (spec.coreInvoiceModelTypeOfChange) {
-                    Object.keys(spec.coreInvoiceModelTypeOfChange).forEach(id => {
-                        const dropdown = document.querySelector(`select[data-id="${id}"]`);
-                        if (dropdown) {
-                            dropdown.value = spec.coreInvoiceModelTypeOfChange[id];
+                // Initialize data manager
+                const workingData = await initializeDataManager();
+                
+                // Legacy compatibility - for any remaining code that might need this
+                if (workingData && workingData.specName) {
+                    localStorage.setItem("selectedSpecification", workingData.specName);
+                }
+            });
+                    
+            // Event listeners for form changes
+            // Set up event listeners for the table when DOM is ready
+            setTimeout(() => {
+                const tableElement = document.querySelector('#coreInvoiceTable');
+                if (tableElement) {
+                    tableElement.addEventListener('change', (event) => {
+                        if (event.target.matches('.row-selector:not(:disabled)') || event.target.matches('.type-of-change-dropdown')) {
+                            isFormDirty = true;
+                            window.isFormDirty = true; // Update global reference
+                            
+                            // Auto-check "Included in Spec" when dropdown changes to anything other than "No change"
+                            if (event.target.matches('.type-of-change-dropdown')) {
+                                const dropdown = event.target;
+                                const itemId = dropdown.getAttribute('data-id');
+                                const selectedValue = dropdown.value;
+                                
+                                // Find the corresponding checkbox for this item
+                                const checkbox = document.querySelector(`.row-selector[data-id="${itemId}"]`);
+                                if (checkbox) {
+                                    // Auto-check if user selects anything other than "No change"
+                                    if (selectedValue !== "No change") {
+                                        checkbox.checked = true;
+                                    }
+                                    // Note: When changing back to "No change", checkbox remains checked (per requirement #3)
+                                }
+                            }
+                            
+                            // Handle cascading selection for BG items
+                            if (event.target.matches('.row-selector')) {
+                                const checkbox = event.target;
+                                
+                                // Use the global cascading function if available
+                                if (window.handleCascadingSelection) {
+                                    window.handleCascadingSelection(checkbox);
+                                }
+                            }
                         }
                     });
                 }
-                
-                // Clear the dirty flag since we just loaded saved data
-                isFormDirty = false;
-                window.isFormDirty = false; // Update global reference
-            }
-
-                document.querySelector('#coreInvoiceTable').addEventListener('change', (event) => {
-                    if (event.target.matches('.row-selector:not(:disabled)') || event.target.matches('.type-of-change-dropdown')) {
-                        isFormDirty = true;
-                        window.isFormDirty = true; // Update global reference
-                        
-                        // Auto-check "Included in Spec" when dropdown changes to anything other than "No change"
-                        if (event.target.matches('.type-of-change-dropdown')) {
-                            const dropdown = event.target;
-                            const itemId = dropdown.getAttribute('data-id');
-                            const selectedValue = dropdown.value;
-                            
-                            // Find the corresponding checkbox for this item
-                            const checkbox = document.querySelector(`.row-selector[data-id="${itemId}"]`);
-                            if (checkbox) {
-                                // Auto-check if user selects anything other than "No change"
-                                if (selectedValue !== 'No change') {
-                                    checkbox.checked = true;
-                                    
-                                    // If this is a BG item, trigger cascading logic for mandatory children
-                                    if (itemId && itemId.startsWith('BG') && window.handleCascadingSelection) {
-                                        window.handleCascadingSelection(checkbox);
-                                    }
-                                }
-                                // Note: When changing back to "No change", checkbox remains checked (per requirement #3)
-                            }
-                        }
-                        
-                        // Handle cascading selection for BG items
-                        if (event.target.matches('.row-selector')) {
-                            const checkbox = event.target;
-                            
-                            // Use the global cascading function if available
-                            if (window.handleCascadingSelection) {
-                                window.handleCascadingSelection(checkbox);
-                            }
-                        }
-                    }
-                });
-
+            }, 500); // Wait for table to be populated
 
             window.addEventListener('beforeunload', (e) => {
                 if (isFormDirty) {
@@ -212,59 +273,90 @@
                 }
             });
 
-            function handleCoreInvoiceSave(showAlert = true) {
-                const selectedIds = [];
-                document.querySelectorAll('.row-selector:checked').forEach(checkbox => {
-                    selectedIds.push(checkbox.getAttribute('data-id'));
-                });
-
-                const typeOfChangeValues = {};
-                document.querySelectorAll('.type-of-change-dropdown').forEach(dropdown => {
-                    const id = dropdown.getAttribute('data-id');
-                    const value = dropdown.value;
-                    typeOfChangeValues[id] = value;
-                });
-
-                const editingSpecId = localStorage.getItem("selectedSpecification");
-                if (!editingSpecId) {
-                    alert("Error: No specification selected. Please go back to the Identifying Information page.");
+            async function handleCoreInvoiceSave(showAlert = true) {
+                console.log('DEBUG: CoreInvoiceModel - handleCoreInvoiceSave called');
+                
+                if (!dataManager) {
+                    console.error('DEBUG: CoreInvoiceModel - Data manager not initialized');
+                    alert("Error: Data manager not initialized.");
                     return;
                 }
 
-                // Check both storage locations for specifications
-                let specifications = JSON.parse(localStorage.getItem("specifications")) || [];
-                let mySpecifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
-                
-                // First try to find in main specifications store (used by IdentifyingInformation)
-                let specIndex = specifications.findIndex(spec => spec.specName === editingSpecId);
-                let targetArray = specifications;
-                let storageKey = 'specifications';
-                
-                // If not found, try mySpecifications store (for backwards compatibility)
-                if (specIndex === -1) {
-                    specIndex = mySpecifications.findIndex(spec => spec.id === editingSpecId);
-                    targetArray = mySpecifications;
-                    storageKey = 'mySpecifications';
-                }
+                try {
+                    // Collect selected items
+                    const selectedIds = [];
+                    document.querySelectorAll('.row-selector:checked').forEach(checkbox => {
+                        selectedIds.push(checkbox.getAttribute('data-id'));
+                    });
 
-                if (specIndex > -1) {
-                    targetArray[specIndex].coreInvoiceModelIds = selectedIds;
-                    targetArray[specIndex].coreInvoiceModelTypeOfChange = typeOfChangeValues;
-                    localStorage.setItem(storageKey, JSON.stringify(targetArray));
+                    const typeOfChangeValues = {};
+                    document.querySelectorAll('.type-of-change-dropdown').forEach(dropdown => {
+                        const id = dropdown.getAttribute('data-id');
+                        const value = dropdown.value;
+                        typeOfChangeValues[id] = value;
+                    });
+
+                    console.log('DEBUG: CoreInvoiceModel - Selected IDs:', selectedIds);
+                    console.log('DEBUG: CoreInvoiceModel - Type of change values:', typeOfChangeValues);
+
+                    // Update working data with core invoice model selections
+                    if (!dataManager.workingData) {
+                        dataManager.workingData = dataManager.loadWorkingDataFromLocalStorage() || {};
+                    }
+                    
+                    // Store the core invoice model data
+                    dataManager.workingData.coreInvoiceModelData = {
+                        selectedIds: selectedIds,
+                        typeOfChangeValues: typeOfChangeValues
+                    };
+                    
+                    // Save to localStorage (working data)
+                    dataManager.saveWorkingDataToLocalStorage();
+                    
+                    // Optionally save to API if in edit mode and we want immediate persistence
+                    if (dataManager.isEditMode() && dataManager.currentSpecId) {
+                        console.log('DEBUG: CoreInvoiceModel - Saving to API');
+                        
+                        // Transform working data to form data for API call
+                        const formData = {
+                            // Include all the identifying information fields
+                            specName: dataManager.workingData.specName || '',
+                            governingEntity: dataManager.workingData.governingEntity || '',
+                            contactInfo: dataManager.workingData.contactInfo || '',
+                            sector: dataManager.workingData.sector || '',
+                            subSector: dataManager.workingData.subSector || '',
+                            country: dataManager.workingData.country || '',
+                            purpose: dataManager.workingData.purpose || '',
+                            specId: dataManager.workingData.specId || '',
+                            specVersion: dataManager.workingData.specVersion || '',
+                            implDate: dataManager.workingData.implDate || '',
+                            coreVersion: dataManager.workingData.coreVersion || '',
+                            underlyingSpec: dataManager.workingData.underlyingSpec || '',
+                            sourceLink: dataManager.workingData.sourceLink || '',
+                            preferredSyntax: dataManager.workingData.preferredSyntax || ''
+                        };
+                        
+                        await dataManager.saveSpecificationToAPI(formData);
+                    }
+                    
+                    console.log('DEBUG: CoreInvoiceModel - Core invoice model data saved');
+                    
                     if (showAlert) {
-                        alert("Selections saved!");
+                        alert("Core Invoice Model selections saved!");
                     }
                     isFormDirty = false;
-                    window.isFormDirty = false; // Update global reference
-                } else {
-                    alert("Error: Could not find the specification to save to.");
+                    window.isFormDirty = false;
+                    
+                } catch (error) {
+                    console.error('DEBUG: CoreInvoiceModel - Error saving:', error);
+                    alert("Error saving Core Invoice Model: " + error.message);
                 }
             }
 
-            function saveAndGoToExtensionModel() {
+            async function saveAndGoToExtensionModel() {
                 console.log("saveAndGoToExtensionModel() called");
                 try {
-                    handleCoreInvoiceSave(false);
+                    await handleCoreInvoiceSave(false);
                     console.log("Save completed, navigating to ExtensionComponentDataModel.html");
                     // Update breadcrumb context for next page
                     const context = window.breadcrumbManager.getContext();
@@ -280,12 +372,64 @@
             }
 
             function handleCancel() {
-                 if (isFormDirty && !confirm("You have unsaved changes. Are you sure you want to cancel?")) {
+                if (isFormDirty && !confirm("You have unsaved changes. Are you sure you want to cancel?")) {
                     return;
                 }
+                
+                // Clear editing state
+                if (dataManager) {
+                    dataManager.clearEditingState();
+                }
+                
                 isFormDirty = false;
-                window.isFormDirty = false; // Update global reference
-                window.location.href = 'mySpecifications.html';
+                window.isFormDirty = false;
+                
+                // Smart navigation: return to calling page or default to mySpecifications.html
+                let targetPage = 'mySpecifications.html'; // Default fallback
+                
+                try {
+                    // 1. Check if there's a stored return page in localStorage
+                    const storedReturnPage = localStorage.getItem('returnToPage');
+                    console.log('handleCancel: Stored return page:', storedReturnPage);
+                    
+                    if (storedReturnPage) {
+                        targetPage = storedReturnPage;
+                        localStorage.removeItem('returnToPage'); // Clean up after use
+                        console.log('handleCancel: Using stored return page:', targetPage);
+                    }
+                    // 2. Otherwise, try to use document.referrer
+                    else if (document.referrer) {
+                        console.log('handleCancel: Document referrer:', document.referrer);
+                        const referrerUrl = new URL(document.referrer);
+                        const referrerPage = referrerUrl.pathname.split('/').pop();
+                        console.log('handleCancel: Extracted referrer page:', referrerPage);
+                        
+                        // Only navigate back to valid registry pages, avoid loops
+                        const validPages = [
+                            'mySpecifications.html', 
+                            'eInvoicingSpecificationRegistry.html',
+                            'IdentifyingInformation.html',
+                            'viewSpecification.html',
+                            'specificationPreview.html'
+                        ];
+                        
+                        if (validPages.includes(referrerPage) && referrerPage !== 'coreInvoiceModel.html') {
+                            targetPage = referrerPage;
+                            console.log('handleCancel: Using valid referrer page:', targetPage);
+                        } else {
+                            console.log('handleCancel: Referrer page not valid or is self, using default');
+                        }
+                    } else {
+                        console.log('handleCancel: No referrer available, using default');
+                    }
+                    
+                    console.log('handleCancel: Final target page:', targetPage);
+                    window.location.href = targetPage;
+                    
+                } catch (error) {
+                    console.warn('handleCancel: Error determining return page, using default:', error);
+                    window.location.href = 'mySpecifications.html';
+                }
             }
         </script>
         
