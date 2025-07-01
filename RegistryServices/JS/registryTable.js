@@ -330,8 +330,8 @@ function populateTable(data) {
                             window.breadcrumbManager.setContext(context);
                         }
                         
-                        // Navigate to the view specification page with the ID as a URL parameter
-                        const viewUrl = `viewSpecification.html?id=${identityID}`;
+                        // Navigate to the view specification page with the ID and source as URL parameters
+                        const viewUrl = `viewSpecification.html?id=${identityID}&source=registry`;
                         console.log('DEBUG: Navigating to view page:', viewUrl);
                         
                         window.location.href = viewUrl;

@@ -52,6 +52,81 @@
             {
                 font-size: 0.9em;
             }
+            
+            /* Core Invoice Model Table Column Width Restrictions */
+            #coreInvoiceTable {
+                table-layout: fixed;
+                width: 100%;
+            }
+            
+            /* Column widths for the editable version */
+            #coreInvoiceTable th:nth-child(1), /* Select/Checkbox */
+            #coreInvoiceTable td:nth-child(1) {
+                width: 60px;
+                max-width: 60px;
+                text-align: center;
+            }
+            
+            #coreInvoiceTable th:nth-child(2), /* ID */
+            #coreInvoiceTable td:nth-child(2) {
+                width: 80px;
+                max-width: 80px;
+            }
+            
+            #coreInvoiceTable th:nth-child(3), /* Level */
+            #coreInvoiceTable td:nth-child(3) {
+                width: 80px;
+                max-width: 80px;
+            }
+            
+            #coreInvoiceTable th:nth-child(4), /* Cardinality */
+            #coreInvoiceTable td:nth-child(4) {
+                width: 100px;
+                max-width: 100px;
+            }
+            
+            #coreInvoiceTable th:nth-child(5), /* Business Term */
+            #coreInvoiceTable td:nth-child(5) {
+                width: 200px;
+                max-width: 200px;
+                word-wrap: break-word;
+                white-space: normal;
+            }
+            
+            #coreInvoiceTable th:nth-child(6), /* Usage Note */
+            #coreInvoiceTable td:nth-child(6) {
+                width: 250px;
+                max-width: 250px;
+                word-wrap: break-word;
+                white-space: normal;
+            }
+            
+            #coreInvoiceTable th:nth-child(7), /* Business Rules */
+            #coreInvoiceTable td:nth-child(7) {
+                width: 100px;
+                max-width: 100px;
+                word-wrap: break-word;
+                white-space: normal;
+            }
+            
+            #coreInvoiceTable th:nth-child(8), /* Data Type */
+            #coreInvoiceTable td:nth-child(8) {
+                width: 100px;
+                max-width: 100px;
+            }
+            
+            #coreInvoiceTable th:nth-child(9), /* Type of Change dropdown */
+            #coreInvoiceTable td:nth-child(9) {
+                width: 120px;
+                max-width: 120px;
+            }
+            
+            #coreInvoiceTable th:nth-child(10), /* Actions */
+            #coreInvoiceTable td:nth-child(10) {
+                width: 120px;
+                max-width: 120px;
+                text-align: center;
+            }
         </style>
     </head>
     <body>

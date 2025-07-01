@@ -1,0 +1,109 @@
+/******************************************************************************
+    Core Invoice Model Table Stylesheet
+ ******************************************************************************/
+#coreInvoiceTable {
+    table-layout: fixed;
+    /* In case you wish to remove the white space on the right */
+    /* 85% is the lowest before stuff breaks */
+    width: 90%;
+}
+
+/******************************************************************************
+    Each column have a unique width restriction
+ ******************************************************************************/
+/* ID */
+#coreInvoiceTable th:nth-child(1),
+#coreInvoiceTable td:nth-child(1) {
+    width: 35px;
+    max-width: 35px;
+}
+
+/* Level */
+#coreInvoiceTable th:nth-child(2),
+#coreInvoiceTable td:nth-child(2) {
+    width: 35px;
+    max-width: 35px;
+    text-align: center;
+}
+
+/* Cardinality */
+#coreInvoiceTable th:nth-child(3),
+#coreInvoiceTable td:nth-child(3) {
+    width: 55px;
+    max-width: 55px;
+    text-align: center;
+}
+
+/* Business Term */
+#coreInvoiceTable th:nth-child(4),
+#coreInvoiceTable td:nth-child(4) {
+    width: 125px;
+    max-width: 125px;
+}
+
+/* Usage Note */
+#coreInvoiceTable th:nth-child(5),
+#coreInvoiceTable td:nth-child(5) {
+    width: 300px;
+    max-width: 300px;
+    word-wrap: break-word;
+    white-space: normal;
+}
+
+/* Business Rules */
+#coreInvoiceTable th:nth-child(6),
+#coreInvoiceTable td:nth-child(6) {
+    width: 100px;
+    max-width: 100px;
+    word-wrap: break-word;
+    white-space: normal;
+}
+
+/* Data Type */
+#coreInvoiceTable th:nth-child(7),
+#coreInvoiceTable td:nth-child(7) {
+    width: 100px;
+    max-width: 100px;
+}
+
+/* Actions */
+#coreInvoiceTable th:nth-child(8),
+#coreInvoiceTable td:nth-child(8) {
+    width: 70px;
+    max-width: 70px;
+    text-align: center;
+}
+
+/******************************************************************************
+    Additional table styling
+ ******************************************************************************/
+.table-container {
+    font-size: 0.9em;
+}
+
+.centered-cell {
+    text-align: center;
+}
+
+.page-Content {
+    font-size: 0.9em;
+}
+
+.styled-table th,
+.styled-table td {
+    padding: 10.8px 13.5px;
+    font-size: 0.9em;
+}
+
+.styled-table thead tr {
+    font-size: 1.2em;
+}
+
+.fa-solid {
+    font-size: 1.2em;
+}
+
+.show-more-btn {
+    font-size: 0.95em !important;
+    padding: 4px 12px !important;
+}

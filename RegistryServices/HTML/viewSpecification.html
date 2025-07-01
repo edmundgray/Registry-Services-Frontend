@@ -267,8 +267,10 @@
                 // Get specification ID from URL or localStorage
                 const params = new URLSearchParams(window.location.search);
                 const specificationId = params.get('id') || localStorage.getItem('viewSpecificationId');
+                const source = params.get('source') || 'registry'; // Default to registry for public access
                 
                 console.log('DEBUG: Specification ID:', specificationId);
+                console.log('DEBUG: Source:', source);
                 console.log('DEBUG: URL params:', Object.fromEntries(params.entries()));
                 console.log('DEBUG: Auth state:', {
                     isAuthenticated: window.authManager.isAuthenticated,
@@ -278,30 +280,45 @@
                 
                 if (!specificationId) {
                     console.error('No specification ID provided');
-                    showErrorMessage('Error: No specification ID provided. Please navigate from the My Specifications page.');
+                    showErrorMessage('Error: No specification ID provided. Please navigate from the Registry or My Specifications page.');
                     return;
                 }
                 
-                if (!window.authManager.isAuthenticated || !window.authManager.accessToken) {
-                    console.error('User not authenticated');
-                    showErrorMessage('Authentication required. Please log in to view specifications.');
+                // Check if authentication is required based on source
+                const isPublicAccess = source === 'registry' || source === 'public';
+                const requiresAuth = !isPublicAccess;
+                
+                if (requiresAuth && (!window.authManager.isAuthenticated || !window.authManager.accessToken)) {
+                    console.error('User not authenticated for private specification access');
+                    showErrorMessage('Authentication required. Please log in to view your private specifications.');
                     return;
                 }
                 
                 // Load the specification from API
-                loadSpecificationById(specificationId);
+                loadSpecificationById(specificationId, isPublicAccess);
             });
 
-            async function loadSpecificationById(specificationId) {
+            async function loadSpecificationById(specificationId, isPublicAccess = false) {
                 try {
-                    console.log('Loading specification by ID:', specificationId);
+                    console.log('Loading specification by ID:', specificationId, 'Public access:', isPublicAccess);
                     showLoadingIndicator();
                     
-                    // First try to get from the user's specifications list
-                    const response = await authenticatedFetch(`${AUTH_CONFIG.baseUrl}/specifications/${specificationId}`, {
-                        method: 'GET',
-                        forceAuth: true
-                    });
+                    // Choose appropriate fetch method based on access type
+                    let response;
+                    if (isPublicAccess) {
+                        // For public access (registry), use regular fetch without authentication
+                        console.log('DEBUG: Using public API endpoint');
+                        response = await fetch(`${AUTH_CONFIG.baseUrl}/specifications/${specificationId}`, {
+                            method: 'GET'
+                        });
+                    } else {
+                        // For private access (my specifications), use authenticated fetch
+                        console.log('DEBUG: Using authenticated API endpoint');
+                        response = await authenticatedFetch(`${AUTH_CONFIG.baseUrl}/specifications/${specificationId}`, {
+                            method: 'GET',
+                            forceAuth: true
+                        });
+                    }
 
                     console.log('DEBUG: API Response status:', response.status);
 
@@ -511,6 +528,14 @@
             function setupEditButton(spec) {
                 const editButton = document.getElementById("editSpecificationButton");
                 if (editButton) {
+                    // Check if user is authenticated before allowing edit
+                    if (!window.authManager.isAuthenticated || !window.authManager.accessToken) {
+                        // Hide edit button for non-authenticated users
+                        editButton.style.display = 'none';
+                        console.log('DEBUG: Hiding edit button for non-authenticated user');
+                        return;
+                    }
+                    
                     // Use the global editSpecification function for consistency
                     editButton.addEventListener("click", function() {
                         if (spec.identityID) {
