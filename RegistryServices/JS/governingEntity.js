@@ -312,23 +312,23 @@ class GoverningEntityView {
         if (!entityDetailsElement) return;
 
         const entityTable = `
-            <table class="styled-table" style="max-width:900px;">
+            <table class="styled-table" style="max-width:1200px;">
                 <thead>
                     <tr>
                         <th>Created</th>
+                        <th>Name (GroupName)</th>
                         <th>Sector</th>
                         <th>Country</th>
-                        <th>Primary Contact Name</th>
-                        <th>Primary Contact Information</th>
+                        <th style="width: 40%;">Description</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <td>${this.entity.Created}</td>
+                        <td>${this.entity.GoverningEntity}</td>
                         <td></td>
                         <td></td>
-                        <td></td>
-                        <td></td>
+                        <td style="max-width: 300px; word-wrap: break-word;">This is a sample description for the ${this.entity.GoverningEntity}</td>
                     </tr>
                 </tbody>
             </table>
