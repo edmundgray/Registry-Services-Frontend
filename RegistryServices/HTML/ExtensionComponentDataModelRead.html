@@ -189,11 +189,11 @@
                             <tr>
                                 <th>ID</th><th>Level</th><th>Cardinality</th><th>Business Term</th><th>Usage Note</th>
                                 <th>Justification</th><th>Data Type</th><th>Type of Extension</th>
-                                <th>Core Conformant /Rules broken</th><th>Included in Spec</th>
+                                <th>Core Conformant /Rules broken</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr><td colspan="10" style="text-align:center;">Please select a component from the dropdown.</td></tr>
+                            <tr><td colspan="9" style="text-align:center;">Please select a component from the dropdown.</td></tr>
                         </tbody>
                     </table>
                     <button onclick="document.getElementById('${sectionId}').remove(); isFormDirty=true; updateComponentSections();" class="view-button remove-section-btn" style="margin-top: 10px; background: #dc3545;">Remove Selection</button>
@@ -228,7 +228,7 @@
                 const tableBody = selectElement.closest('.component-section').querySelector('tbody');
 
                 if (!selectedComponentId) {
-                    tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Please select a component.</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Please select a component.</td></tr>';
                     return;
                 }
 
@@ -248,19 +248,20 @@
                             throw new Error(`HTTP error! status: ${elementsResponse.status}`);
                         }
                         const elementsData = await elementsResponse.json();
-                        componentElements = Array.isArray(elementsData) ? elementsData : (elementsData.items || []);
+                        // Updated: No more pagination, response is directly an array
+                        componentElements = Array.isArray(elementsData) ? elementsData : [];
                         extensionComponentElementsCache[selectedComponentId] = componentElements;
                         console.log(`Fetched ${componentElements.length} elements for ${selectedComponentId}.`);
                     } catch (error) {
                         console.error(`Error fetching elements for component ${selectedComponentId}:`, error);
-                        tableBody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:red;">Failed to load elements for this component.</td></tr>`;
+                        tableBody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Failed to load elements for this component.</td></tr>`;
                         return;
                     }
                 }
 
                 tableBody.innerHTML = '';
                 if (componentElements.length === 0) {
-                     tableBody.innerHTML = `<tr><td colspan="10" style="text-align:center;">No elements found for this component.</td></tr>`;
+                     tableBody.innerHTML = `<tr><td colspan="9" style="text-align:center;">No elements found for this component.</td></tr>`;
                      return;
                 }
 
@@ -270,21 +271,20 @@
 
                     const mappedEl = {
                         ID: el.businessTermID || 'N/A',
-                        Level: el.level || el.Level || 'N/A',
-                        Cardinality: el.cardinality || el.Cardinality || 'N/A',
+                        Level: el.level || 'N/A',
+                        Cardinality: el.cardinality || 'N/A',
                         "Business Term": el.businessTerm || 'N/A',
-                        "Usage Note": el.semanticDescription || el.semanticDescription || el['Usage Note'] || 'N/A',
-                        Justification: el.justification || el.Justification || 'N/A',
-                        "Data Type": el.dataType || el.DataType || el['Data Type'] || 'N/A',
+                        "Usage Note": el.usageNoteExtension || 'N/A',
+                        Justification: el.justification || 'N/A',
+                        "Data Type": el.dataType || 'N/A',
                         "Type of Extension": el.extensionType || 'N/A',
-                        "Core Conformant/Rules broken": el.coreConformantRulesBroken || el.CoreConformantRulesBroken || el['Core Conformant/Rules broken'] || 'N/A'
+                        "Core Conformant/Rules broken": el.conformanceType || 'N/A'
                     };
 
                     row.innerHTML = `
                         <td>${mappedEl.ID}</td><td>${mappedEl.Level}</td><td>${mappedEl.Cardinality}</td>
                         <td>${mappedEl["Business Term"]}<i class="fa-solid fa-circle-question" title="${mappedEl['Usage Note']}"></i></td>  <td>${mappedEl['Usage Note']}</td><td>${mappedEl.Justification}</td><td>${mappedEl['Data Type']}</td>
                         <td>${mappedEl['Type of Extension']}</td><td>${mappedEl['Core Conformant/Rules broken']}</td>
-                        <td style="text-align:center;"><input type="checkbox" class="element-selector" data-id="${mappedEl.ID}" ${isChecked ? 'checked' : ''} onchange="isFormDirty=true;"></td>
                     `;
                     tableBody.appendChild(row);
                 });
