@@ -21,6 +21,8 @@ window.AuthManager = class {
         this.userRole = null;
         this.userID = null;
         this.username = null;
+        this.userGroupID = null;
+        this.groupName = null;
         this.accessToken = null;
         this.init();
     }
@@ -31,13 +33,17 @@ window.AuthManager = class {
         const role = localStorage.getItem('userRole');
         const username = localStorage.getItem('username');
         const userId = localStorage.getItem('userId');
+        const userGroupID = localStorage.getItem('userGroupID');
+        const groupName = localStorage.getItem('groupName');
         
         console.log('DEBUG: AuthManager init - loading from localStorage:', {
             tokenPresent: !!token,
             tokenPreview: token ? token.substring(0, 30) + '...' : 'Not found',
             role: role,
             username: username,
-            userId: userId
+            userId: userId,
+            userGroupID: userGroupID,
+            groupName: groupName
         });
         
         if (token && role && username) {
@@ -45,6 +51,8 @@ window.AuthManager = class {
             this.userRole = role;
             this.username = username;
             this.userID = userId ? parseInt(userId) : null;
+            this.userGroupID = userGroupID ? parseInt(userGroupID) : null;
+            this.groupName = groupName;
             this.isAuthenticated = true;
             
             console.log('DEBUG: AuthManager initialized with stored credentials');
@@ -79,11 +87,15 @@ window.AuthManager = class {
         this.userRole = null;
         this.userID = null;
         this.username = null;
+        this.userGroupID = null;
+        this.groupName = null;
         this.accessToken = null;
         localStorage.removeItem('access_token');
         localStorage.removeItem('userRole');
         localStorage.removeItem('username');
         localStorage.removeItem('userId');
+        localStorage.removeItem('userGroupID');
+        localStorage.removeItem('groupName');
         console.log('DEBUG: AuthManager logout completed, all data cleared');
     }
 }
@@ -97,6 +109,8 @@ function getCurrentUser(authManager) {
         id: authManager.userID,
         username: authManager.username,
         role: authManager.userRole || 'User',
+        userGroupID: authManager.userGroupID,
+        groupName: authManager.groupName,
         isAuthenticated: authManager.isAuthenticated
     };
 }

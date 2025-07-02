@@ -895,6 +895,8 @@ async function loginUser(username, password) {
         const accessToken = loginData.token || loginData.accessToken || loginData.access_token || loginData.authToken;
         const userRole = loginData.role || loginData.userRole || loginData.roles || 'User';
         const userId = loginData.id || loginData.userId || loginData.user_id || loginData.userID;
+        const userGroupID = loginData.userGroupID || loginData.groupId || loginData.group_id;
+        const groupName = loginData.groupName || loginData.group_name;
         
         if (!accessToken) {
             console.error('DEBUG: No access token found in login response. Available fields:', Object.keys(loginData));
@@ -905,6 +907,8 @@ async function loginUser(username, password) {
         console.log('DEBUG: Token received (first 30 chars):', accessToken.substring(0, 30) + '...');
         console.log('DEBUG: User role:', userRole);
         console.log('DEBUG: User ID:', userId);
+        console.log('DEBUG: User Group ID:', userGroupID);
+        console.log('DEBUG: Group Name:', groupName);
         
         // IMPORTANT: Clear any old authentication data first
         window.authManager.logout();
@@ -915,6 +919,8 @@ async function loginUser(username, password) {
         window.authManager.username = username;
         window.authManager.userRole = userRole;
         window.authManager.userID = userId;
+        window.authManager.userGroupID = userGroupID;
+        window.authManager.groupName = groupName;
         window.authManager.accessToken = accessToken;
         
         // Store in localStorage with the correct keys
@@ -923,6 +929,12 @@ async function loginUser(username, password) {
         localStorage.setItem('username', username);
         if (userId) {
             localStorage.setItem('userId', userId.toString());
+        }
+        if (userGroupID) {
+            localStorage.setItem('userGroupID', userGroupID.toString());
+        }
+        if (groupName) {
+            localStorage.setItem('groupName', groupName);
         }
         
         console.log('DEBUG: Auth manager updated with real token');
@@ -1101,6 +1113,8 @@ function getCurrentUser() {
         id: window.authManager.userID,
         username: window.authManager.username,
         role: window.authManager.userRole || 'User',
+        userGroupID: window.authManager.userGroupID,
+        groupName: window.authManager.groupName,
         isAuthenticated: window.authManager.isAuthenticated
     };
 }

@@ -36,6 +36,12 @@
                 padding: 4.5px;
                 font-size: 0.75rem;
             }
+            .info-row input[readonly] {
+                background-color: #f5f5f5 !important;
+                color: #666 !important;
+                cursor: not-allowed;
+                border: 1px solid #ddd;
+            }
             .info-row label 
             {
                 font-size: 0.741rem;
@@ -132,12 +138,12 @@
                         <input type="text" id="specName" name="specName" required>
                     </div>
                     
-                    <!-- Governing Entity (Required) -->
+                    <!-- Governing Entity (Read-only - derived from User Group) -->
                     <div class="info-row">
                         <label for="governingEntity">Governing Entity:
-                            <span class="semantic-tooltip" title="Organization or authority responsible for the specification.">?</span>
+                            <span class="semantic-tooltip" title="Organization or authority responsible for the specification (derived from your user group).">?</span>
                         </label>
-                        <input type="text" id="governingEntity" name="governingEntity">
+                        <input type="text" id="governingEntity" name="governingEntity" readonly>
                     </div>
                     
                     <!-- Contact Info (Required) -->
@@ -296,6 +302,7 @@
                     <div>
                         <button type="button" onclick="handleSave()" class="view-button">Save</button>
                         <button type="button" onclick="handleCancel()" class="view-button" style="background:#ccc; color:#333;">Cancel</button>
+                        <button type="button" onclick="debugUserGroupID()" class="view-button" style="background:#ff9800; color:#fff; font-size: 0.7rem;">Debug UserGroupID</button>
                     </div>
                     
                     <div>
@@ -319,6 +326,11 @@
                     console.log('DEBUG: IdentifyingInformation - LocalStorage state:');
                     console.log('  - editMode:', localStorage.getItem('editMode'));
                     console.log('  - specificationIdentityId:', localStorage.getItem('specificationIdentityId'));
+                    
+                    // Ensure AuthManager is properly initialized with userGroupID
+                    window.authManager.init();
+                    const currentUser = getCurrentUser(window.authManager);
+                    console.log('DEBUG: IdentifyingInformation - Current user after re-init:', currentUser);
                     
                     dataManager = new SpecificationDataManager();
                     console.log('DEBUG: IdentifyingInformation - Data manager initialized');
@@ -436,7 +448,7 @@
                 const form = document.getElementById('identifyingForm');
                 return {
                     specName: form.specName.value,
-                    governingEntity: form.governingEntity.value,
+                    // governingEntity is excluded - it's read-only and derived from UserGroup
                     contactInfo: form.contactInfo.value,
                     sector: form.sector.value,
                     subSector: form.subSector.value,
@@ -452,11 +464,29 @@
                 };
             }
 
+            // Debug function to check userGroupID
+            function debugUserGroupID() {
+                const currentUser = getCurrentUser();
+                console.log('DEBUG: UserGroupID Investigation:', {
+                    'Current User': currentUser,
+                    'AuthManager userGroupID': window.authManager?.userGroupID,
+                    'localStorage userGroupID': localStorage.getItem('userGroupID'),
+                    'Original Data userGroupID': dataManager?.originalData?.userGroupID,
+                    'Working Data userGroupID': dataManager?.workingData?.userGroupID,
+                    'DataManager mode': dataManager?.currentMode,
+                    'Is Edit Mode': dataManager?.isEditMode(),
+                    'AuthManager full state': window.authManager
+                });
+            }
+
             async function handleSave() {
                 const form = document.getElementById('identifyingForm');
                 if (!form.reportValidity()) return;
 
                 try {
+                    // Debug userGroupID before saving
+                    debugUserGroupID();
+                    
                     const formData = getFormData();
                     
                     // Show saving indicator

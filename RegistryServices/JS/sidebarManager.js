@@ -281,6 +281,8 @@ function performLogin(username, role) {
     window.authManager.username = username;
     window.authManager.userRole = role;
     window.authManager.userID = role === 'Admin' ? 1 : 2;
+    window.authManager.userGroupID = role === 'Admin' ? 1 : 2; // Demo group IDs
+    window.authManager.groupName = role === 'Admin' ? 'Admin Group' : 'Default Group';
     window.authManager.accessToken = 'demo-token-' + Date.now();
 
     // Update localStorage
@@ -288,6 +290,8 @@ function performLogin(username, role) {
     localStorage.setItem('userRole', role);
     localStorage.setItem('username', username);
     localStorage.setItem('userId', window.authManager.userID.toString());
+    localStorage.setItem('userGroupID', window.authManager.userGroupID.toString());
+    localStorage.setItem('groupName', window.authManager.groupName);
 
     // Update sidebar
     window.sidebarManager.updateSidebar(window.authManager);
@@ -302,7 +306,7 @@ function performLogin(username, role) {
         updateVisibility();
     }
 
-    console.log('User logged in:', { username, role });
+    console.log('User logged in:', { username, role, userGroupID: window.authManager.userGroupID });
 }
 
 function logout() {
@@ -341,7 +345,7 @@ window.resetAuth = function() {
     console.log('Clearing all authentication data');
     
     // Clear localStorage
-    const authKeys = ['access_token', 'userRole', 'username', 'userId'];
+    const authKeys = ['access_token', 'userRole', 'username', 'userId', 'userGroupID', 'groupName'];
     authKeys.forEach(key => {
         if (localStorage.getItem(key)) {
             console.log(`Removing ${key} from localStorage`);

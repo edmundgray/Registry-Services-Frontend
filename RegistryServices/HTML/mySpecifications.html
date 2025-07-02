@@ -484,8 +484,15 @@
                 if (currentUser.isAuthenticated) {
                     const displayName = currentUser.username || 'Unknown User';
                     const role = currentUser.role || 'User';
-                    userInfoElement.innerHTML = `${displayName} (${role})`;
-                    console.log('DEBUG: User display updated:', { displayName, role });
+                    const groupInfo = currentUser.userGroupID ? ` | Group: ${currentUser.groupName || currentUser.userGroupID}` : '';
+                    userInfoElement.innerHTML = `${displayName} (${role})${groupInfo}`;
+                    console.log('DEBUG: User display updated:', { 
+                        displayName, 
+                        role, 
+                        userGroupID: currentUser.userGroupID,
+                        groupName: currentUser.groupName,
+                        fullUserData: currentUser
+                    });
                 } else {
                     userInfoElement.innerHTML = 'Not logged in';
                     console.log('DEBUG: User not authenticated');

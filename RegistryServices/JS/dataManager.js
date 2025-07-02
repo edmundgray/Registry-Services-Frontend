@@ -58,7 +58,7 @@ class SpecificationDataManager {
         return {
             // General Information fields
             specName: apiResponse.specificationName || '',
-            governingEntity: apiResponse.governingEntity || '',
+            governingEntity: apiResponse.governingEntity || '', // Read-only display field
             contactInfo: apiResponse.contactInformation || '',
             sector: apiResponse.sector || '',
             subSector: apiResponse.subSector || '',
@@ -79,6 +79,8 @@ class SpecificationDataManager {
             conformanceLevel: apiResponse.conformanceLevel || '',
             implementationStatus: apiResponse.implementationStatus || '',
             registrationStatus: apiResponse.registrationStatus || '',
+            userGroupID: apiResponse.userGroupID || 0,
+            isCountrySpecification: apiResponse.isCountrySpecification || true,
             
             // Nested data for other pages
             coreInvoiceModelData: apiResponse.specificationCores?.items || [],
@@ -93,29 +95,77 @@ class SpecificationDataManager {
 
     // Transform form data back to API format
     transformFormToApiData(formData) {
+        // Get current user's group ID for new specifications
+        const currentUser = getCurrentUser();
+        
+        // Get userGroupID with multiple fallback sources
+        const getUserGroupID = () => {
+            // Priority: current user from AuthManager -> localStorage -> default
+            return currentUser.userGroupID || 
+                   parseInt(localStorage.getItem('userGroupID')) || 
+                   window.authManager?.userGroupID ||
+                   1; // fallback to 1 if all else fails
+        };
+        
+        let userGroupID;
+        if (this.isEditMode()) {
+            // For edit mode, preserve the original userGroupID from API if valid, otherwise use current user's
+            userGroupID = (this.originalData?.userGroupID && this.originalData.userGroupID !== 0) 
+                ? this.originalData.userGroupID 
+                : getUserGroupID();
+        } else {
+            // For create mode, always use current user's group ID
+            userGroupID = getUserGroupID();
+        }
+        
+        console.log('DEBUG: transformFormToApiData - userGroupID logic:', {
+            mode: this.currentMode,
+            isEditMode: this.isEditMode(),
+            originalUserGroupID: this.originalData?.userGroupID,
+            currentUserGroupID: currentUser.userGroupID,
+            localStorageUserGroupID: localStorage.getItem('userGroupID'),
+            authManagerUserGroupID: window.authManager?.userGroupID,
+            finalUserGroupID: userGroupID,
+            currentUserData: currentUser,
+            userGroupIDSources: {
+                fromOriginalData: this.originalData?.userGroupID,
+                fromCurrentUser: currentUser.userGroupID,
+                fromLocalStorage: parseInt(localStorage.getItem('userGroupID')),
+                fromAuthManager: window.authManager?.userGroupID,
+                finalChoice: userGroupID
+            },
+            logicUsed: this.isEditMode() 
+                ? (this.originalData?.userGroupID && this.originalData.userGroupID !== 0 ? 'Original API data' : 'Current user fallback')
+                : 'Current user (create mode)'
+        });
+        
+        // Validate userGroupID before proceeding
+        if (!userGroupID || userGroupID === 0) {
+            console.error('ERROR: Invalid userGroupID detected:', userGroupID);
+            throw new Error(`Invalid userGroupID: ${userGroupID}. Cannot save specification without valid group ID.`);
+        }
+        
         return {
             identityID: this.originalData?.identityID || 0,
             specificationIdentifier: formData.specId || '',
             specificationName: formData.specName || '',
             sector: formData.sector || '',
-            specificationVersion: formData.specVersion || '',
-            dateOfImplementation: this.formatDateForAPI(formData.implDate),
-            country: formData.country || '',
             subSector: formData.subSector || '',
             purpose: formData.purpose || '',
+            specificationVersion: formData.specVersion || '',
             contactInformation: formData.contactInfo || '',
-            governingEntity: formData.governingEntity || '',
+            dateOfImplementation: this.formatDateForAPI(formData.implDate),
+            userGroupID: userGroupID,
             coreVersion: formData.coreVersion || '',
             specificationSourceLink: formData.sourceLink || '',
+            country: formData.country || '',
+            specificationType: this.originalData?.specificationType || formData.specificationType || '',
+            isCountrySpecification: this.originalData?.isCountrySpecification || true,
             underlyingSpecificationIdentifier: formData.underlyingSpec || '',
             preferredSyntax: formData.preferredSyntax || '',
-            
-            // Additional fields - preserve from original if available
-            specificationType: this.originalData?.specificationType || formData.specificationType || '',
-            conformanceLevel: this.originalData?.conformanceLevel || formData.conformanceLevel || '',
             implementationStatus: this.originalData?.implementationStatus || 'In Progress',
             registrationStatus: this.originalData?.registrationStatus || 'Draft',
-            isCountrySpecification: this.originalData?.isCountrySpecification || true,
+            conformanceLevel: this.originalData?.conformanceLevel || formData.conformanceLevel || '',
             
             // Nested data - preserve from working data if available
             specificationCores: this.workingData?.coreInvoiceModelData ? 
@@ -132,6 +182,27 @@ class SpecificationDataManager {
     async saveSpecificationToAPI(formData) {
         try {
             const apiData = this.transformFormToApiData(formData);
+            
+            // Validate userGroupID before sending to API
+            if (!apiData.userGroupID || apiData.userGroupID === 0) {
+                const currentUser = getCurrentUser(window.authManager);
+                console.error('DEBUG: Invalid userGroupID detected:', {
+                    apiDataUserGroupID: apiData.userGroupID,
+                    currentUserGroupID: currentUser.userGroupID,
+                    originalDataUserGroupID: this.originalData?.userGroupID,
+                    isEditMode: this.isEditMode(),
+                    authManagerState: {
+                        isAuthenticated: window.authManager.isAuthenticated,
+                        userGroupID: window.authManager.userGroupID,
+                        username: window.authManager.username
+                    }
+                });
+                
+                throw new Error(`Invalid userGroupID (${apiData.userGroupID}). Please ensure you are properly logged in with a valid group assignment.`);
+            }
+            
+            console.log('DEBUG: Saving specification with userGroupID:', apiData.userGroupID);
+            
             const method = this.isEditMode() ? 'PUT' : 'POST';
             const url = this.isEditMode() 
                 ? `${AUTH_CONFIG.baseUrl}/specifications/${this.currentSpecId}`
