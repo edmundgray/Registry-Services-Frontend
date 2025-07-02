@@ -84,29 +84,45 @@ class GoverningEntityList {
         }
     }
 
-    loadData() {
+    async loadData() {
         console.log('GoverningEntityList: Loading governing entity data...');
         
         // Load data from JSON file
-        fetch("../JSON/mockGoverningEntities.json")
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('GoverningEntityList: Data loaded successfully:', data);
-                this.originalData = data;
-                this.filteredData = data;
-                this.populateTable(this.filteredData);
-            })
-            .catch(error => {
-                console.error('GoverningEntityList: Failed to load data:', error);
-                if (this.tableBody) {
-                    this.tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;font-style:italic;">Failed to load data</td></tr>`;
-                }
+        // Check if user is an Admin
+        if (typeof isAdmin === 'function' && !isAdmin(window.authManager)) {
+            console.warn('GoverningEntityList: User is not an Admin. Cannot fetch user group data.');
+            if (this.tableBody) {
+                this.tableBody.innerHTML = `<tr><td colspan="9" style="text-align:center;font-style:italic;color:red;">You must be logged in as an Admin to view governing entities.</td></tr>`;
+            }
+            return;
+        }
+
+        try {
+            const apiUrl = `${AUTH_CONFIG.baseUrl}/usergroups`;
+            console.log(`GoverningEntityList: Attempting to fetch from API: ${apiUrl}`);
+
+            // Use authenticatedFetch for admin-only endpoint
+            const response = await authenticatedFetch(apiUrl, {
+                method: 'GET',
+                forceAuth: true // Ensure authentication headers are sent
             });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('GoverningEntityList: Data loaded successfully from API:', data);
+            
+            this.originalData = data;
+            this.filteredData = data;
+            this.populateTable(this.filteredData);
+        } catch (error) {
+            console.error('GoverningEntityList: Failed to load data from API:', error);
+            if (this.tableBody) {
+                this.tableBody.innerHTML = `<tr><td colspan="9" style="text-align:center;font-style:italic;color:red;">Failed to load governing entities: ${error.message}</td></tr>`;
+            }
+        }
     }
 
     populateTable(data) {
@@ -119,7 +135,7 @@ class GoverningEntityList {
         if (data.length === 0) {
             const row = document.createElement("tr");
             const cell = document.createElement("td");
-            cell.colSpan = 6;
+            cell.colSpan = 9;
             cell.style.textAlign = "center";
             cell.style.fontStyle = "italic";
             cell.textContent = "No governing entities found.";
@@ -136,21 +152,33 @@ class GoverningEntityList {
             const entry = data[i];
             const row = document.createElement("tr");
             
+            const totalSpecifications = 
+                (entry.numberInProgress || 0) + 
+                (entry.numberSubmitted || 0) + 
+                (entry.numberUnderReview || 0) + 
+                (entry.numberVerified || 0);
+
             // Create URLSearchParams for view page
             const params = new URLSearchParams({
-                Created: entry["Created"],
-                GoverningEntity: entry["GoverningEntity"],
-                NoOfUsers: entry["No. of Users"],
-                NoOfSpecifications: entry["No. of Specifications"],
-                InProgress: entry["In Progress"]
+                Created: entry.createdDate ? new Date(entry.createdDate).toLocaleDateString('en-GB') : 'N/A',
+                GoverningEntity: entry.groupName || 'N/A',
+                NoOfUsers: entry.numberUsers || '0',
+                TotalSpecifications: totalSpecifications.toString(),
+                InProgress: entry.numberInProgress || '0',
+                Submitted: entry.numberSubmitted || '0',
+                UnderReview: entry.numberUnderReview || '0',
+                Verified: entry.numberVerified || '0'
             }).toString();
 
             row.innerHTML = `
-                <td>${entry["Created"]}</td>
-                <td>${entry["GoverningEntity"]}</td>
-                <td>${entry["No. of Users"]}</td>
-                <td>${entry["No. of Specifications"]}</td>
-                <td>${entry["In Progress"]}</td>
+                <td>${entry.createdDate ? new Date(entry.createdDate).toLocaleDateString('en-GB') : 'N/A'}</td>
+                <td>${entry.groupName || 'N/A'}</td>
+                <td>${entry.numberUsers || '0'}</td>
+                <td>${entry.numberInProgress || '0'}</td>
+                <td>${entry.numberSubmitted || '0'}</td>
+                <td>${entry.numberUnderReview || '0'}</td>
+                <td>${entry.numberVerified || '0'}</td>
+                <td>${totalSpecifications}</td>
                 <td>
                     <button class="view-button" onclick="window.location.href='governingEntityView.html?${params}'">View</button>
                 </td>
@@ -188,7 +216,7 @@ class GoverningEntityList {
 
         // Remove "No pending entities" row if present
         if (this.waitingApprovalTable.rows.length === 1 && 
-            this.waitingApprovalTable.rows[0].cells[0].colSpan === 7) {
+            this.waitingApprovalTable.rows[0].cells[0].colSpan === 4) {
             this.waitingApprovalTable.innerHTML = "";
         }
 
@@ -217,11 +245,14 @@ class GoverningEntityList {
             // Get values from inputs
             const cells = row.querySelectorAll('input');
             const newEntry = {
-                "Created": dateStr,
-                "GoverningEntity": cells[0].value,
-                "No. of Users": cells[1].value,
-                "No. of Specifications": "0",
-                "In Progress": "0"
+                "createdDate": now.toISOString(), // Use ISO string for consistency
+                "usergroupName": cells[0].value,
+                "numberUsers": parseInt(cells[1].value) || 0, // Assume 2nd input is for users, parse as int
+                "numberSpecifications": 0, // New entries start with 0
+                "numberInProgress": 0,
+                "numberSubmitted": 0,
+                "numberUnderReview": 0,
+                "numberVerified": 0
             };
 
             // Remove from waiting approval table
@@ -293,8 +324,11 @@ class GoverningEntityView {
             Created: params.get("Created") || "",
             GoverningEntity: params.get("GoverningEntity") || "",
             NoOfUsers: params.get("NoOfUsers") || "",
-            NoOfSpecifications: params.get("NoOfSpecifications") || "",
-            InProgress: params.get("InProgress") || ""
+            TotalSpecifications: params.get("TotalSpecifications") || "", // New param
+            InProgress: params.get("InProgress") || "",
+            Submitted: params.get("Submitted") || "", // New param
+            UnderReview: params.get("UnderReview") || "", // New param
+            Verified: params.get("Verified") || "" // New param
         };
         
         console.log('GoverningEntityView: Parsed entity data:', this.entity);
