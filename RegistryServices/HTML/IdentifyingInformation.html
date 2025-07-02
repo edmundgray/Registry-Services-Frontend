@@ -329,7 +329,7 @@
                     
                     // Ensure AuthManager is properly initialized with userGroupID
                     window.authManager.init();
-                    const currentUser = getCurrentUser(window.authManager);
+                    const currentUser = getCurrentUser();
                     console.log('DEBUG: IdentifyingInformation - Current user after re-init:', currentUser);
                     
                     dataManager = new SpecificationDataManager();
@@ -368,7 +368,25 @@
                             populateForm(workingData);
                             isFormDirty = false;
                         } else {
-                            console.log('DEBUG: IdentifyingInformation - No working data found');
+                            console.log('DEBUG: IdentifyingInformation - No working data found, initializing with defaults');
+                            // Initialize with empty data but populate governing entity
+                            const emptyData = {
+                                specName: '',
+                                contactInfo: '',
+                                sector: '',
+                                subSector: '',
+                                country: '',
+                                purpose: '',
+                                specId: '',
+                                specVersion: '',
+                                implDate: '',
+                                coreVersion: '',
+                                underlyingSpec: '',
+                                sourceLink: '',
+                                preferredSyntax: ''
+                            };
+                            populateForm(emptyData); // This will auto-populate governing entity
+                            isFormDirty = false;
                         }
                     }
                 } catch (error) {
@@ -410,10 +428,34 @@
                     return;
                 }
                 
+                // Get current user for governing entity population
+                const currentUser = getCurrentUser();
+                
+                // Determine governing entity
+                let governingEntity = '';
+                if (dataManager && dataManager.isEditMode()) {
+                    // For edit mode, use the data from API
+                    governingEntity = data.governingEntity || '';
+                    console.log('DEBUG: populateForm - Edit mode, using API governing entity:', governingEntity);
+                } else {
+                    // For create mode, use current user's group name
+                    governingEntity = currentUser.groupName || 
+                                     localStorage.getItem('groupName') || 
+                                     window.authManager?.groupName || 
+                                     '';
+                    console.log('DEBUG: populateForm - Create mode, using user group name as governing entity:', governingEntity);
+                    console.log('DEBUG: populateForm - Group name sources:', {
+                        fromCurrentUser: currentUser.groupName,
+                        fromLocalStorage: localStorage.getItem('groupName'),
+                        fromAuthManager: window.authManager?.groupName,
+                        finalChoice: governingEntity
+                    });
+                }
+                
                 // Populate all form fields
                 const fieldMappings = {
                     specName: data.specName,
-                    governingEntity: data.governingEntity,
+                    governingEntity: governingEntity,
                     contactInfo: data.contactInfo,
                     sector: data.sector,
                     subSector: data.subSector,
@@ -448,7 +490,7 @@
                 const form = document.getElementById('identifyingForm');
                 return {
                     specName: form.specName.value,
-                    // governingEntity is excluded - it's read-only and derived from UserGroup
+                    governingEntity: form.governingEntity.value,
                     contactInfo: form.contactInfo.value,
                     sector: form.sector.value,
                     subSector: form.subSector.value,

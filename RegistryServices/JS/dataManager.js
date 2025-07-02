@@ -107,6 +107,20 @@ class SpecificationDataManager {
                    1; // fallback to 1 if all else fails
         };
         
+        // Get governing entity - for new specs, use user's group name
+        const getGoverningEntity = () => {
+            if (this.isEditMode() && this.originalData?.governingEntity) {
+                // For edit mode, preserve original governing entity
+                return this.originalData.governingEntity;
+            } else {
+                // For create mode or if no original governing entity, use user's group name
+                return currentUser.groupName || 
+                       localStorage.getItem('groupName') || 
+                       window.authManager?.groupName || 
+                       'Default Organization';
+            }
+        };
+        
         let userGroupID;
         if (this.isEditMode()) {
             // For edit mode, preserve the original userGroupID from API if valid, otherwise use current user's
@@ -118,14 +132,21 @@ class SpecificationDataManager {
             userGroupID = getUserGroupID();
         }
         
+        const governingEntity = getGoverningEntity();
+        
         console.log('DEBUG: transformFormToApiData - userGroupID logic:', {
             mode: this.currentMode,
             isEditMode: this.isEditMode(),
             originalUserGroupID: this.originalData?.userGroupID,
+            originalGoverningEntity: this.originalData?.governingEntity,
             currentUserGroupID: currentUser.userGroupID,
+            currentUserGroupName: currentUser.groupName,
             localStorageUserGroupID: localStorage.getItem('userGroupID'),
+            localStorageGroupName: localStorage.getItem('groupName'),
             authManagerUserGroupID: window.authManager?.userGroupID,
+            authManagerGroupName: window.authManager?.groupName,
             finalUserGroupID: userGroupID,
+            finalGoverningEntity: governingEntity,
             currentUserData: currentUser,
             userGroupIDSources: {
                 fromOriginalData: this.originalData?.userGroupID,
@@ -133,6 +154,13 @@ class SpecificationDataManager {
                 fromLocalStorage: parseInt(localStorage.getItem('userGroupID')),
                 fromAuthManager: window.authManager?.userGroupID,
                 finalChoice: userGroupID
+            },
+            governingEntitySources: {
+                fromOriginalData: this.originalData?.governingEntity,
+                fromCurrentUser: currentUser.groupName,
+                fromLocalStorage: localStorage.getItem('groupName'),
+                fromAuthManager: window.authManager?.groupName,
+                finalChoice: governingEntity
             },
             logicUsed: this.isEditMode() 
                 ? (this.originalData?.userGroupID && this.originalData.userGroupID !== 0 ? 'Original API data' : 'Current user fallback')
@@ -149,6 +177,7 @@ class SpecificationDataManager {
             identityID: this.originalData?.identityID || 0,
             specificationIdentifier: formData.specId || '',
             specificationName: formData.specName || '',
+            governingEntity: governingEntity,
             sector: formData.sector || '',
             subSector: formData.subSector || '',
             purpose: formData.purpose || '',

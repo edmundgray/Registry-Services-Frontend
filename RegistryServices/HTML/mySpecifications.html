@@ -168,7 +168,7 @@
                     showLoadingIndicator();
                     
                     // Determine API endpoint based on user role
-                    const currentUser = getCurrentUser(window.authManager);
+                    const currentUser = getCurrentUser();
                     const isAdmin = currentUser.role === 'Admin' || currentUser.role === 'admin';
                     const endpoint = isAdmin ? '/specifications/all' : '/specifications/by-user-group';
                     const apiUrl = `${AUTH_CONFIG.baseUrl}${endpoint}?PageSize=1000`;
@@ -479,7 +479,7 @@
                 const userInfoElement = document.getElementById('currentUserDisplay');
                 if (!userInfoElement) return;
                 
-                const currentUser = getCurrentUser(window.authManager);
+                const currentUser = getCurrentUser();
                 
                 if (currentUser.isAuthenticated) {
                     const displayName = currentUser.username || 'Unknown User';
@@ -549,7 +549,7 @@
                 }
                 
                 // Debug: Show current user information
-                const currentUser = getCurrentUser(window.authManager);
+                const currentUser = getCurrentUser();
                 console.log('DEBUG: Current user info:', currentUser);
                 console.log('DEBUG: Auth manager state:', {
                     isAuthenticated: window.authManager.isAuthenticated,
