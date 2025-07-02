@@ -12,6 +12,7 @@ class GoverningEntityList {
         this.rowsPerPage = 10;
         this.tableBody = null;
         this.waitingApprovalTable = null;
+        this.authManager = window.authManager || null;
         this.init();
     }
 
@@ -84,29 +85,106 @@ class GoverningEntityList {
         }
     }
 
-    loadData() {
+    reloadGoverningEntitiesData() {
+        console.log('GoverningEntityList: Reloading table data due to authentication state change.');
+        this.loadData(); // Re-run the data loading process
+    }
+    
+    async loadData() {
         console.log('GoverningEntityList: Loading governing entity data...');
         
-        // Load data from JSON file
-        fetch("../JSON/mockGoverningEntities.json")
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('GoverningEntityList: Data loaded successfully:', data);
-                this.originalData = data;
-                this.filteredData = data;
-                this.populateTable(this.filteredData);
-            })
-            .catch(error => {
-                console.error('GoverningEntityList: Failed to load data:', error);
-                if (this.tableBody) {
-                    this.tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;font-style:italic;">Failed to load data</td></tr>`;
-                }
+        if(!this.authManager) {
+            console.error('GoverningEntityList: AuthManager not initialized');
+            this.displayErrorMessage('Authentication system not ready');
+            return;
+        }
+
+        if (!canAccess(this.authManager, 'admin')) {
+            console.warn('GoverningEntityList: User does not have admin access. Cannot fetch user groups.');
+            this.displayErrorMessage('You must be logged in as an Admin to view Governing Entities. Please log in first.', true);
+            if(this.tableBody) {
+                this.tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#b22222;">${canAccess(this.authManager, 'user') ? 'You do not have administrative privileges to view this data.' : 'Please log in as an Admin to view Governing Entities.'}</td></tr>`;
+            }
+            return;
+        }
+        try {
+            const apiUrl = `${AUTH_CONFIG.baseUrl}/usergroups`;
+            console.log(`GoverningEntityList: Fetching data from: ${apiUrl}`);
+
+            const response = await authenticatedFetch(apiUrl, {
+                method: 'GET',
+                forceAuth: true
             });
+
+            if (!response.ok) {
+                const errorData = await response.text();
+                throw new Error(`HTTP error! status: ${response.status} - ${errorData}`);
+            }
+
+            const apiData = await response.json();
+            console.log('GoverningEntityList: User Group API Response:', apiData);
+
+            // Process API data to match table columns
+            this.originalData = (Array.isArray(apiData) ? apiData : (apiData.items || [])).map(item => {
+                const totalSpecs = (item.numberInProgress || 0) + (item.numberSubmitted || 0) + (item.numberUnderReview || 0) + (item.numberVerified || 0);
+                return {
+                    "Created": item.createdDate ? new Date(item.createdDate).toLocaleDateString('en-GB') : 'N/A', // Format date
+                    "GoverningEntity": item.groupName || 'N/A',
+                    "No. of Users": item.numberUsers || 0,
+                    "No. of In Progress Specifications": item.numberInProgress || 0,
+                    "No. of Submitted Specifications": item.numberSubmitted || 0,
+                    "No. of Under Review Specifications": item.numberUnderReview || 0,
+                    "No. of Verified Specifications": item.numberVerified || 0,
+                    "Total Specifications": totalSpecs, // Calculated field
+                    "userGroupId": item.userGroupId // Store ID for potential view page use
+                };
+            });
+            this.filteredData = this.originalData;
+            this.populateTable(this.filteredData);
+            this.displayErrorMessage('', false); // Hide any previous error messages
+
+        } catch (error) {
+            console.error('GoverningEntityList: Failed to load data:', error);
+            let userMessage = 'Failed to load Governing Entities from the server. Please check your connection and try again.';
+            if (error.message.includes('403')) {
+                userMessage = 'Access Denied: You do not have permission to view Governing Entities. Please ensure you are logged in as an Admin.';
+            } else if (error.message.includes('401')) {
+                 userMessage = 'Authentication Required: Your session may have expired. Please log in as an Admin to view Governing Entities.';
+                 showLoginForm(); // Prompt for login
+            }
+            this.displayErrorMessage(userMessage);
+            if (this.tableBody) {
+                this.tableBody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#b22222;">${userMessage}</td></tr>`;
+            }
+        }
+    }
+
+    displayErrorMessage(message, isWarning = false) {
+        let errorDiv = document.getElementById('governingEntityErrorMessage');
+        if (!errorDiv) {
+            errorDiv = document.createElement('div');
+            errorDiv.id = 'governingEntityErrorMessage';
+            errorDiv.style.cssText = 'background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin: 20px 0; border: 2px solid #f5c6cb; font-weight: bold;';
+            const pageContent = document.querySelector('.page-Content');
+            if (pageContent) {
+                pageContent.insertBefore(errorDiv, pageContent.firstChild);
+            }
+        }
+        if (message) {
+            errorDiv.innerHTML = `<i class="fa-solid fa-exclamation-triangle" style="margin-right: 10px; font-size: 18px;"></i> ${message}`;
+            errorDiv.style.display = 'block';
+            if (isWarning) {
+                 errorDiv.style.backgroundColor = '#fff3cd'; // Yellow for warnings
+                 errorDiv.style.borderColor = '#ffeeba';
+                 errorDiv.style.color = '#856404';
+            } else {
+                 errorDiv.style.backgroundColor = '#f8d7da'; // Red for errors
+                 errorDiv.style.borderColor = '#f5c6cb';
+                 errorDiv.style.color = '#721c24';
+            }
+        } else {
+            errorDiv.style.display = 'none';
+        }
     }
 
     populateTable(data) {
@@ -119,7 +197,7 @@ class GoverningEntityList {
         if (data.length === 0) {
             const row = document.createElement("tr");
             const cell = document.createElement("td");
-            cell.colSpan = 6;
+            cell.colSpan = 9;
             cell.style.textAlign = "center";
             cell.style.fontStyle = "italic";
             cell.textContent = "No governing entities found.";
@@ -138,19 +216,26 @@ class GoverningEntityList {
             
             // Create URLSearchParams for view page
             const params = new URLSearchParams({
+                id: entry.userGroupId || entry.GoverningEntity,
                 Created: entry["Created"],
                 GoverningEntity: entry["GoverningEntity"],
                 NoOfUsers: entry["No. of Users"],
-                NoOfSpecifications: entry["No. of Specifications"],
-                InProgress: entry["In Progress"]
+                NoOfSpecifications: entry["Total Specifications"],
+                InProgress: entry["No. of In Progress Specifications"],
+                Submitted: entry["No. of Submitted Specifications"],
+                UnderReview: entry["No. of Under Review Specifications"],
+                Verified: entry["No. of Verified Specifications"]
             }).toString();
 
             row.innerHTML = `
                 <td>${entry["Created"]}</td>
                 <td>${entry["GoverningEntity"]}</td>
                 <td>${entry["No. of Users"]}</td>
-                <td>${entry["No. of Specifications"]}</td>
-                <td>${entry["In Progress"]}</td>
+                <td>${entry["No. of In Progress Specifications"]}</td>
+                <td>${entry["No. of Submitted Specifications"]}</td>
+                <td>${entry["No. of Under Review Specifications"]}</td>
+                <td>${entry["No. of Verified Specifications"]}</td>
+                <td>${entry["Total Specifications"]}</td>
                 <td>
                     <button class="view-button" onclick="window.location.href='governingEntityView.html?${params}'">View</button>
                 </td>
@@ -220,8 +305,11 @@ class GoverningEntityList {
                 "Created": dateStr,
                 "GoverningEntity": cells[0].value,
                 "No. of Users": cells[1].value,
-                "No. of Specifications": "0",
-                "In Progress": "0"
+                "No. of In Progress Specifications": "0",
+                "No. of Submitted Specifications": "0",
+                "No. of Under Review Specifications": "0",
+                "No. of Verified Specifications": "0",
+                "Total Specifications": "0"
             };
 
             // Remove from waiting approval table
@@ -294,8 +382,12 @@ class GoverningEntityView {
             Created: params.get("Created") || "",
             GoverningEntity: params.get("GoverningEntity") || "",
             NoOfUsers: params.get("NoOfUsers") || "",
-            NoOfSpecifications: params.get("No. Of Specifications") || "",
-            InProgress: params.get("In Progress") || ""
+            NoOfSpecifications: params.get("NoOfSpecifications") || "",
+            InProgress: params.get("In Progress") || "",
+            Submitted: params.get("Submitted") || "",
+            UnderReview: params.get("Under Review") || "",
+            Verified: params.get("Verified") || "",
+            userGroupId: params.get("id") || ""
         };
         
         console.log('GoverningEntityView: Parsed entity data:', this.entity);
@@ -483,24 +575,22 @@ class GoverningEntityView {
     setupAdminFunctionality() {
         console.log('GoverningEntityView: Setting up admin functionality...');
         
-        // Check user role using AuthManager if available
-        if (isAdmin(window.authManager)) { // Uses the global isAdmin function from javascript.js/authManager.js
-            const adminContainerElement = document.getElementById("adminNewSpecContainer");
-            if (adminContainerElement) {
-                adminContainerElement.innerHTML = `
-                    <button class="view-button" id="newSpecBtn">New Specification</button>
-                `;
-                
-                const newSpecBtn = document.getElementById("newSpecBtn");
-                if (newSpecBtn) {
-                    newSpecBtn.onclick = () => this.startNewSpecification();
-                }
-            }
-        } else {
-             console.log('GoverningEntityView: User is not Admin, hiding New Specification button.');
-            const adminContainerElement = document.getElementById("adminNewSpecContainer");
-            if (adminContainerElement) {
-                adminContainerElement.innerHTML = ''; // Clear the container if not admin
+        let userRole = "User";
+        if (window.authManager && window.authManager.userRole) {
+            userRole = window.authManager.userRole;
+        }
+
+        console.log('GoverningEntityView: Current user role:', userRole);
+
+        const adminContainerElement = document.getElementById("adminNewSpecContainer");
+        if (adminContainerElement && userRole.toLowerCase() === "admin") {
+            adminContainerElement.innerHTML = `
+                <button class="view-button" id="newSpecBtn" style="background-color: #28a745; margin-left: 10px;">New Specification</button>
+            `;
+            
+            const newSpecBtn = document.getElementById("newSpecBtn");
+            if (newSpecBtn) {
+                newSpecBtn.onclick = () => this.startNewSpecification();
             }
         }
     }

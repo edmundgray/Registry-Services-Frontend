@@ -64,8 +64,11 @@
                         <th>Created</th>
                         <th>Governing Entity</th>
                         <th>No. of Users</th>
-                        <th>No. of Specifications</th>
-                        <th>In Progress</th>
+                        <th>No. of In Progress Specifications</th>
+                        <th>No. of Submitted Specifications</th>
+                        <th>No. of Under Review Specifications</th>
+                        <th>No. of Verified Specifications</th>
+                        <th>Total Specifications</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -104,6 +107,23 @@
             
             // Initialize sidebar
             window.sidebarManager.initializeSidebar(window.authManager);
+
+            if (typeof window.updateVisibilityWithRoles === 'function') {
+                const originalUpdateVisibilityWithRoles = window.updateVisibilityWithRoles;
+                window.updateVisibilityWithRoles = function() {
+                    originalUpdateVisibilityWithRoles(); // Call the original function to update other UI elements
+
+                    // Only trigger data reload if the governingEntityList instance exists
+                    // and the user is now authenticated as an Admin.
+                    // The loadData function in GoverningEntityList already handles the 'admin' check.
+                    if (window.governingEntityList) {
+                        // Delay slightly to ensure all auth state updates are propagated
+                        setTimeout(() => {
+                            window.governingEntityList.reloadGoverningEntitiesData();
+                        }, 100); 
+                    }
+                };
+            }
         });
     </script>
 

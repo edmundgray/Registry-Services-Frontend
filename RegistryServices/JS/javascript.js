@@ -1000,7 +1000,14 @@ async function adminLogin() {
         
         loggedInStatus = true;
         updateVisibility();
-        updateUserDisplay();
+        //updateUserDisplay();
+        
+        if (typeof window.updateUserDisplay === 'function') {
+            window.updateUserDisplay();
+        } else {
+            console.warn('DEBUG: updateUserDisplay function not found on this page.');
+        }
+
         showMessage('Admin login successful! Logged in as Admin (Admin)', 'success');
         
         // Trigger specification reload if on mySpecifications page
@@ -1028,7 +1035,13 @@ async function demoLogin() {
         
         loggedInStatus = true;
         updateVisibility();
-        updateUserDisplay();
+        //updateUserDisplay();
+
+        if (typeof window.updateUserDisplay === 'function') {
+            window.updateUserDisplay();
+        } else {
+            console.warn('DEBUG: updateUserDisplay function not found on this page.');
+        }
         showMessage('Demo login successful! Logged in as Edmund (Admin)', 'success');
         
         // Trigger specification reload if on mySpecifications page
