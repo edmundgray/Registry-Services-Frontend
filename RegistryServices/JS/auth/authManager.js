@@ -55,22 +55,14 @@ window.AuthManager = class {
     }
 
     getAuthHeaders() {
-        console.log('DEBUG: getAuthHeaders called. Current state:', {
-            isAuthenticated: this.isAuthenticated,
-            accessTokenPresent: !!this.accessToken,
-            accessTokenPreview: this.accessToken ? this.accessToken.substring(0, 30) + '...' : 'Not set'
-        });
-        
         if (this.accessToken) {
             const headers = {
                 'Authorization': `Bearer ${this.accessToken}`,
                 'Content-Type': 'application/json'
             };
-            console.log('DEBUG: Returning auth headers with token:', this.accessToken.substring(0, 30) + '...');
             return headers;
         }
         
-        console.log('DEBUG: No access token available, returning basic headers');
         return {
             'Content-Type': 'application/json'
         };

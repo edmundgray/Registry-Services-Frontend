@@ -27,7 +27,6 @@ class SpecificationDataManager {
     async loadSpecificationFromAPI(identityID) {
         try {
             const apiUrl = `${AUTH_CONFIG.baseUrl}/specifications/${identityID}?PageSize=1000`;
-            console.log(`Loading specification from API: ${apiUrl}`);
 
             const response = await authenticatedFetch(apiUrl, {
                 method: 'GET',
@@ -42,7 +41,6 @@ class SpecificationDataManager {
             }
 
             const apiData = await response.json();
-            console.log('API Response for specification:', apiData);
 
             this.originalData = apiData;
             this.workingData = this.transformApiToFormData(apiData);
@@ -139,9 +137,6 @@ class SpecificationDataManager {
                 ? `${AUTH_CONFIG.baseUrl}/specifications/${this.currentSpecId}`
                 : `${AUTH_CONFIG.baseUrl}/specifications`;
 
-            console.log(`Saving specification via ${method} to: ${url}`);
-            console.log('Data being sent:', apiData);
-
             const response = await authenticatedFetch(url, {
                 method: method,
                 body: JSON.stringify(apiData),
@@ -149,9 +144,6 @@ class SpecificationDataManager {
                     'Content-Type': 'application/json'
                 }
             });
-
-            console.log('Response status:', response.status);
-            console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
             if (!response.ok) {
                 // Try to get error details from response
@@ -173,21 +165,17 @@ class SpecificationDataManager {
 
             // Check if response has content before parsing JSON
             const contentType = response.headers.get('content-type');
-            console.log('Response content-type:', contentType);
             
             let result;
             if (contentType && contentType.includes('application/json')) {
                 // Check if response has content
                 const responseText = await response.text();
-                console.log('Response text:', responseText);
                 
                 if (responseText.trim() === '') {
-                    console.log('Empty response received - handling as success without data');
                     result = {}; // Empty result for successful operations that return no data
                 } else {
                     try {
                         result = JSON.parse(responseText);
-                        console.log('Save response:', result);
                     } catch (jsonError) {
                         console.error('Failed to parse JSON response:', jsonError);
                         console.error('Response text was:', responseText);
@@ -197,7 +185,6 @@ class SpecificationDataManager {
             } else {
                 // Non-JSON response - might be successful but with different content type
                 const responseText = await response.text();
-                console.log('Non-JSON response received:', responseText);
                 
                 // Handle different scenarios based on status code
                 if (response.status === 204) {
@@ -216,7 +203,6 @@ class SpecificationDataManager {
                 this.originalData = result;
                 this.workingData = this.transformApiToFormData(result);
             } else {
-                console.log('Empty result from API - preserving current working data');
                 // Keep current working data if API returns empty response
                 if (!this.workingData) {
                     this.workingData = this.transformFormToApiData(formData);
@@ -229,7 +215,6 @@ class SpecificationDataManager {
                 localStorage.setItem('specificationIdentityId', this.currentSpecId);
                 localStorage.setItem('editMode', 'edit'); // Switch to edit mode
                 this.currentMode = 'edit';
-                console.log('Switched to edit mode with new ID:', this.currentSpecId);
             } else if (this.isCreateMode() && (!result || !result.identityID)) {
                 console.warn('Create operation completed but no identityID returned in response');
                 // Handle case where API doesn't return the new ID
@@ -314,11 +299,7 @@ class SpecificationDataManager {
         try {
             const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/coreElements?pageSize=${pageSize}`;
             
-            console.log(`Loading core elements from: ${url}`);
-            
             const response = await authenticatedFetch(url);
-
-            console.log('Core elements response status:', response.status);
 
             if (!response.ok) {
                 let errorMessage = `Failed to load core elements! status: ${response.status}`;
@@ -352,7 +333,6 @@ class SpecificationDataManager {
                 result = { items: [], metadata: { totalCount: 0 } };
             }
 
-            console.log('Core elements loaded successfully:', result);
             return this.transformCoreElementsFromAPI(result);
 
         } catch (error) {
@@ -393,125 +373,51 @@ class SpecificationDataManager {
             typeOfChangeValues,
             cardinalityMap,
             usageNoteMap,
+            // Store complete element objects for deletion (includes entityID)
+            savedElements: apiData.items || [],
             metadata: apiData.metadata || { totalCount: 0 }
         };
     }
 
     // Individual Core Element Delete Method
-    async deleteCoreElement(specificationId, elementId) {
+    async deleteCoreElement(specificationId, entityId) {
         try {
-            const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/coreElements/${elementId}`;
-            
-            console.log(`Deleting individual core element: ${url}`);
+            const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/coreElements/${entityId}`;
 
             const response = await authenticatedFetch(url, {
                 method: 'DELETE'
             });
 
-            console.log('Delete individual core element response status:', response.status);
-            console.log('Delete individual core element response headers:', Object.fromEntries(response.headers.entries()));
-
-            if (!response.ok) {
-                let errorMessage = `Failed to delete core element ${elementId}! status: ${response.status}`;
-                let errorDetails = '';
-                
-                try {
-                    const contentType = response.headers.get('content-type');
-                    console.log('Delete individual element error response content-type:', contentType);
-                    
-                    if (contentType && contentType.includes('application/json')) {
-                        const errorData = await response.json();
-                        console.log('Delete individual element error response JSON:', errorData);
-                        errorDetails = JSON.stringify(errorData);
-                        errorMessage += ` - ${errorDetails}`;
-                    } else {
-                        const errorText = await response.text();
-                        console.log('Delete individual element error response text:', errorText);
-                        errorDetails = errorText;
-                        errorMessage += ` - ${errorDetails}`;
-                    }
-                } catch (parseError) {
-                    console.warn('Could not parse delete individual element error response:', parseError);
+            // Only accept 204 - anything else is a failure
+            if (response.status !== 204) {
+                if (response.status === 403) {
+                    throw new Error('Permission denied: You do not have permission to delete core elements');
+                } else if (response.status === 404) {
+                    throw new Error(`Core element ${entityId} not found - it may have already been deleted`);
+                } else {
+                    throw new Error(`Delete failed: HTTP ${response.status} (expected 204)`);
                 }
-                
-                console.error('DELETE individual core element failed:', errorMessage);
-                throw new Error(errorMessage);
             }
 
-            console.log(`Individual core element ${elementId} deleted successfully`);
-            return { success: true, status: response.status, elementId: elementId };
+            return { success: true, entityId: entityId };
 
         } catch (error) {
-            console.error(`Error deleting individual core element ${elementId} from API:`, error);
+            console.error(`Error deleting core element ${entityId}:`, error);
             throw error;
         }
     }
 
     // Simplified Core Elements API Methods
-    async deleteCoreElementsForSpecification(specificationId) {
-        try {
-            const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/coreElements`;
-            
-            console.log(`Deleting all core elements for specification: ${url}`);
-            
-            const response = await authenticatedFetch(url, {
-                method: 'DELETE'
-            });
-
-            console.log('Delete core elements response status:', response.status);
-            console.log('Delete core elements response headers:', Object.fromEntries(response.headers.entries()));
-
-            if (!response.ok) {
-                let errorMessage = `Failed to delete core elements! status: ${response.status}`;
-                let errorDetails = '';
-                
-                try {
-                    const contentType = response.headers.get('content-type');
-                    console.log('Delete error response content-type:', contentType);
-                    
-                    if (contentType && contentType.includes('application/json')) {
-                        const errorData = await response.json();
-                        console.log('Delete error response JSON:', errorData);
-                        errorDetails = JSON.stringify(errorData);
-                        errorMessage += ` - ${errorDetails}`;
-                    } else {
-                        const errorText = await response.text();
-                        console.log('Delete error response text:', errorText);
-                        errorDetails = errorText;
-                        errorMessage += ` - ${errorDetails}`;
-                    }
-                } catch (parseError) {
-                    console.warn('Could not parse delete core elements error response:', parseError);
-                }
-                
-                console.error('DELETE core elements failed:', errorMessage);
-                throw new Error(errorMessage);
-            }
-
-            console.log('All core elements deleted successfully');
-            return { success: true, status: response.status };
-
-        } catch (error) {
-            console.error('Error deleting core elements from API:', error);
-            throw error;
-        }
-    }
 
     async addCoreElement(specificationId, elementData) {
         try {
             const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/coreElements`;
-            
-            console.log(`Adding core element to: ${url}`, elementData);
-            console.log('POST request headers will include auth headers from authenticatedFetch');
 
             const response = await authenticatedFetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(elementData)
             });
-
-            console.log('Add core element response status:', response.status);
-            console.log('Add core element response headers:', Object.fromEntries(response.headers.entries()));
 
             if (!response.ok) {
                 let errorMessage = `Failed to add core element! status: ${response.status}`;
@@ -552,7 +458,6 @@ class SpecificationDataManager {
                 }
             }
 
-            console.log('Core element added successfully:', newElement);
             return newElement || { ...elementData, success: true };
 
         } catch (error) {
@@ -563,190 +468,61 @@ class SpecificationDataManager {
 
     async saveCoreElementsSimplified(specificationId, coreElementsData) {
         try {
-            console.log('Starting simplified core elements save');
-            console.log('Specification ID:', specificationId);
-            console.log('Core elements data:', coreElementsData);
-            console.log('Current mode:', this.currentMode);
-            console.log('Is edit mode:', this.isEditMode());
-
-            // Verify the specification exists first
-            console.log('Verifying specification exists...');
-            try {
-                const verifyUrl = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}`;
-                const verifyResponse = await authenticatedFetch(verifyUrl, {
-                    method: 'GET'
-                });
-                
-                console.log('Specification verification response status:', verifyResponse.status);
-                
-                if (!verifyResponse.ok) {
-                    if (verifyResponse.status === 404) {
-                        throw new Error(`Specification with ID ${specificationId} not found in the system`);
-                    } else {
-                        throw new Error(`Failed to verify specification (status: ${verifyResponse.status})`);
-                    }
-                }
-                
-                const specData = await verifyResponse.json();
-                console.log('Specification verified successfully:', {
-                    id: specData.identityID,
-                    name: specData.specificationName,
-                    status: specData.registrationStatus
-                });
-                
-            } catch (verifyError) {
-                console.error('Specification verification failed:', verifyError);
-                throw new Error(`Cannot save core elements: ${verifyError.message}`);
+            if (!specificationId) {
+                throw new Error('Specification ID is required');
             }
 
             const results = {
-                deleted: false,
-                added: [],
-                errors: [],
-                skippedDelete: false
+                deletedCount: 0,
+                addedCount: 0
             };
 
-            // Step 1: Handle existing core elements in edit mode
-            if (this.isEditMode() && specificationId) {
-                console.log('Edit mode: Attempting to delete existing core elements individually');
-                
-                // First, get existing core elements to see what needs to be deleted
-                try {
-                    const existingElements = await this.loadCoreElementsFromAPI(specificationId, 1000);
-                    console.log('Found existing core elements:', existingElements);
-                    
-                    if (existingElements && existingElements.items && existingElements.items.length > 0) {
-                        console.log(`Found ${existingElements.items.length} existing core elements to delete`);
-                        
-                        // Delete each existing core element individually
-                        let deletedCount = 0;
-                        const deleteErrors = [];
-                        
-                        for (const element of existingElements.items) {
-                            const elementId = element.id || element.identityID || element.coreElementId;
-                            
-                            if (elementId) {
-                                try {
-                                    console.log(`Deleting core element ID: ${elementId}`);
-                                    await this.deleteCoreElement(specificationId, elementId);
-                                    deletedCount++;
-                                    console.log(`Successfully deleted core element: ${elementId}`);
-                                } catch (deleteError) {
-                                    console.error(`Failed to delete core element ${elementId}:`, deleteError);
-                                    deleteErrors.push({
-                                        elementId: elementId,
-                                        error: deleteError.message
-                                    });
-                                    
-                                    // Continue deleting other elements even if one fails
-                                    // Don't throw here, just collect errors
-                                }
-                            } else {
-                                console.warn('Core element missing ID, cannot delete:', element);
-                                deleteErrors.push({
-                                    elementId: 'unknown',
-                                    error: 'Element missing ID property'
-                                });
-                            }
+            // Step 1: Delete previously saved elements (if any exist)
+            const previouslySelectedElements = this.workingData?.coreInvoiceModelData?.savedElements || [];
+            
+            if (previouslySelectedElements.length > 0) {
+                for (const element of previouslySelectedElements) {
+                    if (element.entityID) {
+                        try {
+                            await this.deleteCoreElement(specificationId, element.entityID);
+                            results.deletedCount++;
+                        } catch (deleteError) {
+                            // Stop immediately on any deletion error
+                            throw new Error(`Deletion failed for element ${element.entityID}: ${deleteError.message}`);
                         }
-                        
-                        console.log(`Deletion completed: ${deletedCount} deleted, ${deleteErrors.length} errors`);
-                        
-                        if (deletedCount > 0) {
-                            results.deleted = true;
-                            results.deletedCount = deletedCount;
-                        }
-                        
-                        if (deleteErrors.length > 0) {
-                            results.deleteErrors = deleteErrors;
-                            console.warn('Some core elements could not be deleted:', deleteErrors);
-                            
-                            // Only throw if ALL deletions failed
-                            if (deletedCount === 0) {
-                                throw new Error(`Failed to delete any existing core elements: ${deleteErrors.map(e => e.error).join(', ')}`);
-                            }
-                        }
-                        
-                    } else {
-                        console.log('No existing core elements found to delete');
                     }
-                    
-                } catch (loadError) {
-                    console.error('Could not load existing core elements for deletion:', loadError);
-                    
-                    // If we can't even load existing elements, proceed with caution
-                    console.log('Proceeding with adding new core elements despite load error');
-                    results.skippedDelete = true;
-                    results.errors.push({
-                        operation: 'load_for_delete',
-                        error: loadError.message
-                    });
                 }
+                
+            } else {
+                // No previously saved elements - skipping deletion
             }
 
-            // Step 2: POST all currently selected core elements
+            // Step 2: Add new core elements
             if (coreElementsData.selectedIds && coreElementsData.selectedIds.length > 0) {
-                console.log(`Adding ${coreElementsData.selectedIds.length} core elements`);
                 
                 for (const businessTermID of coreElementsData.selectedIds) {
-                    const typeOfChange = coreElementsData.typeOfChangeValues 
-                        ? coreElementsData.typeOfChangeValues[businessTermID] || 'No change'
-                        : 'No change';
-                    
-                    const cardinality = coreElementsData.cardinalityMap 
-                        ? coreElementsData.cardinalityMap[businessTermID] || ''
-                        : '';
-                    
-                    const usageNote = coreElementsData.usageNoteMap 
-                        ? coreElementsData.usageNoteMap[businessTermID] || ''
-                        : '';
-
-                    const elementData = {
-                        businessTermID: businessTermID,
-                        cardinality: cardinality,
-                        usageNote: usageNote,
-                        typeOfChange: typeOfChange
-                    };
-
-                    console.log(`Attempting to add core element for businessTermID: ${businessTermID}`, elementData);
-
                     try {
-                        const newElement = await this.addCoreElement(specificationId, elementData);
-                        results.added.push(newElement);
-                        console.log(`Successfully added core element: ${businessTermID}`);
-                    } catch (addError) {
-                        console.error(`Failed to add core element ${businessTermID}:`, addError);
+                        const elementData = {
+                            businessTermID: businessTermID,
+                            typeOfChange: coreElementsData.typeOfChangeValues?.[businessTermID] || 'No change',
+                            cardinality: coreElementsData.cardinalityMap?.[businessTermID] || '0..1'
+                        };
+                        await this.addCoreElement(specificationId, elementData);
+                        results.addedCount++;
                         
-                        // Check if it's a 409 (conflict) error, which might mean element already exists
-                        if (addError.message.includes('409')) {
-                            console.log(`Core element ${businessTermID} may already exist (409 conflict), continuing...`);
-                            results.errors.push({ 
-                                operation: 'add', 
-                                element: elementData, 
-                                error: 'Element may already exist (409 conflict)',
-                                severity: 'warning'
-                            });
-                            // Don't throw error for 409, just continue
-                        } else {
-                            results.errors.push({ 
-                                operation: 'add', 
-                                element: elementData, 
-                                error: addError.message,
-                                severity: 'error'
-                            });
-                            throw addError; // Stop on other types of errors
-                        }
+                    } catch (addError) {
+                        throw new Error(`Failed to add element ${businessTermID}: ${addError.message}`);
                     }
                 }
+                
             } else {
-                console.log('No core elements to add');
+                // No new elements to add
             }
 
-            console.log('Simplified core elements save completed successfully:', results);
             return results;
 
         } catch (error) {
-            console.error('Error in simplified core elements save:', error);
+            console.error('Error saving core elements:', error);
             throw error;
         }
     }
@@ -754,6 +530,13 @@ class SpecificationDataManager {
     saveCoreElementsToLocalStorage(coreElementsData) {
         if (!this.workingData) {
             this.workingData = this.loadWorkingDataFromLocalStorage() || {};
+        }
+        
+        // Preserve savedElements if they exist and the new data doesn't have them
+        const existingSavedElements = this.workingData.coreInvoiceModelData?.savedElements;
+        if (existingSavedElements && !coreElementsData.savedElements) {
+            coreElementsData.savedElements = existingSavedElements;
+            console.log('DEBUG: Preserved savedElements:', existingSavedElements.length, 'elements');
         }
         
         this.workingData.coreInvoiceModelData = coreElementsData;

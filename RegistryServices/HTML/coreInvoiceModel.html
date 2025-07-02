@@ -383,7 +383,6 @@
                         if (checkbox) {
                             checkbox.checked = true;
                             appliedCount++;
-                            console.log(`DEBUG: CoreInvoiceModel - Checked checkbox for ${businessTermID}`);
                         } else {
                             console.warn(`DEBUG: CoreInvoiceModel - Checkbox not found for ${businessTermID}`);
                         }
@@ -394,7 +393,6 @@
                         const dropdown = document.querySelector(`select.type-of-change-dropdown[data-id="${businessTermID}"]`);
                         if (dropdown) {
                             dropdown.value = typeOfChangeValues[businessTermID];
-                            console.log(`DEBUG: CoreInvoiceModel - Set dropdown for ${businessTermID} to ${typeOfChangeValues[businessTermID]}`);
                         } else {
                             console.warn(`DEBUG: CoreInvoiceModel - Dropdown not found for ${businessTermID}`);
                         }
@@ -497,9 +495,9 @@
                 
                 try {
                     // Show saving indicator
-                    originalButtonText = saveButton ? saveButton.textContent : 'Save';
+                    originalButtonText = saveButton ? saveButton.innerHTML : 'Save';
                     if (saveButton) {
-                        saveButton.textContent = 'Saving...';
+                        saveButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
                         saveButton.disabled = true;
                     }
 
@@ -507,6 +505,7 @@
                     const coreElementsData = collectCoreElementsSelections();
                     
                     console.log('DEBUG: CoreInvoiceModel - Collected core elements data:', coreElementsData);
+                console.log('DEBUG: CoreInvoiceModel - Sample cardinality values:', Object.keys(coreElementsData.cardinalityMap).slice(0, 5).map(id => ({id, cardinality: coreElementsData.cardinalityMap[id]})));
 
                     // Always save to localStorage for navigation and working data
                     dataManager.saveCoreElementsToLocalStorage(coreElementsData);
@@ -531,33 +530,32 @@
                         
                         let successMessage = "Core Invoice Model selections saved successfully!";
                         
-                        if (saveResults.deleted && saveResults.deletedCount > 0) {
+                        if (saveResults.deletedCount > 0) {
                             successMessage += `\n• Cleared ${saveResults.deletedCount} existing selections`;
-                            
-                            if (saveResults.deleteErrors && saveResults.deleteErrors.length > 0) {
-                                successMessage += ` (${saveResults.deleteErrors.length} deletion errors)`;
-                            }
-                        } else if (saveResults.skippedDelete) {
-                            successMessage += `\n• Note: Could not clear existing selections (API limitation)`;
                         }
                         
-                        if (saveResults.added && saveResults.added.length > 0) {
-                            successMessage += `\n• Added ${saveResults.added.length} core elements`;
+                        if (saveResults.addedCount > 0) {
+                            successMessage += `\n• Added ${saveResults.addedCount} core elements`;
                         }
                         
                         if (coreElementsData.selectedIds.length === 0) {
-                            if (saveResults.deleted && saveResults.deletedCount > 0) {
+                            if (saveResults.deletedCount > 0) {
                                 successMessage = `Core Invoice Model cleared - ${saveResults.deletedCount} elements removed.`;
                             } else {
                                 successMessage = "Core Invoice Model cleared - no elements selected.";
-                                if (saveResults.skippedDelete) {
-                                    successMessage += "\nNote: Existing elements may still be present due to API limitations.";
-                                }
                             }
                         }
                         
-                        if (showAlert) {
-                            alert(successMessage);
+                        // Success - reload saved elements to update workingData for potential next save
+                        try {
+                            const updatedCoreElementsData = await dataManager.loadCoreElementsFromAPI(
+                                dataManager.currentSpecId,
+                                1000
+                            );
+                            dataManager.saveCoreElementsToLocalStorage(updatedCoreElementsData);
+                        } catch (reloadError) {
+                            console.warn('DEBUG: CoreInvoiceModel - Failed to reload core elements after save:', reloadError);
+                            // Non-critical error - the save was successful, just update failed
                         }
                         
                     } catch (apiError) {
@@ -588,7 +586,7 @@
                     // Restore save button
                     const saveButton = document.querySelector('button[onclick="handleCoreInvoiceSave()"]');
                     if (saveButton) {
-                        saveButton.textContent = originalButtonText || 'Save';
+                        saveButton.innerHTML = originalButtonText || 'Save';
                         saveButton.disabled = false;
                     }
                 }
@@ -612,7 +610,10 @@
                             const cells = row.cells;
                             // Column order: ID, Level, Cardinality, Business Term, Usage Note, Business Rules, Data Type, Included in Spec, Type of Change, Actions
                             if (cells[2]) { // Cardinality column (index 2)
-                                cardinalityMap[businessTermID] = cells[2].textContent.trim();
+                                const cardinality = cells[2].textContent.trim();
+                                cardinalityMap[businessTermID] = cardinality || '0..1'; // Fallback to common cardinality
+                            } else {
+                                cardinalityMap[businessTermID] = '0..1'; // Default fallback
                             }
                             if (cells[4]) { // Usage Note column (index 4)
                                 usageNoteMap[businessTermID] = cells[4].textContent.trim();

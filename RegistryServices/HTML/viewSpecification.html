@@ -282,11 +282,11 @@
                     return;
                 }
                 
-                if (!window.authManager.isAuthenticated || !window.authManager.accessToken) {
-                    console.error('User not authenticated');
-                    showErrorMessage('Authentication required. Please log in to view specifications.');
-                    return;
-                }
+                // Note: Authentication is optional for viewing specifications since the API allows public access
+                console.log('DEBUG: User authentication status:', {
+                    isAuthenticated: window.authManager.isAuthenticated,
+                    accessToken: window.authManager.accessToken ? 'Present' : 'Not present'
+                });
                 
                 // Load the specification from API
                 loadSpecificationById(specificationId);
@@ -297,10 +297,10 @@
                     console.log('Loading specification by ID:', specificationId);
                     showLoadingIndicator();
                     
-                    // First try to get from the user's specifications list
-                    const response = await authenticatedFetch(`${AUTH_CONFIG.baseUrl}/specifications/${specificationId}`, {
-                        method: 'GET',
-                        forceAuth: true
+                    // Try to get the specification from API (no authentication required for public viewing)
+                    const response = await authenticatedFetch(`${AUTH_CONFIG.baseUrl}/specifications/${specificationId}?PageSize=1000`, {
+                        method: 'GET'
+                        // Removed forceAuth: true to allow unauthenticated access
                     });
 
                     console.log('DEBUG: API Response status:', response.status);
