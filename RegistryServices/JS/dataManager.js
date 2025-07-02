@@ -627,6 +627,217 @@ class SpecificationDataManager {
         }
     }
 
+    // Extension Elements API Methods
+
+    async addExtensionElement(specificationId, elementData) {
+        try {
+            const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/extensionElements`;
+
+            const response = await authenticatedFetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(elementData)
+            });
+
+            if (!response.ok) {
+                let errorMessage = `Failed to add extension element! status: ${response.status}`;
+                let errorDetails = '';
+                
+                try {
+                    const contentType = response.headers.get('content-type');
+                    console.log('Add extension error response content-type:', contentType);
+                    
+                    if (contentType && contentType.includes('application/json')) {
+                        const errorData = await response.json();
+                        console.log('Add extension error response JSON:', errorData);
+                        errorDetails = JSON.stringify(errorData);
+                        errorMessage += ` - ${errorDetails}`;
+                    } else {
+                        const errorText = await response.text();
+                        console.log('Add extension error response text:', errorText);
+                        errorDetails = errorText;  
+                        errorMessage += ` - ${errorDetails}`;
+                    }
+                } catch (parseError) {
+                    console.warn('Could not parse add extension element error response:', parseError);
+                }
+                
+                console.error('POST add extension element failed:', errorMessage);
+                throw new Error(errorMessage);
+            }
+
+            // POST should return 201 with the new element
+            let newElement = null;
+            if (response.status === 201) {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const responseText = await response.text();
+                    if (responseText.trim()) {
+                        newElement = JSON.parse(responseText);
+                    }
+                }
+            }
+
+            return newElement || { ...elementData, success: true };
+
+        } catch (error) {
+            console.error('Error adding extension element to API:', error);
+            throw error;
+        }
+    }
+
+    async deleteExtensionElement(specificationId, entityId) {
+        try {
+            const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/extensionElements/${entityId}`;
+
+            const response = await authenticatedFetch(url, {
+                method: 'DELETE'
+            });
+
+            // Only accept 204 - anything else is a failure
+            if (response.status !== 204) {
+                if (response.status === 403) {
+                    throw new Error('Permission denied: You do not have permission to delete extension elements');
+                } else if (response.status === 404) {
+                    throw new Error(`Extension element ${entityId} not found - it may have already been deleted`);
+                } else {
+                    throw new Error(`Delete failed: HTTP ${response.status} (expected 204)`);
+                }
+            }
+
+            return { success: true, entityId: entityId };
+
+        } catch (error) {
+            console.error(`Error deleting extension element ${entityId}:`, error);
+            throw error;
+        }
+    }
+
+    async saveExtensionElementsSimplified(specificationId, extensionElementsData) {
+        try {
+            if (!specificationId) {
+                throw new Error('Specification ID is required');
+            }
+
+            const results = {
+                deletedCount: 0,
+                addedCount: 0
+            };
+
+            // Step 1: Delete previously saved extension elements (if any exist)
+            const previouslySelectedElements = this.workingData?.extensionComponentData?.savedElements || [];
+            
+            if (previouslySelectedElements.length > 0) {
+                for (const element of previouslySelectedElements) {
+                    if (element.entityID) {
+                        try {
+                            await this.deleteExtensionElement(specificationId, element.entityID);
+                            results.deletedCount++;
+                        } catch (deleteError) {
+                            // Stop immediately on any deletion error
+                            throw new Error(`Deletion failed for extension element ${element.entityID}: ${deleteError.message}`);
+                        }
+                    }
+                }
+            }
+
+            // Step 2: Add new extension elements
+            if (extensionElementsData && extensionElementsData.length > 0) {
+                for (const extensionData of extensionElementsData) {
+                    try {
+                        await this.addExtensionElement(specificationId, extensionData);
+                        results.addedCount++;
+                    } catch (addError) {
+                        throw new Error(`Failed to add extension element: ${addError.message}`);
+                    }
+                }
+            }
+
+            return results;
+
+        } catch (error) {
+            console.error('Error saving extension elements:', error);
+            throw error;
+        }
+    }
+
+    async loadExtensionElementsFromAPI(specificationId, pageSize = 1000) {
+        try {
+            const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/extensionElements?pageSize=${pageSize}`;
+            
+            const response = await authenticatedFetch(url, {
+                method: 'GET'
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to load extension elements: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('DEBUG: Loaded extension elements from API:', data);
+            
+            return {
+                items: data.items || [],
+                metadata: data.metadata || { totalCount: 0 }
+            };
+
+        } catch (error) {
+            console.error('Error loading extension elements from API:', error);
+            throw error;
+        }
+    }
+
+    transformExtensionElementsFromAPI(apiData, headers = []) {
+        // Transform API response to component-grouped format
+        const componentGroups = {};
+        
+        if (apiData.items && Array.isArray(apiData.items)) {
+            apiData.items.forEach(element => {
+                const componentId = element.extensionComponentID;
+                if (!componentGroups[componentId]) {
+                    // Resolve component name from headers
+                    const header = headers.find(h => h.id === componentId);
+                    const componentName = header ? header.name : componentId; // Fallback to ID if not found
+                    
+                    componentGroups[componentId] = {
+                        extensionComponentID: componentId, // Keep original ID for API operations  
+                        componentName: componentName, // Resolved name for UI display
+                        selectedElements: []
+                    };
+                }
+                
+                // Add the businessTermID to selected elements
+                if (element.businessTermID) {
+                    componentGroups[componentId].selectedElements.push(element.businessTermID);
+                }
+            });
+        }
+        
+        // Convert to array format and add savedElements for deletion tracking
+        const result = Object.values(componentGroups);
+        
+        // Store complete element objects for deletion (includes entityID)
+        result.savedElements = apiData.items || [];
+        
+        return result;
+    }
+
+    saveExtensionElementsToLocalStorage(extensionElementsData) {
+        if (!this.workingData) {
+            this.workingData = this.loadWorkingDataFromLocalStorage() || {};
+        }
+        
+        // Preserve savedElements if they exist and the new data doesn't have them
+        const existingSavedElements = this.workingData.extensionComponentData?.savedElements;
+        if (existingSavedElements && extensionElementsData && !extensionElementsData.savedElements) {
+            extensionElementsData.savedElements = existingSavedElements;
+            console.log('DEBUG: Preserved extension savedElements:', existingSavedElements.length, 'elements');
+        }
+        
+        this.workingData.extensionComponentData = extensionElementsData;
+        this.saveWorkingDataToLocalStorage();
+    }
+
     saveCoreElementsToLocalStorage(coreElementsData) {
         if (!this.workingData) {
             this.workingData = this.loadWorkingDataFromLocalStorage() || {};

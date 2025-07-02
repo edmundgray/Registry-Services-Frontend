@@ -67,6 +67,7 @@
             let dataManager = null;
             // Cache for storing fetched extension component elements to avoid re-fetching
             let extensionComponentElementsCache = {}; // Changed from extensionComponentData
+            let extensionComponentHeadersCache = null; // Cache for component headers
             let componentsContainer;
 
             // Initialize data manager
@@ -81,35 +82,60 @@
                     console.log('DEBUG: ExtensionComponentDataModel - Data manager initialized');
                     console.log('DEBUG: ExtensionComponentDataModel - Mode:', dataManager.currentMode);
                     console.log('DEBUG: ExtensionComponentDataModel - isEditMode():', dataManager.isEditMode());
+                    console.log('DEBUG: ExtensionComponentDataModel - currentSpecId:', dataManager.currentSpecId);
                     
-                    if (dataManager.isEditMode() && dataManager.currentSpecId) {
-                        console.log('DEBUG: ExtensionComponentDataModel - Loading specification for editing. ID:', dataManager.currentSpecId);
-                        
-                        // Load data from API if not already loaded
-                        if (!dataManager.isDataLoaded) {
-                            await dataManager.loadSpecificationFromAPI(dataManager.currentSpecId);
-                        }
-                        
-                        // Get the working data (should include extensionComponentData)
-                        const workingData = dataManager.workingData || dataManager.loadWorkingDataFromLocalStorage();
-                        console.log('DEBUG: ExtensionComponentDataModel - Working data:', workingData);
-                        
-                        if (workingData && workingData.extensionComponentData) {
-                            console.log('DEBUG: ExtensionComponentDataModel - Found extension component data:', workingData.extensionComponentData);
-                            return workingData.extensionComponentData;
-                        }
-                    } else {
-                        console.log('DEBUG: ExtensionComponentDataModel - Creating new specification or missing spec ID');
-                        // For new specifications, check if there's any working data
-                        const workingData = dataManager.loadWorkingDataFromLocalStorage();
-                        if (workingData && workingData.extensionComponentData) {
-                            console.log('DEBUG: ExtensionComponentDataModel - Found working extension data');
-                            return workingData.extensionComponentData;
-                        }
+                    // Validate that we have a specification ID (required for Step 3)
+                    if (!dataManager.currentSpecId) {
+                        console.error('DEBUG: ExtensionComponentDataModel - No specification ID found');
+                        throw new Error('No specification ID found. Please complete Step 1 (Identifying Information) first.');
                     }
                     
-                    console.log('DEBUG: ExtensionComponentDataModel - No existing extension data found');
-                    return [];
+                    // Load saved extension elements from API
+                    let savedExtensions = [];
+                    try {
+                        console.log('DEBUG: Loading extension elements from API for spec:', dataManager.currentSpecId);
+                        const apiResponse = await dataManager.loadExtensionElementsFromAPI(dataManager.currentSpecId);
+                        console.log('DEBUG: API Response for extension elements:', apiResponse);
+                        
+                        // Load headers if not already cached
+                        if (!extensionComponentHeadersCache) {
+                            console.log('DEBUG: Loading extension component headers for transformation');
+                            const headersApiUrl = `${AUTH_CONFIG.baseUrl}/extensionmodels/headers`;
+                            const headersResponse = await authenticatedFetch(headersApiUrl, {
+                                method: 'GET',
+                                forceAuth: true
+                            });
+                            if (headersResponse.ok) {
+                                extensionComponentHeadersCache = await headersResponse.json();
+                                console.log('DEBUG: Cached extension component headers:', extensionComponentHeadersCache);
+                            } else {
+                                console.warn('DEBUG: Failed to load headers, using empty array');
+                                extensionComponentHeadersCache = [];
+                            }
+                        }
+                        
+                        // Transform API data to component-grouped format with resolved names
+                        savedExtensions = dataManager.transformExtensionElementsFromAPI(apiResponse, extensionComponentHeadersCache);
+                        console.log('DEBUG: Transformed extension data with resolved names:', savedExtensions);
+                        
+                        // Store the savedElements for deletion tracking in dataManager
+                        if (!dataManager.workingData) {
+                            dataManager.workingData = {};
+                        }
+                        if (!dataManager.workingData.extensionComponentData) {
+                            dataManager.workingData.extensionComponentData = {};
+                        }
+                        dataManager.workingData.extensionComponentData.savedElements = apiResponse.items || [];
+                        
+                    } catch (error) {
+                        console.error('Error loading extension elements from API:', error);
+                        // Continue with empty array if loading fails
+                        savedExtensions = [];
+                    }
+                    
+                    console.log('DEBUG: ExtensionComponentDataModel - Returning saved extensions:', savedExtensions);
+                    return savedExtensions;
+                    
                 } catch (error) {
                     console.error('DEBUG: ExtensionComponentDataModel - Error initializing data manager:', error);
                     throw error;
@@ -118,88 +144,121 @@
 
             async function loadExtensionData() {
                 try {
-                    // Initialize data manager first
+                    // Initialize data manager and load saved extensions from API
                     const savedExtensions = await initializeDataManager();
                     
-                    // Fetch the list of available Extension Components (headers)
-                    // Assuming /api/extensionmodels/headers provides a list of {id, name} objects
-                    const headersApiUrl = `${AUTH_CONFIG.baseUrl}/extensionmodels/headers?page=1&pageSize=50`; // Adjust page size as needed
+                    // Use cached headers or fetch them if not available
+                    let availableComponents = extensionComponentHeadersCache;
+                    if (!availableComponents) {
+                        const headersApiUrl = `${AUTH_CONFIG.baseUrl}/extensionmodels/headers`;
+                        console.log(`Attempting to fetch Extension Component Headers from API: ${headersApiUrl}`);
+                        const headersResponse = await authenticatedFetch(headersApiUrl, {
+                            method: 'GET',
+                            forceAuth: true
+                        });
 
-                    console.log(`Attempting to fetch Extension Component Headers from API: ${headersApiUrl}`);
-                    const headersResponse = await authenticatedFetch(headersApiUrl, {
-                        method: 'GET',
-                        forceAuth: true // Assuming this endpoint also requires authentication
-                    });
-
-                    if (!headersResponse.ok) {
-                        throw new Error(`HTTP error! status: ${headersResponse.status}`);
+                        if (!headersResponse.ok) {
+                            throw new Error(`HTTP error! status: ${headersResponse.status}`);
+                        }
+                        availableComponents = await headersResponse.json();
+                        // Cache for future use
+                        extensionComponentHeadersCache = availableComponents;
                     }
-                    const headersData = await headersResponse.json();
-                    const availableComponents = headersData.items || headersData; // Assuming it returns {items: []} or directly an array
                     console.log('Available Extension Component Headers:', availableComponents);
 
-                    // Populate the dropdown with available components
-                    const initialSectionSelect = document.querySelector('.component-section .component-select');
-                    if (initialSectionSelect) {
-                        let options = '<option value="">Select an Extension Component</option>';
-                        availableComponents.forEach(comp => {
-                            options += `<option value="${comp.id}">${comp.name || comp.id}</option>`; // Use comp.name if available, else comp.id
-                        });
-                        initialSectionSelect.innerHTML = options;
-                    }
+                    // Clear existing sections
+                    componentsContainer.innerHTML = '';
 
-                    // Use saved extensions from data manager instead of localStorage
                     if (savedExtensions && savedExtensions.length > 0) {
                         console.log('DEBUG: ExtensionComponentDataModel - Loading saved extensions:', savedExtensions);
+                        
                         // For each saved extension, add a section and populate its table
                         for (const savedExt of savedExtensions) {
-                            await addNewComponentSection(savedExt.componentName, savedExt.selectedElements);
+                            // Use extensionComponentID for dropdown selection, but display componentName
+                            await addNewComponentSection(savedExt.extensionComponentID, savedExt.selectedElements, availableComponents);
                         }
-                        // Remove the initial empty section if more than one saved extension was added
-                        if (savedExtensions.length > 0 && document.querySelectorAll('.component-section').length > 1) {
-                            document.querySelector('.component-section:first-child').remove();
-                        }
+                        console.log('DEBUG: Restored', savedExtensions.length, 'saved extension components');
                     } else {
-                        // If no saved extensions, ensure at least one empty section is present
-                        if (document.querySelectorAll('.component-section').length === 0) {
-                            addNewComponentSection();
-                        }
+                        // If no saved extensions, create one empty section
+                        console.log('DEBUG: No saved extensions, creating empty section');
+                        await addNewComponentSection('', [], availableComponents);
                     }
 
                 } catch (error) {
                     console.error("Error loading extension component data:", error);
                     if (componentsContainer) {
-                         componentsContainer.innerHTML = `<p style="color: red;">Error: Could not load extension component data. Please ensure you are logged in and the API is accessible.</p>`;
+                        if (error.message.includes('No specification ID found')) {
+                            componentsContainer.innerHTML = `
+                                <div style="color: red; padding: 20px; border: 1px solid red; background-color: #ffe6e6; margin: 20px 0;">
+                                    <h3>Missing Specification ID</h3>
+                                    <p><strong>Error:</strong> ${error.message}</p>
+                                    <p>This is Step 3 of the specification creation process. You must first complete:</p>
+                                    <ol>
+                                        <li><strong>Step 1:</strong> Identifying Information (to create the specification)</li>
+                                        <li><strong>Step 2:</strong> Core Invoice Model</li>
+                                        <li><strong>Step 3:</strong> Extension Component Data Model (current step)</li>
+                                    </ol>
+                                    <button onclick="window.location.href='IdentifyingInformation.html'" class="view-button" style="margin-top: 10px;">
+                                        Go to Step 1 - Identifying Information
+                                    </button>
+                                </div>`;
+                        } else {
+                            componentsContainer.innerHTML = `<p style="color: red;">Error: Could not load extension component data. ${error.message}</p>`;
+                        }
                     }
                 }
             }
 
-            // addNewComponentSection now takes an optional preSelectedComponentId and preSelectedElementIds
-            async function addNewComponentSection(preSelectedComponentId = '', preSelectedElementIds = []) {
+            // addNewComponentSection now takes an optional preSelectedComponentId, preSelectedElementIds, and availableComponents
+            async function addNewComponentSection(preSelectedComponentId = '', preSelectedElementIds = [], availableComponents = null) {
                 const sectionId = `section-${Date.now()}`;
                 const section = document.createElement('div');
                 section.className = 'component-section';
                 section.id = sectionId;
 
-                // Fetch the list of all components again to populate the new dropdown
-                const headersApiUrl = `${AUTH_CONFIG.baseUrl}/extensionmodels/headers?page=1&pageSize=50`;
-                let availableComponents = [];
-                try {
-                    const headersResponse = await authenticatedFetch(headersApiUrl, { method: 'GET', forceAuth: true });
-                    const headersData = await headersResponse.json();
-                    availableComponents = headersData.items || headersData;
-                } catch (error) {
-                    console.error("Error re-fetching component headers for new section:", error);
+                // If no available components provided, use cached headers or fetch them
+                if (!availableComponents) {
+                    if (extensionComponentHeadersCache) {
+                        availableComponents = extensionComponentHeadersCache;
+                    } else {
+                        try {
+                            const headersApiUrl = `${AUTH_CONFIG.baseUrl}/extensionmodels/headers`;
+                            const headersResponse = await authenticatedFetch(headersApiUrl, { method: 'GET', forceAuth: true });
+                            availableComponents = await headersResponse.json();
+                            extensionComponentHeadersCache = availableComponents; // Cache for future use
+                        } catch (error) {
+                            console.error("Error re-fetching component headers for new section:", error);
+                            availableComponents = [];
+                        }
+                    }
                 }
 
-                let options = '<option value="">Select an Extension Component</option>';
-                availableComponents.forEach(comp => {
-                    options += `<option value="${comp.id}" ${comp.id === preSelectedComponentId ? 'selected' : ''}>${comp.name || comp.id}</option>`;
-                });
-
+                // Check if the preSelected component is available
+                const isComponentAvailable = !preSelectedComponentId || availableComponents.some(comp => comp.id === preSelectedComponentId);
+                
+                let dropdownHtml;
+                if (preSelectedComponentId && !isComponentAvailable) {
+                    // Component not available - show error message instead of dropdown
+                    // Try to get the component name for a better error message
+                    const componentName = preSelectedComponentId; // Fallback to ID since component is not available
+                    dropdownHtml = `
+                        <div style="color: red; background-color: #ffe6e6; border: 1px solid red; padding: 10px; border-radius: 4px;">
+                            <strong>⚠️ Component Not Available</strong><br>
+                            Extension Component "${componentName}" (ID: ${preSelectedComponentId}) is no longer available in the system.<br>
+                            <small>This component may have been removed or you may not have access to it.</small>
+                        </div>`;
+                } else {
+                    // Normal dropdown
+                    let options = '<option value="">Select an Extension Component</option>';
+                    availableComponents.forEach(comp => {
+                        const selected = comp.id === preSelectedComponentId ? 'selected' : '';
+                        options += `<option value="${comp.id}" ${selected}>${comp.name || comp.id}</option>`;
+                    });
+                    dropdownHtml = `<select class="component-select" onchange="populateComponentTable(this, [])">${options}</select>`;
+                }
 
                 section.innerHTML = `
-                    <select class="component-select" onchange="populateComponentTable(this, [])">${options}</select>
+                    ${dropdownHtml}
                     <p style="margin-top: 5px;">Select the required Extension Component and tick the box for all required elements</p>
                     <table class="styled-table" style="width:100%;">
                         <thead>
@@ -210,16 +269,21 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr><td colspan="10" style="text-align:center;">Please select a component from the dropdown.</td></tr>
+                            <tr><td colspan="10" style="text-align:center;">
+                                ${isComponentAvailable ? 'Please select a component from the dropdown.' : 'Component not available - cannot load elements.'}
+                            </td></tr>
                         </tbody>
                     </table>
                     <button onclick="document.getElementById('${sectionId}').remove(); isFormDirty=true; updateComponentSections();" class="view-button" style="margin-top: 10px; background: #dc3545;">Remove Selection</button>
                 `;
                 componentsContainer.appendChild(section);
 
-                if (preSelectedComponentId) {
-                    // Populate table immediately if a component is pre-selected
-                    populateComponentTable(section.querySelector('.component-select'), preSelectedElementIds);
+                // If we have a valid pre-selected component, populate its table
+                if (preSelectedComponentId && isComponentAvailable) {
+                    const selectElement = section.querySelector('.component-select');
+                    if (selectElement) {
+                        await populateComponentTable(selectElement, preSelectedElementIds);
+                    }
                 }
             }
 
@@ -231,10 +295,12 @@
                 }
             }
 
-            // populateComponentTable now fetches elements for the selected component
+            // populateComponentTable now fetches elements for the selected component and restores selections
             async function populateComponentTable(selectElement, selectedIds = []) {
                 const selectedComponentId = selectElement.value;
                 const tableBody = selectElement.closest('.component-section').querySelector('tbody');
+
+                console.log('DEBUG: populateComponentTable called with:', { selectedComponentId, selectedIds });
 
                 if (!selectedComponentId) {
                     tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Please select a component.</td></tr>';
@@ -253,14 +319,14 @@
                     try {
                         const elementsResponse = await authenticatedFetch(elementsApiUrl, {
                             method: 'GET',
-                            forceAuth: true // This endpoint also requires authentication
+                            forceAuth: true
                         });
                         if (!elementsResponse.ok) {
                             throw new Error(`HTTP error! status: ${elementsResponse.status}`);
                         }
                         const elementsData = await elementsResponse.json();
-                        componentElements = Array.isArray(elementsData) ? elementsData : (elementsData.items || []); // Adjust based on API response structure
-                        extensionComponentElementsCache[selectedComponentId] = componentElements; // Cache the fetched data
+                        componentElements = Array.isArray(elementsData) ? elementsData : (elementsData.items || []);
+                        extensionComponentElementsCache[selectedComponentId] = componentElements;
                         console.log(`Fetched ${componentElements.length} elements for ${selectedComponentId}.`);
                     } catch (error) {
                         console.error(`Error fetching elements for component ${selectedComponentId}:`, error);
@@ -275,18 +341,26 @@
                      return;
                 }
 
-
                 componentElements.forEach(el => {
                     const row = document.createElement('tr');
-                    const isChecked = selectedIds.includes(el.id || el.ID); // Check against normalized ID
+                    
+                    // Map properties from API response with proper businessTermID extraction
+                    const businessTermID = el.businessTermID || el.BusinessTermID || el.id || el.ID;
+                    const isChecked = selectedIds.includes(businessTermID);
+                    
+                    console.log('DEBUG: Processing element:', { 
+                        businessTermID, 
+                        isChecked, 
+                        selectedIds,
+                        element: el 
+                    });
 
-                    // Map properties from API response (assuming potential camelCase/PascalCase differences)
                     const mappedEl = {
-                        ID: el.businessTermID || el.BusinessTermID || 'N/A',
+                        ID: businessTermID,
                         Level: el.level || el.Level || 'N/A',
                         Cardinality: el.cardinality || el.Cardinality || 'N/A',
                         "Business Term": el.businessTerm || el.BusinessTerm || el['Business Term'] || 'N/A',
-                        "Usage Note": el.semanticDescription || el.semanticDescription || el['Usage Note'] || 'N/A',
+                        "Usage Note": el.semanticDescription || el.usageNote || el['Usage Note'] || 'N/A',
                         Justification: el.justification || el.Justification || 'N/A',
                         "Data Type": el.dataType || el.DataType || el['Data Type'] || 'N/A',
                         "Type of Extension": el.extensionType || el.ExtensionType || el['Type of Extension'] || 'N/A',
@@ -298,60 +372,87 @@
                         <td>${mappedEl['Business Term']}<i class="fa-solid fa-circle-question" title="${mappedEl['Usage Note']}"></i></td>
                         <td>${mappedEl['Usage Note']}</td><td>${mappedEl.Justification}</td><td>${mappedEl['Data Type']}</td>
                         <td>${mappedEl['Type of Extension']}</td><td>${mappedEl['Core Conformant/Rules broken']}</td>
-                        <td style="text-align:center;"><input type="checkbox" class="element-selector" data-id="${mappedEl.ID}" ${isChecked ? 'checked' : ''} onchange="isFormDirty=true;"></td>
+                        <td style="text-align:center;"><input type="checkbox" class="element-selector" data-id="${businessTermID}" ${isChecked ? 'checked' : ''} onchange="isFormDirty=true;"></td>
                     `;
                     tableBody.appendChild(row);
                 });
+                
+                console.log('DEBUG: Table populated with', componentElements.length, 'elements,', selectedIds.filter(id => componentElements.some(el => (el.businessTermID || el.BusinessTermID || el.id || el.ID) === id)).length, 'pre-selected');
                 isFormDirty = true; // Mark form as dirty after population
             }
 
-            function handleSave(showAlert = true) {
+            async function handleSave(showAlert = true) {
                 console.log('DEBUG: ExtensionComponentDataModel - handleSave called');
                 
-                const selectedExtensions = [];
-                document.querySelectorAll('.component-section').forEach(section => {
-                    const componentName = section.querySelector('.component-select').value;
-                    if (componentName) {
-                        const selectedElements = [];
-                        section.querySelectorAll('.element-selector:checked').forEach(checkbox => {
-                            selectedElements.push(checkbox.getAttribute('data-id'));
-                        });
-                        // Only save component sections that have selected elements OR if the component itself is selected (even if no elements are ticked for it)
-                        // Adjust this logic if you want to save empty component selections
-                        if (selectedElements.length > 0) { // Only save if at least one element is selected
-                            selectedExtensions.push({ componentName, selectedElements });
-                        }
-                    }
-                });
-
-                console.log('DEBUG: ExtensionComponentDataModel - Selected extensions:', selectedExtensions);
-
+                // Validate that we have a specification ID
                 if (!dataManager) {
                     console.error('DEBUG: ExtensionComponentDataModel - Data manager not initialized');
                     alert("Error: Data manager not initialized.");
-                    return;
+                    return false;
                 }
 
-                try {
-                    // Update the working data with selected extensions
-                    if (!dataManager.workingData) {
-                        dataManager.workingData = dataManager.loadWorkingDataFromLocalStorage() || {};
+                if (!dataManager.currentSpecId) {
+                    console.error('DEBUG: ExtensionComponentDataModel - No specification ID available');
+                    alert("Error: No specification ID found. Please ensure the specification was created in Step 1 (Identifying Information).");
+                    return false;
+                }
+
+                // Collect extension elements data for API submission
+                const apiExtensionElements = [];
+                
+                document.querySelectorAll('.component-section').forEach(section => {
+                    const extensionComponentID = section.querySelector('.component-select').value;
+                    if (extensionComponentID) {
+                        section.querySelectorAll('.element-selector:checked').forEach(checkbox => {
+                            const businessTermID = checkbox.getAttribute('data-id');
+                            
+                            // Get the element data from the table row
+                            const row = checkbox.closest('tr');
+                            const cells = row.querySelectorAll('td');
+                            
+                            // Extract data based on table column positions
+                            // Columns: ID, Level, Cardinality, Business Term, Usage Note, Justification, Data Type, Type of Extension, Core Conformant, Checkbox
+                            const elementApiData = {
+                                extensionComponentID: extensionComponentID,
+                                businessTermID: businessTermID,
+                                cardinality: cells[2]?.textContent?.trim() || '',
+                                usageNote: cells[4]?.textContent?.trim() || '',
+                                justification: cells[5]?.textContent?.trim() || '',
+                                typeOfExtension: cells[7]?.textContent?.trim() || ''
+                            };
+                            
+                            apiExtensionElements.push(elementApiData);
+                        });
                     }
+                });
+
+                console.log('DEBUG: ExtensionComponentDataModel - API extension elements:', apiExtensionElements);
+                console.log('DEBUG: ExtensionComponentDataModel - Saving to API with spec ID:', dataManager.currentSpecId);
+
+                try {
+                    // Save extension elements to API
+                    const apiResults = await dataManager.saveExtensionElementsSimplified(
+                        dataManager.currentSpecId, 
+                        apiExtensionElements
+                    );
                     
-                    dataManager.workingData.extensionComponentData = selectedExtensions;
-                    
-                    // Save to localStorage (working data)
-                    dataManager.saveWorkingDataToLocalStorage();
-                    
-                    console.log('DEBUG: ExtensionComponentDataModel - Extension components saved to working data');
+                    console.log('DEBUG: ExtensionComponentDataModel - API save results:', apiResults);
                     
                     if (showAlert) {
-                        alert("Extension components saved!");
+                        if (apiExtensionElements.length > 0) {
+                            alert(`Extension components saved successfully!\nDeleted: ${apiResults.deletedCount}, Added: ${apiResults.addedCount}`);
+                        } else {
+                            alert(`Extension components cleared successfully!\nDeleted: ${apiResults.deletedCount}`);
+                        }
                     }
+                    
                     isFormDirty = false;
+                    return true; // Return success status
+                    
                 } catch (error) {
-                    console.error('DEBUG: ExtensionComponentDataModel - Error saving:', error);
-                    alert("Error saving extension components: " + error.message);
+                    console.error('DEBUG: ExtensionComponentDataModel - API save error:', error);
+                    alert("Error saving extension components to server: " + error.message);
+                    return false; // Return failure status
                 }
             }
 
@@ -367,9 +468,12 @@
                 window.location.href = returnPage;
             }
 
-            function saveAndGoToNextStep() {
-                handleSave(false);
-                window.location.href = 'additionalRequirements.html';
+            async function saveAndGoToNextStep() {
+                const saveSuccessful = await handleSave(false); // Don't show alert for intermediate save
+                if (saveSuccessful) {
+                    window.location.href = 'additionalRequirements.html';
+                }
+                // If save failed, handleSave() will show the error and we stay on current page
             }
 
             document.addEventListener('DOMContentLoaded', async () => {
