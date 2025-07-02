@@ -283,6 +283,7 @@ class GoverningEntityView {
         this.setupEntityTitle();
         this.setupEntityDetails();
         this.setupSpecificationsTable();
+        this.populateSpecificationsTable();
         this.setupUsersTable();
         this.setupAdminFunctionality();
     }
@@ -293,8 +294,8 @@ class GoverningEntityView {
             Created: params.get("Created") || "",
             GoverningEntity: params.get("GoverningEntity") || "",
             NoOfUsers: params.get("NoOfUsers") || "",
-            NoOfSpecifications: params.get("NoOfSpecifications") || "",
-            InProgress: params.get("InProgress") || ""
+            NoOfSpecifications: params.get("No. Of Specifications") || "",
+            InProgress: params.get("In Progress") || ""
         };
         
         console.log('GoverningEntityView: Parsed entity data:', this.entity);
@@ -341,8 +342,7 @@ class GoverningEntityView {
         if (!specificationsSectionElement) return;
 
         const specificationsTable = `
-            <h2 style="margin:24px 0 8px 0;font-size:20px;">Specifications</h2>
-            <table class="styled-table" id="specificationsTable" style="font-size:13px;">
+            <table class="styled-table governing-entity-spec-table" id="specificationsTable" style="font-size:13px; margin-top: 0;">
                 <thead>
                     <tr>
                         <th>Created/Modified</th>
@@ -352,10 +352,7 @@ class GoverningEntityView {
                         <th>Type</th>
                         <th>Sector</th>
                         <th>Country</th>
-                        <th>Preferred Syntax</th>
-                        <th>Conformance level</th>
                         <th>Registry Status</th>
-                        <th>Last Modified by</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -365,162 +362,99 @@ class GoverningEntityView {
         `;
         specificationsSectionElement.innerHTML = specificationsTable;
         
-        this.populateSpecificationsTable();
     }
 
-    populateSpecificationsTable() {
+    async populateSpecificationsTable() {
+        if (!isAdmin(window.authManager)) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:red;">Access denied: You must be an Admin to view all specifications for entities.</td></tr>`;
+        console.warn('GoverningEntityView: Non-admin user attempted to fetch all specifications.');
+        return; // Important: This stops the function execution if not an Admin.
+        }
+
         const tbody = document.querySelector('#specificationsTable tbody');
         if (!tbody) return;
 
         console.log('GoverningEntityView: Populating specifications table...');
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Loading specifications...</td></tr>'; // Loading message
 
         // Get specifications from SpecificationDataManager
         let specifications = [];
         
         try {
-            // Try to get from SpecificationDataManager if available
-            if (window.SpecificationDataManager) {
-                specifications = window.SpecificationDataManager.getAllSpecifications();
-                console.log('GoverningEntityView: Got specifications from SpecificationDataManager:', specifications);
-            } else {
-                // Fallback to localStorage
-                specifications = JSON.parse(localStorage.getItem("specifications") || "[]");
-                console.log('GoverningEntityView: Got specifications from localStorage (fallback):', specifications);
-            }
-        } catch (error) {
-            console.error('GoverningEntityView: Error getting specifications:', error);
-            specifications = [];
-        }
-
-        // Pre-rendered specs for demo
-        const preRenderedSpecs = [
-            {
-                "specName": "Pre-rendered In Progress Spec",
-                "purpose": "This is an in-progress specification.",
-                "implDate": "2025-07-01",
-                "type": "CIUS",
-                "sector": "Manufacturing",
-                "country": "IE",
-                "preferredSyntax": "UBL",
-                "conformanceLevel": "Core Conformant",
-                "registryStatus": "In Progress",
-                "governingEntity": this.entity.GoverningEntity,
-                "contactInfo": "contact@example.com",
-                "specId": "PR-IP-001",
-                "specVersion": "1.0",
-                "coreVersion": "3.0",
-                "underlyingSpec": "None",
-                "sourceLink": "http://example.com/pr-ip-001",
-                "coreInvoiceModelIds": ["BT-1", "BT-2"]
-            },
-            {
-                "specName": "Digital Tax Report",
-                "purpose": "Automated tax filing",
-                "implDate": "2024-01-01",
-                "type": "JSON",
-                "sector": "Finance",
-                "country": "DE",
-                "preferredSyntax": "EDIFACT",
-                "conformanceLevel": "Core Conformant",
-                "registryStatus": "Submitted",
-                "governingEntity": this.entity.GoverningEntity,
-                "contactInfo": "info@example.com",
-                "specId": "PR-SUB-001",
-                "specVersion": "2.0",
-                "coreVersion": "2.0",
-                "underlyingSpec": "Base Spec v1.0",
-                "sourceLink": "http://example.com/pr-sub-001",
-                "coreInvoiceModelIds": ["BT-5", "BG-2"]
-            }
-        ];
-
-        // Filter and combine specifications
-        const entitySpecs = specifications.filter(s => s.governingEntity === this.entity.GoverningEntity);
-        const combinedSpecs = [...entitySpecs, ...preRenderedSpecs];
-        const uniqueSpecs = Array.from(new Map(combinedSpecs.map(spec => [spec.specName, spec])).values());
-
-        tbody.innerHTML = '';
-        
-        uniqueSpecs.forEach(spec => {
-            const tr = document.createElement('tr');
             
-            // Create query parameters for navigation
-            const queryParams = new URLSearchParams({
-                "Name": spec.specName || "",
-                "Governing Entity": spec.governingEntity || "",
-                "Purpose": spec.purpose || "",
-                "Implementation Date": spec.implDate || "",
-                "Sector": spec.sector || "",
-                "Country": spec.country || "",
-                "Preferred Syntax": spec.preferredSyntax || "",
-                "Specification Identifier": spec.specId || "",
-                "Specification Version": spec.specVersion || "",
-                "Contact Information": spec.contactInfo || "",
-                "Core Version": spec.coreVersion || "",
-                "Underlying Specification": spec.underlyingSpec || "",
-                "Specification Source Link": spec.sourceLink || "",
-                "IDs": JSON.stringify(spec.coreInvoiceModelIds || [])
-            }).toString();
+            const apiUrl = `${AUTH_CONFIG.baseUrl}/specifications/all?PageSize=1000`; // Fetch all for filtering
+            console.log(`GoverningEntityView: Fetching specifications from: ${apiUrl}`);
+            const response = await authenticatedFetch(apiUrl, { method: 'GET', forceAuth: true });
 
-            // Determine action button based on status
-            let actionButtonHtml = '';
-            if (spec.registryStatus === 'In Progress') {
-                actionButtonHtml = `<button class="view-button" onclick="governingEntityView.startEdit('${spec.specName}', '${queryParams}')">Edit</button>`;
-            } else {
-                actionButtonHtml = `<button class="view-button" onclick="window.location.href='viewSpecification.html?${queryParams}'">View</button>`;
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            // Style submitted rows
-            if (spec.registryStatus === 'Submitted') {
-                tr.classList.add("submitted-row");
+            const apiData = await response.json();
+            specifications = Array.isArray(apiData) ? apiData : (apiData.items || []);
+            console.log('GoverningEntityView: Fetched specifications:', specifications.length);
+
+            const entitySpecs = specifications.filter(spec =>
+                spec.governingEntity === this.entity.GoverningEntity
+            );
+            console.log('GoverningEntityView: Filtered specifications for this entity:', entitySpecs.length);
+
+            tbody.innerHTML = '';
+            if (entitySpecs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;font-style:italic;">No specifications found for this Governing Entity.</td></tr>`;
+                return;
             }
+        
+            entitySpecs.forEach(spec => {
+                const tr = document.createElement('tr');
 
-            tr.innerHTML = `
-                <td>${spec.implDate || 'N/A'}</td>
-                <td>${spec.specName || ''}</td>
-                <td>${spec.purpose || ''}</td>
-                <td>${spec.implDate || ''}</td>
-                <td>CIUS</td>
-                <td>${spec.sector || ''}</td>
-                <td>${spec.country || ''}</td>
-                <td>${spec.preferredSyntax || ''}</td>
-                <td>${spec.conformanceLevel || ''}</td>
-                <td>${spec.registryStatus || ''}</td>
-                <td>Admin</td>
-                <td>${actionButtonHtml}</td>
-            `;
-            tbody.appendChild(tr);
-        });
+                // Determine action button based on status (assuming "In Progress" allows edit, others view)
+                let actionButtonHtml = '';
+                // Check implementationStatus or registrationStatus for "In Progress"
+                if (spec.implementationStatus === 'In Progress' || spec.registrationStatus === 'Draft' || spec.registrationStatus === 'In Progress') {
+                    // Use the global editSpecification function from javascript.js
+                    actionButtonHtml = `<button class="view-button" onclick="editSpecification(${spec.identityID})">Edit</button>`;
+                } else {
+                    // Use the global viewSpecification function from javascript.js
+                    actionButtonHtml = `<button class="view-button" onclick="viewSpecification(${spec.identityID})">View</button>`;
+                }
 
-        console.log('GoverningEntityView: Specifications table populated with', uniqueSpecs.length, 'specifications');
+                // Style submitted rows if their registrationStatus is 'Submitted' or 'Published'
+                if (spec.registrationStatus === 'Submitted' || spec.registrationStatus === 'Published') {
+                    tr.classList.add("submitted-row");
+                }
+
+                // Populate cells based on the updated header structure and data properties
+                tr.innerHTML = `
+                    <td>${spec.modifiedDate ? new Date(spec.modifiedDate).toLocaleDateString() : (spec.createdDate ? new Date(spec.createdDate).toLocaleDateString() : 'N/A')}</td>
+                    <td>${spec.specificationName || 'N/A'}</td>
+                    <td>${spec.purpose || 'N/A'}</td>
+                    <td>${spec.dateOfImplementation ? new Date(spec.dateOfImplementation).toLocaleDateString() : 'N/A'}</td>
+                    <td>${spec.specificationType || 'N/A'}</td>
+                    <td>${spec.sector || 'N/A'}</td>
+                    <td>${spec.country || 'N/A'}</td>
+                    <td>${spec.registrationStatus || 'N/A'}</td>
+                    <td>${actionButtonHtml}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            console.log('GoverningEntityView: Specifications table populated with', entitySpecs.length, 'specifications');
+
+        } catch (error) {
+            console.error('GoverningEntityView: Error fetching or populating specifications:', error);
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:red;">Failed to load specifications. Please try again.</td></tr>`;
+        }
     }
 
-    startEdit(specName, specParams) {
-        console.log('GoverningEntityView: Starting edit for specification:', specName);
-        
-        try {
-            // Use the global editSpecification function for consistency
-            if (window.editSpecification) {
-                window.editSpecification(specName, specParams);
-            } else {
-                // Fallback to SpecificationDataManager if available
-                if (window.SpecificationDataManager) {
-                    window.SpecificationDataManager.setWorkingData({
-                        specName: specName,
-                        mode: 'edit'
-                    });
-                    console.log('GoverningEntityView: Set working data for edit mode');
-                } else {
-                    // Final fallback to localStorage
-                    localStorage.setItem("selectedSpecification", specName);
-                    localStorage.setItem("editSpecData", specParams);
-                }
-                
-                window.location.href = "IdentifyingInformation.html";
-            }
-        } catch (error) {
-            console.error('GoverningEntityView: Error starting edit:', error);
-            alert("Cannot edit: Error starting edit mode.");
+
+    startEdit(identityID) {
+        console.log('GoverningEntityView: Calling global editSpecification for ID:', identityID);
+        if (window.editSpecification) {
+            window.editSpecification(identityID); // Assuming editSpecification now takes identityID directly
+        } else {
+            console.error('Global editSpecification function not found!');
+            alert("Cannot edit: Edit functionality not available.");
         }
     }
 
@@ -550,23 +484,7 @@ class GoverningEntityView {
         console.log('GoverningEntityView: Setting up admin functionality...');
         
         // Check user role using AuthManager if available
-        let userRole = "EndUser";
-        
-        try {
-            if (window.AuthManager) {
-                userRole = window.AuthManager.getUserRole();
-                console.log('GoverningEntityView: Got user role from AuthManager:', userRole);
-            } else {
-                // Fallback to localStorage
-                userRole = localStorage.getItem("userRole") || "EndUser";
-                console.log('GoverningEntityView: Got user role from localStorage (fallback):', userRole);
-            }
-        } catch (error) {
-            console.error('GoverningEntityView: Error getting user role:', error);
-        }
-
-        // Add admin functionality if user is admin
-        if (userRole === "Admin") {
+        if (isAdmin(window.authManager)) { // Uses the global isAdmin function from javascript.js/authManager.js
             const adminContainerElement = document.getElementById("adminNewSpecContainer");
             if (adminContainerElement) {
                 adminContainerElement.innerHTML = `
@@ -578,6 +496,12 @@ class GoverningEntityView {
                     newSpecBtn.onclick = () => this.startNewSpecification();
                 }
             }
+        } else {
+             console.log('GoverningEntityView: User is not Admin, hiding New Specification button.');
+            const adminContainerElement = document.getElementById("adminNewSpecContainer");
+            if (adminContainerElement) {
+                adminContainerElement.innerHTML = ''; // Clear the container if not admin
+            }
         }
     }
 
@@ -586,15 +510,12 @@ class GoverningEntityView {
         
         try {
             // Use SpecificationDataManager if available
-            if (window.SpecificationDataManager) {
-                window.SpecificationDataManager.setWorkingData({
-                    governingEntity: this.entity.GoverningEntity,
-                    mode: 'create'
-                });
-                console.log('GoverningEntityView: Set working data for new specification');
-            } else {
-                // Fallback to localStorage
+            if (window.createNewSpecification) {
                 localStorage.setItem("newSpecGoverningEntity", this.entity.GoverningEntity);
+                window.createNewSpecification();
+            } else {
+                console.error('GoverningEntityView: Error starting new specification:', error);
+                alert("Error starting new specification: " + error.message);
             }
             
             window.location.href = "IdentifyingInformation.html";
