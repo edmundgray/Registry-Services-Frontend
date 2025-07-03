@@ -589,14 +589,18 @@
                     return;
                 }
 
+                // Get button reference and original text outside the try block
+                const button = document.querySelector('button[onclick="saveAndGoToCoreInvoiceModel()"]');
+                const originalText = button ? button.textContent : 'Core Invoice Model';
+
                 try {
                     const formData = getFormData();
                     
                     // Show saving indicator
-                    const button = document.querySelector('button[onclick="saveAndGoToCoreInvoiceModel()"]');
-                    const originalText = button.textContent;
-                    button.textContent = 'Saving...';
-                    button.disabled = true;
+                    if (button) {
+                        button.textContent = 'Saving...';
+                        button.disabled = true;
+                    }
 
                     // Save to API first
                     const result = await dataManager.saveSpecificationToAPI(formData);
@@ -633,9 +637,10 @@
                     alert(errorMessage);
                     
                     // Restore button
-                    const button = document.querySelector('button[onclick="saveAndGoToCoreInvoiceModel()"]');
-                    button.textContent = originalText;
-                    button.disabled = false;
+                    if (button) {
+                        button.textContent = originalText;
+                        button.disabled = false;
+                    }
                 }
             }
 

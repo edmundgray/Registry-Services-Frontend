@@ -20,13 +20,40 @@ async function initializeDataManager() {
                 await dataManager.loadSpecificationFromAPI(dataManager.currentSpecId);
             }
             
-            // Get the working data
-            const workingData = dataManager.workingData || dataManager.loadWorkingDataFromLocalStorage();
-            console.log('AdditionalRequirements: Working data:', workingData);
-            
-            if (workingData && workingData.additionalRequirements) {
-                console.log('AdditionalRequirements: Found additional requirements data:', workingData.additionalRequirements);
-                loadSavedRequirements(workingData.additionalRequirements);
+            // Load additional requirements from API
+            try {
+                console.log('AdditionalRequirements: Loading additional requirements from API...');
+                const apiRequirements = await dataManager.loadAdditionalRequirementsFromAPI(dataManager.currentSpecId);
+                console.log('AdditionalRequirements: Loaded from API:', apiRequirements);
+                
+                // Transform API data to table format
+                const tableRequirements = apiRequirements.map(req => ({
+                    ID: req.businessTermID || '',
+                    Level: req.level || '',
+                    Cardinality: req.cardinality || '',
+                    BusinessTerm: req.businessTermName || '',
+                    Description: req.semanticDescription || '',
+                    TypeOfChange: req.typeOfChange || ''
+                }));
+                
+                if (tableRequirements.length > 0) {
+                    loadSavedRequirements(tableRequirements);
+                }
+                
+                // Update working data with loaded requirements
+                if (!dataManager.workingData) {
+                    dataManager.workingData = dataManager.loadWorkingDataFromLocalStorage() || {};
+                }
+                dataManager.workingData.additionalRequirements = tableRequirements;
+                
+            } catch (error) {
+                console.error('AdditionalRequirements: Error loading from API:', error);
+                // Fall back to working data if API fails
+                const workingData = dataManager.workingData || dataManager.loadWorkingDataFromLocalStorage();
+                if (workingData && workingData.additionalRequirements) {
+                    console.log('AdditionalRequirements: Falling back to working data');
+                    loadSavedRequirements(workingData.additionalRequirements);
+                }
             }
         } else {
             console.log('AdditionalRequirements: Creating new specification or missing spec ID');
@@ -158,7 +185,7 @@ function deleteRow(button)
 /**************************************************************
     Save the additional requirements table data
  **************************************************************/
-function saveTable() 
+async function saveTable() 
 {
     console.log('AdditionalRequirements: saveTable called');
     
@@ -197,6 +224,14 @@ function saveTable()
     }
 
     try {
+        // Show loading indicator
+        const saveButton = document.querySelector('button[onclick="saveTable()"]');
+        const originalText = saveButton ? saveButton.textContent : '';
+        if (saveButton) {
+            saveButton.disabled = true;
+            saveButton.textContent = 'Saving...';
+        }
+
         // Update the working data with additional requirements
         if (!dataManager.workingData) {
             dataManager.workingData = dataManager.loadWorkingDataFromLocalStorage() || {};
@@ -207,14 +242,49 @@ function saveTable()
         // Save to localStorage (working data)
         dataManager.saveWorkingDataToLocalStorage();
         
-        console.log('AdditionalRequirements: Additional requirements saved to working data');
+        // If in edit mode and we have a specification ID, save to API
+        if (dataManager.isEditMode() && dataManager.currentSpecId) {
+            console.log('AdditionalRequirements: Saving to API...');
+            await dataManager.saveAdditionalRequirementsToAPI(dataManager.currentSpecId, data);
+            console.log('AdditionalRequirements: Successfully saved to API');
+        }
         
-        alert("Additional requirements saved!");
+        console.log('AdditionalRequirements: Additional requirements saved successfully');
+        
+        alert("Additional requirements saved successfully!");
         unsavedChanges = false;
+        
+        // Restore button state
+        if (saveButton) {
+            saveButton.disabled = false;
+            saveButton.textContent = originalText;
+        }
         
     } catch (error) {
         console.error('AdditionalRequirements: Error saving:', error);
-        alert("Error saving additional requirements: " + error.message);
+        
+        // Restore button state
+        const saveButton = document.querySelector('button[onclick="saveTable()"]');
+        if (saveButton) {
+            saveButton.disabled = false;
+            saveButton.textContent = originalText || 'Save';
+        }
+        
+        // Show user-friendly error message
+        let errorMessage = "Error saving additional requirements: ";
+        if (error.message.includes('Permission denied')) {
+            errorMessage += "You don't have permission to modify this specification.";
+        } else if (error.message.includes('HTTP 404')) {
+            errorMessage += "The specification was not found. It may have been deleted.";
+        } else if (error.message.includes('HTTP 401')) {
+            errorMessage += "Your session has expired. Please log in again.";
+        } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+            errorMessage += "Network error. Please check your internet connection and try again.";
+        } else {
+            errorMessage += error.message;
+        }
+        
+        alert(errorMessage);
     }
 }
 
@@ -244,12 +314,20 @@ function cancelAction()
     Navigate to the specification preview page
     Save data first, then navigate
  **************************************************************/
-function goToSpecificationPreview() 
+async function goToSpecificationPreview() 
 {
     console.log('AdditionalRequirements: goToSpecificationPreview called');
     
     // Auto-save before proceeding
-    saveTable();
+    try {
+        await saveTable();
+    } catch (error) {
+        console.error('AdditionalRequirements: Error auto-saving before navigation:', error);
+        // Let the user decide whether to continue or not
+        if (!confirm("There was an error saving your changes. Do you want to continue anyway? Your changes may be lost.")) {
+            return;
+        }
+    }
     
     // Update breadcrumb context for next page
     if (window.breadcrumbManager) {
@@ -261,6 +339,89 @@ function goToSpecificationPreview()
     }
     
     window.location.href = "specificationPreview.html";
+}
+
+/**************************************************************
+    Refresh additional requirements data from API
+ **************************************************************/
+async function refreshFromAPI() 
+{
+    console.log('AdditionalRequirements: refreshFromAPI called');
+    
+    if (!dataManager || !dataManager.isEditMode() || !dataManager.currentSpecId) {
+        alert("Cannot refresh: Not in edit mode or no specification ID available.");
+        return;
+    }
+    
+    try {
+        // Show loading indicator
+        const refreshButton = document.querySelector('button[onclick="refreshFromAPI().catch(e => console.error(\'Refresh error:\', e))"]');
+        const originalText = refreshButton ? refreshButton.textContent : '';
+        if (refreshButton) {
+            refreshButton.disabled = true;
+            refreshButton.textContent = 'Loading...';
+        }
+        
+        console.log('AdditionalRequirements: Refreshing from API...');
+        const apiRequirements = await dataManager.loadAdditionalRequirementsFromAPI(dataManager.currentSpecId);
+        console.log('AdditionalRequirements: Refreshed from API:', apiRequirements);
+        
+        // Transform API data to table format
+        const tableRequirements = apiRequirements.map(req => ({
+            ID: req.businessTermID || '',
+            Level: req.level || '',
+            Cardinality: req.cardinality || '',
+            BusinessTerm: req.businessTermName || '',
+            Description: req.semanticDescription || '',
+            TypeOfChange: req.typeOfChange || ''
+        }));
+        
+        // Load into table
+        loadSavedRequirements(tableRequirements);
+        
+        // Update working data
+        if (!dataManager.workingData) {
+            dataManager.workingData = dataManager.loadWorkingDataFromLocalStorage() || {};
+        }
+        dataManager.workingData.additionalRequirements = tableRequirements;
+        dataManager.saveWorkingDataToLocalStorage();
+        
+        // Reset unsaved changes flag
+        unsavedChanges = false;
+        
+        console.log('AdditionalRequirements: Successfully refreshed from API');
+        alert("Additional requirements refreshed from server!");
+        
+        // Restore button state
+        if (refreshButton) {
+            refreshButton.disabled = false;
+            refreshButton.textContent = originalText;
+        }
+        
+    } catch (error) {
+        console.error('AdditionalRequirements: Error refreshing from API:', error);
+        
+        // Restore button state
+        const refreshButton = document.querySelector('button[onclick="refreshFromAPI().catch(e => console.error(\'Refresh error:\', e))"]');
+        if (refreshButton) {
+            refreshButton.disabled = false;
+            refreshButton.textContent = originalText || 'Refresh';
+        }
+        
+        // Show user-friendly error message
+        let errorMessage = "Error refreshing data: ";
+        if (error.message.includes('HTTP 404')) {
+            errorMessage += "No additional requirements found for this specification.";
+        } else if (error.message.includes('HTTP 401')) {
+            errorMessage += "Your session has expired. Please log in again.";
+        } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+            errorMessage += "Network error. Please check your internet connection and try again.";
+        } else {
+            errorMessage += error.message;
+        }
+        
+        alert(errorMessage);
+    }
 }
 
 /**************************************************************

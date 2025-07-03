@@ -171,7 +171,7 @@
                     const currentUser = getCurrentUser();
                     const isAdmin = currentUser.role === 'Admin' || currentUser.role === 'admin';
                     const endpoint = isAdmin ? '/specifications/all' : '/specifications/by-user-group';
-                    const apiUrl = `${AUTH_CONFIG.baseUrl}${endpoint}?PageSize=1000`;
+                    const apiUrl = `${AUTH_CONFIG.baseUrl}${endpoint}`;
                     
                     console.log('DEBUG: User role:', currentUser.role);
                     console.log('DEBUG: Is Admin:', isAdmin);
@@ -370,9 +370,10 @@
             }
 
             function hasExtensionComponents(spec) {
+                // Handle new direct array format (no longer wrapped in { items: [...] })
                 return spec.specificationExtensionComponents && 
-                       spec.specificationExtensionComponents.items && 
-                       spec.specificationExtensionComponents.items.length > 0;
+                       Array.isArray(spec.specificationExtensionComponents) &&
+                       spec.specificationExtensionComponents.length > 0;
             }
 
             function viewSpecification(identityID) {

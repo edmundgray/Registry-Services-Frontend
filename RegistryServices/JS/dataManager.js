@@ -398,9 +398,12 @@ class SpecificationDataManager {
     // Simplified Core Elements API Methods
     async loadCoreElementsFromAPI(specificationId, pageSize = 1000) {
         try {
-            const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/coreElements?pageSize=${pageSize}`;
+            // Remove PageSize parameter - pagination removed from API
+            const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/coreElements`;
             
-            const response = await authenticatedFetch(url);
+            const response = await authenticatedFetch(url, {
+                method: 'GET'
+            });
 
             if (!response.ok) {
                 let errorMessage = `Failed to load core elements! status: ${response.status}`;
@@ -419,14 +422,22 @@ class SpecificationDataManager {
                 throw new Error(errorMessage);
             }
 
-            // Parse response
+            // Parse response - handle new direct array response format
             const contentType = response.headers.get('content-type');
             let result = null;
 
             if (contentType && contentType.includes('application/json')) {
                 const responseText = await response.text();
                 if (responseText.trim()) {
-                    result = JSON.parse(responseText);
+                    const data = JSON.parse(responseText);
+                    console.log('DEBUG: Loaded core elements from API (new schema):', data);
+                    
+                    // Handle new direct array response format
+                    const coreElements = Array.isArray(data) ? data : [];
+                    result = {
+                        items: coreElements,
+                        metadata: { totalCount: coreElements.length }
+                    };
                 } else {
                     result = { items: [], metadata: { totalCount: 0 } };
                 }
@@ -448,6 +459,7 @@ class SpecificationDataManager {
         const typeOfChangeValues = {};
         const cardinalityMap = {};
         const usageNoteMap = {};
+        const savedElements = []; // For deletion tracking
         
         if (apiData.items && Array.isArray(apiData.items)) {
             apiData.items.forEach(item => {
@@ -466,8 +478,19 @@ class SpecificationDataManager {
                         usageNoteMap[item.businessTermID] = item.usageNote;
                     }
                 }
+                
+                // IMPORTANT: Store the complete element with entityID for deletion
+                savedElements.push({
+                    entityID: item.entityID || item.id, // Ensure we have the deletion key
+                    businessTermID: item.businessTermID,
+                    typeOfChange: item.typeOfChange,
+                    cardinality: item.cardinality,
+                    usageNote: item.usageNote
+                });
             });
         }
+        
+        console.log('DEBUG: Transform Core Elements - savedElements for deletion:', savedElements);
         
         return { 
             selectedIds, 
@@ -475,7 +498,7 @@ class SpecificationDataManager {
             cardinalityMap,
             usageNoteMap,
             // Store complete element objects for deletion (includes entityID)
-            savedElements: apiData.items || [],
+            savedElements: savedElements,
             metadata: apiData.metadata || { totalCount: 0 }
         };
     }
@@ -483,11 +506,16 @@ class SpecificationDataManager {
     // Individual Core Element Delete Method
     async deleteCoreElement(specificationId, entityId) {
         try {
+            console.log('DEBUG: Attempting to delete core element:', { specificationId, entityId });
+            
             const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/coreElements/${entityId}`;
+            console.log('DEBUG: Delete URL:', url);
 
             const response = await authenticatedFetch(url, {
                 method: 'DELETE'
             });
+
+            console.log('DEBUG: Delete response status:', response.status);
 
             // Only accept 204 - anything else is a failure
             if (response.status !== 204) {
@@ -496,10 +524,19 @@ class SpecificationDataManager {
                 } else if (response.status === 404) {
                     throw new Error(`Core element ${entityId} not found - it may have already been deleted`);
                 } else {
-                    throw new Error(`Delete failed: HTTP ${response.status} (expected 204)`);
+                    // Log response body for debugging
+                    let responseText = '';
+                    try {
+                        responseText = await response.text();
+                        console.log('DEBUG: Delete error response body:', responseText);
+                    } catch (e) {
+                        console.log('DEBUG: Could not read error response body');
+                    }
+                    throw new Error(`Delete failed: HTTP ${response.status} (expected 204). Response: ${responseText}`);
                 }
             }
 
+            console.log('DEBUG: Core element deleted successfully:', entityId);
             return { success: true, entityId: entityId };
 
         } catch (error) {
@@ -581,25 +618,35 @@ class SpecificationDataManager {
             // Step 1: Delete previously saved elements (if any exist)
             const previouslySelectedElements = this.workingData?.coreInvoiceModelData?.savedElements || [];
             
+            console.log('DEBUG: Elements to delete:', previouslySelectedElements.length);
+            console.log('DEBUG: Sample element for deletion:', previouslySelectedElements[0]);
+            
             if (previouslySelectedElements.length > 0) {
                 for (const element of previouslySelectedElements) {
-                    if (element.entityID) {
+                    const entityId = element.entityID || element.id;
+                    console.log('DEBUG: Processing delete for element:', { element, entityId });
+                    
+                    if (entityId) {
                         try {
-                            await this.deleteCoreElement(specificationId, element.entityID);
+                            await this.deleteCoreElement(specificationId, entityId);
                             results.deletedCount++;
+                            console.log('DEBUG: Successfully deleted element:', entityId);
                         } catch (deleteError) {
+                            console.error('DEBUG: Delete failed for element:', entityId, deleteError);
                             // Stop immediately on any deletion error
-                            throw new Error(`Deletion failed for element ${element.entityID}: ${deleteError.message}`);
+                            throw new Error(`Deletion failed for element ${entityId}: ${deleteError.message}`);
                         }
+                    } else {
+                        console.warn('DEBUG: Skipping delete - no entityID found for element:', element);
                     }
                 }
-                
             } else {
-                // No previously saved elements - skipping deletion
+                console.log('DEBUG: No previously saved elements to delete');
             }
 
             // Step 2: Add new core elements
             if (coreElementsData.selectedIds && coreElementsData.selectedIds.length > 0) {
+                console.log('DEBUG: Adding', coreElementsData.selectedIds.length, 'new elements');
                 
                 for (const businessTermID of coreElementsData.selectedIds) {
                     try {
@@ -608,18 +655,21 @@ class SpecificationDataManager {
                             typeOfChange: coreElementsData.typeOfChangeValues?.[businessTermID] || 'No change',
                             cardinality: coreElementsData.cardinalityMap?.[businessTermID] || '0..1'
                         };
+                        
+                        console.log('DEBUG: Adding element:', elementData);
                         await this.addCoreElement(specificationId, elementData);
                         results.addedCount++;
                         
                     } catch (addError) {
+                        console.error('DEBUG: Add failed for element:', businessTermID, addError);
                         throw new Error(`Failed to add element ${businessTermID}: ${addError.message}`);
                     }
                 }
-                
             } else {
-                // No new elements to add
+                console.log('DEBUG: No new elements to add');
             }
 
+            console.log('DEBUG: Save operation completed:', results);
             return results;
 
         } catch (error) {
@@ -764,7 +814,7 @@ class SpecificationDataManager {
 
     async loadExtensionElementsFromAPI(specificationId, pageSize = 1000) {
         try {
-            const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/extensionElements?pageSize=${pageSize}`;
+            const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/extensionElements`;
             
             const response = await authenticatedFetch(url, {
                 method: 'GET'
@@ -777,9 +827,12 @@ class SpecificationDataManager {
             const data = await response.json();
             console.log('DEBUG: Loaded extension elements from API:', data);
             
+            // Handle new direct array response format
+            const extensionElements = Array.isArray(data) ? data : [];
+            
             return {
-                items: data.items || [],
-                metadata: data.metadata || { totalCount: 0 }
+                items: extensionElements,
+                metadata: { totalCount: extensionElements.length }
             };
 
         } catch (error) {
@@ -888,50 +941,209 @@ class SpecificationDataManager {
         }
     }
 
-    // Save working data to localStorage for cross-page persistence
-    saveWorkingDataToLocalStorage() {
-        if (this.workingData) {
-            localStorage.setItem('currentSpecificationData', JSON.stringify(this.workingData));
-            localStorage.setItem('selectedSpecification', this.workingData.specName || 'New Specification');
+    // Additional Requirements API Methods
+
+    async loadAdditionalRequirementsFromAPI(specificationId) {
+        try {
+            const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/additionalrequirements`;
+            console.log('DEBUG: Loading additional requirements from API:', url);
+
+            const response = await authenticatedFetch(url, {
+                method: 'GET'
+            });
+
+            if (!response.ok) {
+                let errorMessage = `Failed to load additional requirements! status: ${response.status}`;
+                try {
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const errorData = await response.json();
+                        errorMessage += ` - ${JSON.stringify(errorData)}`;
+                    } else {
+                        const errorText = await response.text();
+                        errorMessage += ` - ${errorText}`;
+                    }
+                } catch (parseError) {
+                    console.warn('Could not parse additional requirements error response:', parseError);
+                }
+                throw new Error(errorMessage);
+            }
+
+            // Parse response
+            const contentType = response.headers.get('content-type');
+            let result = [];
+
+            if (contentType && contentType.includes('application/json')) {
+                const responseText = await response.text();
+                if (responseText.trim()) {
+                    const data = JSON.parse(responseText);
+                    console.log('DEBUG: Loaded additional requirements from API:', data);
+                    result = Array.isArray(data) ? data : [];
+                } else {
+                    result = [];
+                }
+            }
+
+            return result;
+
+        } catch (error) {
+            console.error('Error loading additional requirements from API:', error);
+            throw error;
         }
     }
 
-    // Load working data from localStorage
-    loadWorkingDataFromLocalStorage() {
-        const stored = localStorage.getItem('currentSpecificationData');
-        if (stored) {
-            this.workingData = JSON.parse(stored);
-            return this.workingData;
+    async deleteAdditionalRequirement(specificationId, businessTermId) {
+        try {
+            const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/additionalrequirements/${businessTermId}`;
+            console.log('DEBUG: Delete additional requirement URL:', url);
+
+            const response = await authenticatedFetch(url, {
+                method: 'DELETE'
+            });
+
+            console.log('DEBUG: Delete additional requirement response status:', response.status);
+
+            // Only accept 204 - anything else is a failure
+            if (response.status !== 204) {
+                if (response.status === 403) {
+                    throw new Error('Permission denied: You do not have permission to delete additional requirements');
+                } else if (response.status === 404) {
+                    throw new Error(`Additional requirement ${businessTermId} not found - it may have already been deleted`);
+                } else {
+                    // Log response body for debugging
+                    let responseText = '';
+                    try {
+                        responseText = await response.text();
+                        console.log('DEBUG: Delete additional requirement error response body:', responseText);
+                    } catch (e) {
+                        console.log('DEBUG: Could not read error response body');
+                    }
+                    throw new Error(`Delete failed: HTTP ${response.status} (expected 204). Response: ${responseText}`);
+                }
+            }
+
+            console.log('DEBUG: Additional requirement deleted successfully:', businessTermId);
+            return { success: true, businessTermId: businessTermId };
+
+        } catch (error) {
+            console.error(`Error deleting additional requirement ${businessTermId}:`, error);
+            throw error;
         }
-        return null;
     }
 
-    // Clear all editing state
-    clearEditingState() {
-        localStorage.removeItem('editMode');
-        localStorage.removeItem('specificationIdentityId');
-        localStorage.removeItem('selectedSpecification');
-        localStorage.removeItem('currentSpecificationData');
-        this.currentMode = 'create';
-        this.currentSpecId = null;
-        this.originalData = null;
-        this.workingData = null;
-        this.isDataLoaded = false;
+    async addAdditionalRequirement(specificationId, requirementData) {
+        try {
+            const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/additionalrequirements`;
+            console.log('DEBUG: Adding additional requirement to API:', url, requirementData);
+
+            const response = await authenticatedFetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requirementData)
+            });
+
+            if (!response.ok) {
+                let errorMessage = `Failed to add additional requirement! status: ${response.status}`;
+                try {
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const errorData = await response.json();
+                        errorMessage += ` - ${JSON.stringify(errorData)}`;
+                    } else {
+                        const errorText = await response.text();
+                        errorMessage += ` - ${errorText}`;
+                    }
+                } catch (parseError) {
+                    console.warn('Could not parse additional requirement error response:', parseError);
+                }
+                throw new Error(errorMessage);
+            }
+
+            // Parse response
+            const contentType = response.headers.get('content-type');
+            let result = {};
+
+            if (contentType && contentType.includes('application/json')) {
+                const responseText = await response.text();
+                if (responseText.trim()) {
+                    result = JSON.parse(responseText);
+                    console.log('DEBUG: Additional requirement added successfully:', result);
+                } else {
+                    // Some APIs return empty body on successful POST
+                    result = { success: true };
+                }
+            } else {
+                result = { success: true };
+            }
+
+            return result;
+
+        } catch (error) {
+            console.error('Error adding additional requirement to API:', error);
+            throw error;
+        }
     }
 
-    // Initialize for editing an existing specification
-    static initializeForEdit(identityID) {
-        console.log('DEBUG: SpecificationDataManager.initializeForEdit called with ID:', identityID);
-        console.log('DEBUG: SpecificationDataManager.initializeForEdit - ID type:', typeof identityID);
-        
-        localStorage.setItem('editMode', 'edit');
-        localStorage.setItem('specificationIdentityId', identityID.toString());
-        
-        console.log('DEBUG: SpecificationDataManager.initializeForEdit - Stored values:');
-        console.log('  - editMode:', localStorage.getItem('editMode'));
-        console.log('  - specificationIdentityId:', localStorage.getItem('specificationIdentityId'));
-        
-        return new SpecificationDataManager();
+    async saveAdditionalRequirementsToAPI(specificationId, requirementsData) {
+        try {
+            console.log('DEBUG: Saving additional requirements to API:', specificationId, requirementsData);
+
+            // First, load existing requirements to get their IDs for deletion
+            let existingRequirements = [];
+            try {
+                existingRequirements = await this.loadAdditionalRequirementsFromAPI(specificationId);
+                console.log('DEBUG: Existing requirements to delete:', existingRequirements);
+            } catch (error) {
+                console.warn('Could not load existing requirements (may be none):', error);
+            }
+
+            // Delete all existing requirements
+            for (const requirement of existingRequirements) {
+                if (requirement.businessTermID) {
+                    try {
+                        await this.deleteAdditionalRequirement(specificationId, requirement.businessTermID);
+                        console.log('DEBUG: Deleted existing requirement:', requirement.businessTermID);
+                    } catch (error) {
+                        console.warn('Error deleting existing requirement:', requirement.businessTermID, error);
+                        // Continue with other deletions even if one fails
+                    }
+                }
+            }
+
+            // Add new requirements
+            const results = [];
+            for (const requirement of requirementsData) {
+                // Transform table data to API schema
+                const apiRequirement = {
+                    businessTermID: requirement.ID || '',
+                    businessTermName: requirement.BusinessTerm || '',
+                    level: requirement.Level || '',
+                    cardinality: requirement.Cardinality || '',
+                    rowPos: 0,
+                    semanticDescription: requirement.Description || '',
+                    usageNote: '',
+                    dataType: '',
+                    businessRules: '',
+                    typeOfChange: requirement.TypeOfChange || ''
+                };
+
+                try {
+                    const result = await this.addAdditionalRequirement(specificationId, apiRequirement);
+                    results.push(result);
+                    console.log('DEBUG: Added new requirement:', apiRequirement, result);
+                } catch (error) {
+                    console.error('Error adding requirement:', apiRequirement, error);
+                    throw error; // Stop on first failure to maintain data consistency
+                }
+            }
+
+            console.log('DEBUG: All additional requirements saved successfully');
+            return { success: true, results: results };
+
+        } catch (error) {
+            console.error('Error saving additional requirements to API:', error);
+            throw error;
+        }
     }
 
     // Initialize for creating a new specification
@@ -939,6 +1151,347 @@ class SpecificationDataManager {
         localStorage.setItem('editMode', 'create');
         localStorage.removeItem('specificationIdentityId');
         return new SpecificationDataManager();
+    }
+
+    // Initialize for editing an existing specification
+    static initializeForEdit(identityID) {
+        localStorage.setItem('editMode', 'edit');
+        localStorage.setItem('specificationIdentityId', identityID);
+        return new SpecificationDataManager();
+    }
+
+    // Local Storage Methods for Working Data
+    saveWorkingDataToLocalStorage() {
+        try {
+            if (this.workingData) {
+                const key = `workingData_${this.currentSpecId || 'new'}`;
+                localStorage.setItem(key, JSON.stringify(this.workingData));
+                console.log('DEBUG: Working data saved to localStorage:', key);
+            }
+        } catch (error) {
+            console.error('Error saving working data to localStorage:', error);
+        }
+    }
+
+    loadWorkingDataFromLocalStorage() {
+        try {
+            const key = `workingData_${this.currentSpecId || 'new'}`;
+            const savedData = localStorage.getItem(key);
+            if (savedData) {
+                const parsedData = JSON.parse(savedData);
+                console.log('DEBUG: Working data loaded from localStorage:', key, parsedData);
+                return parsedData;
+            }
+        } catch (error) {
+            console.error('Error loading working data from localStorage:', error);
+        }
+        return null;
+    }
+
+    clearWorkingDataFromLocalStorage() {
+        try {
+            const key = `workingData_${this.currentSpecId || 'new'}`;
+            localStorage.removeItem(key);
+            console.log('DEBUG: Working data cleared from localStorage:', key);
+        } catch (error) {
+            console.error('Error clearing working data from localStorage:', error);
+        }
+    }
+
+    clearEditingState() {
+        try {
+            // Clear localStorage data
+            this.clearWorkingDataFromLocalStorage();
+            
+            // Reset internal state
+            this.workingData = null;
+            this.originalData = null;
+            this.isDataLoaded = false;
+            
+            // Clear edit mode and specification ID
+            localStorage.removeItem('editMode');
+            localStorage.removeItem('specificationIdentityId');
+            
+            console.log('DEBUG: Editing state cleared');
+        } catch (error) {
+            console.error('Error clearing editing state:', error);
+        }
+    }
+
+    // Additional Requirements API Methods
+    async loadAdditionalRequirementsFromAPI(specificationId) {
+        try {
+            const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/additionalrequirements`;
+            console.log('DEBUG: Loading additional requirements from API:', url);
+
+            const response = await authenticatedFetch(url, {
+                method: 'GET'
+            });
+
+            if (!response.ok) {
+                let errorMessage = `Failed to load additional requirements! status: ${response.status}`;
+                try {
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const errorData = await response.json();
+                        errorMessage += ` - ${JSON.stringify(errorData)}`;
+                    } else {
+                        const errorText = await response.text();
+                        errorMessage += ` - ${errorText}`;
+                    }
+                } catch (parseError) {
+                    console.warn('Could not parse additional requirements error response:', parseError);
+                }
+                throw new Error(errorMessage);
+            }
+
+            // Parse response
+            const contentType = response.headers.get('content-type');
+            let result = [];
+
+            if (contentType && contentType.includes('application/json')) {
+                const responseText = await response.text();
+                if (responseText.trim()) {
+                    const data = JSON.parse(responseText);
+                    console.log('DEBUG: Loaded additional requirements from API:', data);
+                    result = Array.isArray(data) ? data : [];
+                } else {
+                    result = [];
+                }
+            }
+
+            return result;
+
+        } catch (error) {
+            console.error('Error loading additional requirements from API:', error);
+            throw error;
+        }
+    }
+
+    async deleteAdditionalRequirement(specificationId, businessTermId) {
+        try {
+            const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/additionalrequirements/${businessTermId}`;
+            console.log('DEBUG: Delete additional requirement URL:', url);
+
+            const response = await authenticatedFetch(url, {
+                method: 'DELETE'
+            });
+
+            console.log('DEBUG: Delete additional requirement response status:', response.status);
+
+            // Only accept 204 - anything else is a failure
+            if (response.status !== 204) {
+                if (response.status === 403) {
+                    throw new Error('Permission denied: You do not have permission to delete additional requirements');
+                } else if (response.status === 404) {
+                    throw new Error(`Additional requirement ${businessTermId} not found - it may have already been deleted`);
+                } else {
+                    // Log response body for debugging
+                    let responseText = '';
+                    try {
+                        responseText = await response.text();
+                        console.log('DEBUG: Delete additional requirement error response body:', responseText);
+                    } catch (e) {
+                        console.log('DEBUG: Could not read error response body');
+                    }
+                    throw new Error(`Delete failed: HTTP ${response.status} (expected 204). Response: ${responseText}`);
+                }
+            }
+
+            console.log('DEBUG: Additional requirement deleted successfully:', businessTermId);
+            return { success: true, businessTermId: businessTermId };
+
+        } catch (error) {
+            console.error(`Error deleting additional requirement ${businessTermId}:`, error);
+            throw error;
+        }
+    }
+
+    async addAdditionalRequirement(specificationId, requirementData) {
+        try {
+            const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/additionalrequirements`;
+            console.log('DEBUG: Adding additional requirement to API:', url, requirementData);
+
+            const response = await authenticatedFetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requirementData)
+            });
+
+            if (!response.ok) {
+                let errorMessage = `Failed to add additional requirement! status: ${response.status}`;
+                try {
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const errorData = await response.json();
+                        errorMessage += ` - ${JSON.stringify(errorData)}`;
+                    } else {
+                        const errorText = await response.text();
+                        errorMessage += ` - ${errorText}`;
+                    }
+                } catch (parseError) {
+                    console.warn('Could not parse additional requirement error response:', parseError);
+                }
+                throw new Error(errorMessage);
+            }
+
+            // Parse response
+            const contentType = response.headers.get('content-type');
+            let result = {};
+
+            if (contentType && contentType.includes('application/json')) {
+                const responseText = await response.text();
+                if (responseText.trim()) {
+                    result = JSON.parse(responseText);
+                    console.log('DEBUG: Additional requirement added successfully:', result);
+                } else {
+                    // Some APIs return empty body on successful POST
+                    result = { success: true };
+                }
+            } else {
+                result = { success: true };
+            }
+
+            return result;
+
+        } catch (error) {
+            console.error('Error adding additional requirement to API:', error);
+            throw error;
+        }
+    }
+
+    async saveAdditionalRequirementsToAPI(specificationId, requirementsData) {
+        try {
+            console.log('DEBUG: Saving additional requirements to API:', specificationId, requirementsData);
+
+            // First, load existing requirements to get their IDs for deletion
+            let existingRequirements = [];
+            try {
+                existingRequirements = await this.loadAdditionalRequirementsFromAPI(specificationId);
+                console.log('DEBUG: Existing requirements to delete:', existingRequirements);
+            } catch (error) {
+                console.warn('Could not load existing requirements (may be none):', error);
+            }
+
+            // Delete all existing requirements
+            for (const requirement of existingRequirements) {
+                if (requirement.businessTermID) {
+                    try {
+                        await this.deleteAdditionalRequirement(specificationId, requirement.businessTermID);
+                        console.log('DEBUG: Deleted existing requirement:', requirement.businessTermID);
+                    } catch (error) {
+                        console.warn('Error deleting existing requirement:', requirement.businessTermID, error);
+                        // Continue with other deletions even if one fails
+                    }
+                }
+            }
+
+            // Add new requirements
+            const results = [];
+            for (const requirement of requirementsData) {
+                // Transform table data to API schema
+                const apiRequirement = {
+                    businessTermID: requirement.ID || '',
+                    businessTermName: requirement.BusinessTerm || '',
+                    level: requirement.Level || '',
+                    cardinality: requirement.Cardinality || '',
+                    rowPos: 0,
+                    semanticDescription: requirement.Description || '',
+                    usageNote: '',
+                    dataType: '',
+                    businessRules: '',
+                    typeOfChange: requirement.TypeOfChange || ''
+                };
+
+                try {
+                    const result = await this.addAdditionalRequirement(specificationId, apiRequirement);
+                    results.push(result);
+                    console.log('DEBUG: Added new requirement:', apiRequirement, result);
+                } catch (error) {
+                    console.error('Error adding requirement:', apiRequirement, error);
+                    throw error; // Stop on first failure to maintain data consistency
+                }
+            }
+
+            console.log('DEBUG: All additional requirements saved successfully');
+            return { success: true, results: results };
+
+        } catch (error) {
+            console.error('Error saving additional requirements to API:', error);
+            throw error;
+        }
+    }
+
+    // Initialize for creating a new specification
+    static initializeForCreate() {
+        localStorage.setItem('editMode', 'create');
+        localStorage.removeItem('specificationIdentityId');
+        return new SpecificationDataManager();
+    }
+
+    // Initialize for editing an existing specification
+    static initializeForEdit(identityID) {
+        localStorage.setItem('editMode', 'edit');
+        localStorage.setItem('specificationIdentityId', identityID);
+        return new SpecificationDataManager();
+    }
+
+    // Local Storage Methods for Working Data
+    saveWorkingDataToLocalStorage() {
+        try {
+            if (this.workingData) {
+                const key = `workingData_${this.currentSpecId || 'new'}`;
+                localStorage.setItem(key, JSON.stringify(this.workingData));
+                console.log('DEBUG: Working data saved to localStorage:', key);
+            }
+        } catch (error) {
+            console.error('Error saving working data to localStorage:', error);
+        }
+    }
+
+    loadWorkingDataFromLocalStorage() {
+        try {
+            const key = `workingData_${this.currentSpecId || 'new'}`;
+            const savedData = localStorage.getItem(key);
+            if (savedData) {
+                const parsedData = JSON.parse(savedData);
+                console.log('DEBUG: Working data loaded from localStorage:', key, parsedData);
+                return parsedData;
+            }
+        } catch (error) {
+            console.error('Error loading working data from localStorage:', error);
+        }
+        return null;
+    }
+
+    clearWorkingDataFromLocalStorage() {
+        try {
+            const key = `workingData_${this.currentSpecId || 'new'}`;
+            localStorage.removeItem(key);
+            console.log('DEBUG: Working data cleared from localStorage:', key);
+        } catch (error) {
+            console.error('Error clearing working data from localStorage:', error);
+        }
+    }
+
+    clearEditingState() {
+        try {
+            // Clear localStorage data
+            this.clearWorkingDataFromLocalStorage();
+            
+            // Reset internal state
+            this.workingData = null;
+            this.originalData = null;
+            this.isDataLoaded = false;
+            
+            // Clear edit mode and specification ID
+            localStorage.removeItem('editMode');
+            localStorage.removeItem('specificationIdentityId');
+            
+            console.log('DEBUG: Editing state cleared');
+        } catch (error) {
+            console.error('Error clearing editing state:', error);
+        }
     }
 }
 

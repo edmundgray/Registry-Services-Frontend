@@ -83,11 +83,12 @@
             <div class="button-row">
                 <div class="button-group">
                     <button onclick="addRow()">Add another row</button>
-                    <button onclick="saveTable()">Save</button>
+                    <button onclick="saveTable().catch(e => console.error('Save error:', e))">Save</button>
+                    <button onclick="refreshFromAPI().catch(e => console.error('Refresh error:', e))" title="Reload data from server">Refresh</button>
                     <button onclick="cancelAction()">Cancel</button>
                 </div>
 
-                <button class="spec-preview-btn" onclick="goToSpecificationPreview()">Specification Preview</button>
+                <button class="spec-preview-btn" onclick="goToSpecificationPreview().catch(e => console.error('Navigation error:', e))">Specification Preview</button>
             </div>
         </div>
         
