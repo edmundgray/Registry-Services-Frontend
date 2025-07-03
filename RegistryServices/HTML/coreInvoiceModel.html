@@ -9,12 +9,33 @@
         <!-- Add authManager.js for global AuthManager and AUTH_CONFIG -->
         <script src="../JS/auth/authManager.js"></script>
         <script>
-            // Create a global authManager instance
+            // Create a global authManager instance and enhanced authenticatedFetch
             window.authManager = new AuthManager();
-            // Define authenticatedFetch globally
-            function authenticatedFetch(url, options = {}) {
-                const headers = { ...(options.headers || {}), ...window.authManager.getAuthHeaders() };
-                return fetch(url, { ...options, headers });
+            
+            async function authenticatedFetch(url, options = {}) {
+                try {
+                    const headers = { ...(options.headers || {}), ...window.authManager.getAuthHeaders() };
+                    let response = await fetch(url, { ...options, headers });
+                    
+                    if (response.status === 401) {
+                        // Try to refresh the token
+                        const refreshed = await window.authManager.refreshToken();
+                        if (refreshed) {
+                            // Retry with new token
+                            const newHeaders = { ...(options.headers || {}), ...window.authManager.getAuthHeaders() };
+                            response = await fetch(url, { ...options, headers: newHeaders });
+                        } else {
+                            // Show re-authentication modal
+                            window.authManager.showReAuthModal();
+                            throw new Error('Authentication failed');
+                        }
+                    }
+                    
+                    return response;
+                } catch (error) {
+                    console.error('Authenticated fetch error:', error);
+                    throw error;
+                }
             }
         </script>
         <script src="../JS/sidebarManager.js"></script>
@@ -22,6 +43,7 @@
         <script src="../JS/javascript.js"></script>
         <script src="../JS/dataManager.js"></script>
         <script src="../JS/coreInvoiceModel.js"></script>
+        <script src="../JS/workflowSessionManager.js"></script>
         
         <title>Registry Services</title>
         
@@ -162,10 +184,11 @@
             </div>
         </div>
         <script>
-            let isFormDirty = false;
+            // Note: isFormDirty is deprecated in favor of hasActualChanges()
+            // let isFormDirty = false;
             let dataManager = null;
-            // Make isFormDirty globally accessible for breadcrumb manager
-            window.isFormDirty = false;
+            // Note: window.isFormDirty is deprecated in favor of window.hasActualChanges
+            // window.isFormDirty = false;
 
             // Initialize data manager and load data
             async function initializeDataManager() {
@@ -219,6 +242,22 @@
                             // Store core elements data in working data for local operations
                             dataManager.saveCoreElementsToLocalStorage(coreElementsData);
                             
+                            // Set initial baseline data for change detection
+                            // We need to get the current state including cardinality and usage notes
+                            // First, set a temporary baseline to prevent errors
+                            dataManager.coreElementsData = {
+                                selectedIds: coreElementsData.selectedIds || [],
+                                typeOfChangeValues: {},
+                                cardinalityMap: {},
+                                usageNotesMap: {}
+                            };
+                            console.log('DEBUG: CoreInvoiceModel - Temporary baseline data set during initialization');
+                            
+                            // Then update with proper baseline after UI is populated
+                            setTimeout(() => {
+                                updateBaselineData();
+                            }, 100); // Small delay to ensure UI is populated
+                            
                             return workingData;
                             
                         } catch (coreElementsError) {
@@ -239,6 +278,18 @@
                                     setTimeout(() => {
                                         loadExistingSelections(workingData.coreInvoiceModelData);
                                     }, 1000);
+                                    // Set baseline data from localStorage
+                                    dataManager.coreElementsData = workingData.coreInvoiceModelData;
+                                    console.log('DEBUG: CoreInvoiceModel - Baseline data set from localStorage fallback');
+                                } else {
+                                    // No existing core elements data - initialize empty baseline
+                                    dataManager.coreElementsData = {
+                                        selectedIds: [],
+                                        typeOfChangeValues: {},
+                                        cardinalityMap: {},
+                                        usageNotesMap: {}
+                                    };
+                                    console.log('DEBUG: CoreInvoiceModel - Empty baseline data initialized in fallback');
                                 }
                             }
                             
@@ -264,6 +315,17 @@
                                 setTimeout(() => {
                                     loadExistingSelections(workingData.coreInvoiceModelData);
                                 }, 1000);
+                                // Set baseline data for existing core elements data
+                                dataManager.coreElementsData = workingData.coreInvoiceModelData;
+                                console.log('DEBUG: CoreInvoiceModel - Baseline data set from localStorage for new spec');
+                            } else {                                    // No existing core elements data - initialize empty baseline
+                                    dataManager.coreElementsData = {
+                                        selectedIds: [],
+                                        typeOfChangeValues: {},
+                                        cardinalityMap: {},
+                                        usageNotesMap: {}
+                                    };
+                                console.log('DEBUG: CoreInvoiceModel - Empty baseline data initialized for new spec');
                             }
                             
                             return workingData;
@@ -275,6 +337,15 @@
                             if (workingData && workingData.specName) {
                                 updatePageTitle(workingData.specName);
                             }
+                            // Initialize empty baseline for error case
+                            dataManager.coreElementsData = {
+                                selectedElements: [],
+                                selectedIds: [],
+                                typeOfChangeValues: {},
+                                cardinalityMap: {},
+                                usageNotesMap: {}
+                            };
+                            console.log('DEBUG: CoreInvoiceModel - Empty baseline data initialized for load error case');
                             return workingData;
                         }
                         
@@ -291,6 +362,16 @@
                         if (workingData && workingData.specName) {
                             updatePageTitle(workingData.specName + " (No Spec ID)");
                         }
+                        
+                        // Initialize empty baseline for no spec ID case
+                        dataManager.coreElementsData = {
+                            selectedElements: [],
+                            selectedIds: [],
+                            typeOfChangeValues: {},
+                            cardinalityMap: {},
+                            usageNotesMap: {}
+                        };
+                        console.log('DEBUG: CoreInvoiceModel - Empty baseline data initialized for no spec ID case');
                         
                         return workingData;
                     }
@@ -338,9 +419,7 @@
             function navigateToIdentifyingInformation() {
                 console.log('DEBUG: CoreInvoiceModel - Navigating to Identifying Information');
                 
-                // Clear any existing form dirty state
-                isFormDirty = false;
-                window.isFormDirty = false;
+                // Note: No need to clear isFormDirty anymore since we use hasActualChanges()
                 
                 // Store return page for navigation back
                 localStorage.setItem('returnToPage', 'coreInvoiceModel.html');
@@ -400,6 +479,13 @@
                     
                     console.log(`DEBUG: CoreInvoiceModel - Applied ${appliedCount} checkbox selections`);
                     
+                    // Update baseline data after selections are applied
+                    if (appliedCount > 0 || selectedIds.length === 0) {
+                        setTimeout(() => {
+                            updateBaselineData();
+                        }, 100);
+                    }
+                    
                     return appliedCount > 0 || selectedIds.length === 0;
                 };
                 
@@ -408,8 +494,24 @@
                     // If table not ready, wait and try again
                     console.log('DEBUG: CoreInvoiceModel - Table not ready, waiting...');
                     setTimeout(() => {
-                        applySelections();
+                        if (applySelections()) {
+                            updateBaselineData();
+                        }
                     }, 2000);
+                }
+            }
+
+            // Function to update baseline data after UI is populated
+            function updateBaselineData() {
+                try {
+                    const currentSelections = collectCoreElementsSelections();
+                    dataManager.coreElementsData = currentSelections;
+                    console.log('DEBUG: CoreInvoiceModel - Baseline data updated after UI population:', currentSelections);
+                    console.log('DEBUG: CoreInvoiceModel - Baseline selectedIds count:', currentSelections.selectedIds.length);
+                    console.log('DEBUG: CoreInvoiceModel - Baseline has cardinalityMap:', !!currentSelections.cardinalityMap);
+                    console.log('DEBUG: CoreInvoiceModel - Baseline has usageNotesMap:', !!currentSelections.usageNotesMap);
+                } catch (error) {
+                    console.error('DEBUG: CoreInvoiceModel - Error updating baseline data:', error);
                 }
             }
 
@@ -432,8 +534,9 @@
                 if (tableElement) {
                     tableElement.addEventListener('change', (event) => {
                         if (event.target.matches('.row-selector:not(:disabled)') || event.target.matches('.type-of-change-dropdown')) {
-                            isFormDirty = true;
-                            window.isFormDirty = true; // Update global reference
+                            console.log('DEBUG: Form element changed, updating save button appearance');
+                            // Don't set isFormDirty anymore - rely on hasActualChanges()
+                            updateSaveButtonAppearance(); // Update save button appearance when form changes
                             
                             // Auto-check "Included in Spec" when dropdown changes to anything other than "No change"
                             if (event.target.matches('.type-of-change-dropdown')) {
@@ -467,13 +570,168 @@
             }, 500); // Wait for table to be populated
 
             window.addEventListener('beforeunload', (e) => {
-                if (isFormDirty) {
+                const actualChanges = hasActualChanges();
+                console.log('DEBUG: beforeunload triggered - hasActualChanges():', actualChanges);
+                console.log('DEBUG: beforeunload triggered - using hasActualChanges() for decision');
+                
+                if (actualChanges) {
+                    console.log('DEBUG: beforeunload - preventing navigation due to actual changes');
                     e.preventDefault();
                     e.returnValue = '';
+                } else {
+                    console.log('DEBUG: beforeunload - allowing navigation, no actual changes detected');
                 }
             });
 
-            async function handleCoreInvoiceSave(showAlert = true) {
+            // Enhanced change detection functions
+            function hasActualChanges() {
+                console.log('DEBUG: hasActualChanges() called');
+                
+                if (!dataManager || !dataManager.coreElementsData) {
+                    console.log('DEBUG: hasActualChanges() - No baseline data available');
+                    console.log('DEBUG: hasActualChanges() - dataManager exists:', !!dataManager);
+                    console.log('DEBUG: hasActualChanges() - dataManager.coreElementsData exists:', !!(dataManager && dataManager.coreElementsData));
+                    return true; // If no baseline data, assume changes exist
+                }
+                
+                const currentData = collectCoreElementsSelections();
+                const originalData = dataManager.coreElementsData;
+                
+                console.log('DEBUG: hasActualChanges() - Current data:', currentData);
+                console.log('DEBUG: hasActualChanges() - Baseline data:', originalData);
+                console.log('DEBUG: hasActualChanges() - Baseline selectedIds count:', originalData.selectedIds ? originalData.selectedIds.length : 'N/A');
+                
+                // Compare selected elements
+                if (currentData.selectedIds.length !== originalData.selectedIds.length) {
+                    console.log('DEBUG: hasActualChanges() - Different number of selected elements:', currentData.selectedIds.length, 'vs', originalData.selectedIds.length);
+                    return true;
+                }
+                
+                // Check if same elements are selected
+                const currentSet = new Set(currentData.selectedIds);
+                const originalSet = new Set(originalData.selectedIds);
+                for (const element of currentSet) {
+                    if (!originalSet.has(element)) {
+                        console.log('Change detected: New element selected:', element);
+                        return true;
+                    }
+                }
+                for (const element of originalSet) {
+                    if (!currentSet.has(element)) {
+                        console.log('Change detected: Element deselected:', element);
+                        return true;
+                    }
+                }
+                
+                // Compare cardinality and usage note changes
+                if (originalData.cardinalityMap && originalData.usageNotesMap && 
+                    currentData.cardinalityMap && currentData.usageNotesMap) {
+                    for (const elementId of currentData.selectedIds) {
+                        if (currentData.cardinalityMap[elementId] !== originalData.cardinalityMap[elementId]) {
+                            console.log(`DEBUG: hasActualChanges() - Change detected in cardinality for ${elementId}: "${originalData.cardinalityMap[elementId]}" -> "${currentData.cardinalityMap[elementId]}"`);
+                            return true;
+                        }
+                        if (currentData.usageNotesMap[elementId] !== originalData.usageNotesMap[elementId]) {
+                            console.log(`DEBUG: hasActualChanges() - Change detected in usage notes for ${elementId}`);
+                            return true;
+                        }
+                    }
+                } else {
+                    console.log('DEBUG: hasActualChanges() - Missing cardinality or usage note maps, skipping detailed comparison');
+                }
+                
+                console.log('DEBUG: hasActualChanges() - No changes detected, returning false');
+                return false;
+            }
+
+            // Make hasActualChanges globally accessible for breadcrumb manager
+            window.hasActualChanges = hasActualChanges;
+
+            function getChangedFields() {
+                if (!dataManager || !dataManager.coreElementsData) return [];
+                
+                const currentData = collectCoreElementsSelections();
+                const originalData = dataManager.coreElementsData;
+                const changedFields = [];
+                
+                // Check for selection changes
+                const currentSet = new Set(currentData.selectedIds);
+                const originalSet = new Set(originalData.selectedIds);
+                
+                // New selections
+                for (const element of currentSet) {
+                    if (!originalSet.has(element)) {
+                        changedFields.push({
+                            field: element,
+                            displayName: `Element: ${element}`,
+                            oldValue: 'Not selected',
+                            newValue: 'Selected'
+                        });
+                    }
+                }
+                
+                // Removed selections
+                for (const element of originalSet) {
+                    if (!currentSet.has(element)) {
+                        changedFields.push({
+                            field: element,
+                            displayName: `Element: ${element}`,
+                            oldValue: 'Selected',
+                            newValue: 'Not selected'
+                        });
+                    }
+                }
+                
+                // Cardinality and usage note changes
+                if (originalData.cardinalityMap && originalData.usageNotesMap && 
+                    currentData.cardinalityMap && currentData.usageNotesMap) {
+                    for (const elementId of currentData.selectedIds) {
+                        if (currentData.cardinalityMap[elementId] !== originalData.cardinalityMap[elementId]) {
+                            changedFields.push({
+                                field: `${elementId}_cardinality`,
+                                displayName: `${elementId} - Cardinality`,
+                                oldValue: originalData.cardinalityMap[elementId] || '',
+                                newValue: currentData.cardinalityMap[elementId] || ''
+                            });
+                        }
+                        if (currentData.usageNotesMap[elementId] !== originalData.usageNotesMap[elementId]) {
+                            changedFields.push({
+                                field: `${elementId}_notes`,
+                                displayName: `${elementId} - Usage Notes`,
+                                oldValue: originalData.usageNotesMap[elementId] || '',
+                                newValue: currentData.usageNotesMap[elementId] || ''
+                            });
+                        }
+                    }
+                } else {
+                    console.log('DEBUG: getChangedFields() - Missing cardinality or usage note maps, skipping detailed comparison');
+                    console.log('DEBUG: originalData.cardinalityMap:', !!originalData.cardinalityMap);
+                    console.log('DEBUG: originalData.usageNotesMap:', !!originalData.usageNotesMap);
+                    console.log('DEBUG: currentData.cardinalityMap:', !!currentData.cardinalityMap);
+                    console.log('DEBUG: currentData.usageNotesMap:', !!currentData.usageNotesMap);
+                }
+                
+                return changedFields;
+            }
+
+            function updateSaveButtonAppearance() {
+                const saveButton = document.querySelector('button[onclick="handleCoreInvoiceSave()"]');
+                const hasChanges = hasActualChanges();
+                
+                if (saveButton) {
+                    if (hasChanges) {
+                        saveButton.style.background = '#28a745'; // Green when changes exist
+                        saveButton.style.fontWeight = 'bold';
+                        saveButton.style.boxShadow = '0 2px 4px rgba(40, 167, 69, 0.3)';
+                    } else {
+                        saveButton.style.background = '#6c757d'; // Gray when no changes
+                        saveButton.style.fontWeight = 'normal';
+                        saveButton.style.boxShadow = 'none';
+                    }
+                }
+            }
+
+            async function handleCoreInvoiceSave(showAlert = true, allowNavigationWithoutChanges = false) {
                 console.log('DEBUG: CoreInvoiceModel - handleCoreInvoiceSave called');
                 
                 if (!dataManager) {
@@ -489,6 +747,54 @@
                     return;
                 }
 
+                // Check if there are actual changes
+                const changedFields = getChangedFields();
+                
+                if (changedFields.length === 0) {
+                    // If this is for navigation and no changes are detected, allow proceeding
+                    if (allowNavigationWithoutChanges) {
+                        console.log('DEBUG: CoreInvoiceModel - No changes detected, but allowing navigation');
+                        return;
+                    }
+                    
+                    // Update save button appearance since no actual changes exist
+                    console.log('DEBUG: CoreInvoiceModel - No changes detected, updating save button appearance');
+                    updateSaveButtonAppearance();
+                    
+                    // Show "no changes" modal only for direct save attempts
+                    const modalHtml = `
+                        <div id="noChangesModal" style="
+                            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                            background: rgba(0,0,0,0.5); z-index: 1002; display: flex;
+                            align-items: center; justify-content: center;">
+                            <div style="
+                                background: white; border-radius: 8px; padding: 24px; max-width: 400px;
+                                width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                                <h3 style="margin: 0 0 16px 0; color: #333;">
+                                    <i class="fa-solid fa-info-circle" style="color: #17a2b8; margin-right: 8px;"></i>
+                                    No Changes Detected
+                                </h3>
+                                <p style="margin: 0 0 20px 0; color: #666;">
+                                    There are no unsaved changes to your core invoice model selections. The current selections match the last saved version.
+                                </p>
+                                <div style="text-align: center;">
+                                    <button onclick="document.getElementById('noChangesModal').remove()" style="
+                                        padding: 8px 16px; background: #17a2b8; color: white; border: none;
+                                        border-radius: 4px; cursor: pointer; font-size: 14px;">
+                                        OK
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.body.insertAdjacentHTML('beforeend', modalHtml);
+                    return;
+                }
+
+                // Save directly without confirmation modal
+                console.log('DEBUG: CoreInvoiceModel - Proceeding with save operation');
+                
                 // Define originalButtonText at function scope so it's available in finally block
                 let originalButtonText = '';
                 const saveButton = document.querySelector('button[onclick="handleCoreInvoiceSave()"]');
@@ -553,9 +859,15 @@
                                 1000
                             );
                             dataManager.saveCoreElementsToLocalStorage(updatedCoreElementsData);
+                            // Update baseline data to match the current UI state (which includes cardinality and usage notes)
+                            updateBaselineData();
+                            console.log('DEBUG: CoreInvoiceModel - Baseline data updated after reload from API');
                         } catch (reloadError) {
                             console.warn('DEBUG: CoreInvoiceModel - Failed to reload core elements after save:', reloadError);
                             // Non-critical error - the save was successful, just update failed
+                            // Keep the baseline as the current UI state (saved data)
+                            updateBaselineData();
+                            console.log('DEBUG: CoreInvoiceModel - Using current UI state as baseline after reload failure');
                         }
                         
                     } catch (apiError) {
@@ -575,10 +887,16 @@
                         alert(errorMessage);
                         return; // Don't proceed if API save failed
                     }
-                    
-                    isFormDirty = false;
-                    window.isFormDirty = false;
-                    
+                        
+                        console.log('DEBUG: CoreInvoiceModel - Save completed successfully');
+                        
+                        if (showAlert) {
+                            alert("Core Invoice Model saved successfully!");
+                        }
+                        
+                        // Update save button appearance after successful save
+                        updateSaveButtonAppearance();
+                        
                 } catch (error) {
                     console.error('DEBUG: CoreInvoiceModel - Error in handleCoreInvoiceSave:', error);
                     alert("Error saving Core Invoice Model: " + error.message);
@@ -635,14 +953,14 @@
                     selectedIds, 
                     typeOfChangeValues,
                     cardinalityMap,
-                    usageNoteMap
+                    usageNotesMap: usageNoteMap  // Renamed for consistency
                 };
             }
 
             async function saveAndGoToExtensionModel() {
                 console.log("saveAndGoToExtensionModel() called");
                 try {
-                    await handleCoreInvoiceSave(false);
+                    await handleCoreInvoiceSave(false, true); // Don't show alert, allow navigation without changes
                     console.log("Save completed, navigating to ExtensionComponentDataModel.html");
                     // Update breadcrumb context for next page
                     const context = window.breadcrumbManager.getContext();
@@ -658,7 +976,7 @@
             }
 
             function handleCancel() {
-                if (isFormDirty && !confirm("You have unsaved changes. Are you sure you want to cancel?")) {
+                if (hasActualChanges() && !confirm("You have unsaved changes. Are you sure you want to cancel?")) {
                     return;
                 }
                 
@@ -666,9 +984,6 @@
                 if (dataManager) {
                     dataManager.clearEditingState();
                 }
-                
-                isFormDirty = false;
-                window.isFormDirty = false;
                 
                 // Smart navigation: return to calling page or default to mySpecifications.html
                 let targetPage = 'mySpecifications.html'; // Default fallback
@@ -724,6 +1039,12 @@
             document.addEventListener('DOMContentLoaded', function() {
                 // Initialize auth manager
                 window.authManager.init();
+                
+                // Initialize session manager for this workflow step
+                if (window.WorkflowSessionManager) {
+                    window.sessionManager = new WorkflowSessionManager('coreInvoiceModel');
+                    window.sessionManager.init();
+                }
                 
                 // Initialize sidebar
                 window.sidebarManager.initializeSidebar(window.authManager);

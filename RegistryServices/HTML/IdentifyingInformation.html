@@ -9,11 +9,35 @@
         <!-- Add authManager.js for global AuthManager and AUTH_CONFIG -->
         <script src="../JS/auth/authManager.js"></script>
         <script>
-            // Create a global authManager instance and authenticatedFetch
+            // Create a global authManager instance and enhanced authenticatedFetch
             window.authManager = new AuthManager();
-            function authenticatedFetch(url, options = {}) {
-                const headers = { ...(options.headers || {}), ...window.authManager.getAuthHeaders() };
-                return fetch(url, { ...options, headers });
+            
+            async function authenticatedFetch(url, options = {}) {
+                try {
+                    const headers = { ...(options.headers || {}), ...window.authManager.getAuthHeaders() };
+                    let response = await fetch(url, { ...options, headers });
+                    
+                    if (response.status === 401) {
+                        // Try to refresh the token
+                        const refreshed = await window.authManager.attemptBackgroundRefresh();
+                        if (refreshed) {
+                            // Retry with new token
+                            const newHeaders = { ...(options.headers || {}), ...window.authManager.getAuthHeaders() };
+                            response = await fetch(url, { ...options, headers: newHeaders });
+                        } else {
+                            // Show re-authentication modal
+                            if (window.authManager.showReAuthModal) {
+                                window.authManager.showReAuthModal();
+                            }
+                            throw new Error('Authentication failed');
+                        }
+                    }
+                    
+                    return response;
+                } catch (error) {
+                    console.error('Authenticated fetch error:', error);
+                    throw error;
+                }
             }
         </script>
         <script src="../JS/sidebarManager.js"></script>
@@ -21,6 +45,7 @@
         <script src="../JS/javascript.js"></script>
         <script src="../JS/identifyingInformation.js"></script>
         <script src="../JS/dataManager.js"></script>
+        <script src="../JS/workflowSessionManager.js"></script>
         
         <title>Registry Services</title>
 
@@ -161,6 +186,7 @@
                         </label>
                         <select id="sector" name="sector" required>
                             <option value="">Select Sector</option>
+                            <option value="any">Any Sector</option>
                             <option>Agriculture, Forestry & Fishing</option>
                             <option>Mining & Quarrying</option>
                             <option>Manufacturing</option>
@@ -199,6 +225,7 @@
                         </label>
                         <select id="country" name="country" required>
                             <option value="">Select Country</option>
+                            <option value="any">Any Country</option>
                             <option value="DE">Germany (DE)</option>
                             <option value="NL">Netherlands (NL)</option>
                             <option value="BE">Belgium (BE)</option>
@@ -302,7 +329,6 @@
                     <div>
                         <button type="button" onclick="handleSave()" class="view-button">Save</button>
                         <button type="button" onclick="handleCancel()" class="view-button" style="background:#ccc; color:#333;">Cancel</button>
-                        <button type="button" onclick="debugUserGroupID()" class="view-button" style="background:#ff9800; color:#fff; font-size: 0.7rem;">Debug UserGroupID</button>
                     </div>
                     
                     <div>
@@ -316,7 +342,8 @@
         JavaScript for mockup functionality
   ------------------------------------------------------------------------------>
         <script>
-            let isFormDirty = false;
+            // Note: isFormDirty is deprecated in favor of hasActualChanges()
+            // let isFormDirty = false;
             let dataManager = null;
 
             // Initialize data manager and load data
@@ -355,7 +382,7 @@
                         hideLoadingIndicator();
                         
                         console.log('DEBUG: IdentifyingInformation - Form populated with existing data');
-                        isFormDirty = false; // Just loaded, so not dirty
+                        // Note: No need to set isFormDirty anymore since we use hasActualChanges()
                     } else {
                         console.log('DEBUG: IdentifyingInformation - Creating new specification or missing spec ID');
                         console.log('DEBUG: IdentifyingInformation - isEditMode:', dataManager.isEditMode());
@@ -366,7 +393,7 @@
                         if (workingData) {
                             console.log('DEBUG: IdentifyingInformation - Found working data, populating form');
                             populateForm(workingData);
-                            isFormDirty = false;
+                            // Note: No need to set isFormDirty anymore since we use hasActualChanges()
                         } else {
                             console.log('DEBUG: IdentifyingInformation - No working data found, initializing with defaults');
                             // Initialize with empty data but populate governing entity
@@ -386,7 +413,7 @@
                                 preferredSyntax: ''
                             };
                             populateForm(emptyData); // This will auto-populate governing entity
-                            isFormDirty = false;
+                            // Note: No need to set isFormDirty anymore since we use hasActualChanges()
                         }
                     }
                 } catch (error) {
@@ -506,78 +533,284 @@
                 };
             }
 
-            // Debug function to check userGroupID
-            function debugUserGroupID() {
-                const currentUser = getCurrentUser();
-                console.log('DEBUG: UserGroupID Investigation:', {
-                    'Current User': currentUser,
-                    'AuthManager userGroupID': window.authManager?.userGroupID,
-                    'localStorage userGroupID': localStorage.getItem('userGroupID'),
-                    'Original Data userGroupID': dataManager?.originalData?.userGroupID,
-                    'Working Data userGroupID': dataManager?.workingData?.userGroupID,
-                    'DataManager mode': dataManager?.currentMode,
-                    'Is Edit Mode': dataManager?.isEditMode(),
-                    'AuthManager full state': window.authManager
-                });
+            // Enhanced change detection functions with comprehensive debugging
+            function hasActualChanges() {
+                console.log('DEBUG: IdentifyingInformation - hasActualChanges() called');
+                
+                try {
+                    if (!dataManager || !dataManager.workingData) {
+                        console.log('DEBUG: IdentifyingInformation - No baseline data (dataManager.workingData), checking if form has content');
+                        const currentData = getFormData();
+                        const hasContent = Object.values(currentData).some(value => value && value.trim() !== '');
+                        console.log('DEBUG: IdentifyingInformation - Form has content without baseline:', hasContent);
+                        return hasContent; // If no baseline data, check if form has any content
+                    }
+                    
+                    const currentData = getFormData();
+                    const originalData = dataManager.workingData;
+                    
+                    console.log('DEBUG: IdentifyingInformation - Comparing data:', {
+                        current: currentData,
+                        baseline: originalData
+                    });
+                    
+                    // Field-by-field comparison with detailed logging
+                    const fields = Object.keys(currentData);
+                    for (const field of fields) {
+                        const currentValue = currentData[field] || '';
+                        const baselineValue = originalData[field] || '';
+                        
+                        if (currentValue !== baselineValue) {
+                            console.log(`DEBUG: IdentifyingInformation - Change detected in ${field}:`, {
+                                baseline: baselineValue,
+                                current: currentValue
+                            });
+                            return true;
+                        }
+                    }
+                    
+                    console.log('DEBUG: IdentifyingInformation - No changes detected');
+                    return false;
+                } catch (error) {
+                    console.error('DEBUG: IdentifyingInformation - Error in hasActualChanges():', error);
+                    return false;
+                }
+            }
+
+            // Make hasActualChanges globally accessible for breadcrumb manager
+            window.hasActualChanges = hasActualChanges;
+
+            function getChangedFields() {
+                console.log('DEBUG: IdentifyingInformation - getChangedFields() called');
+                
+                try {
+                    if (!dataManager || !dataManager.workingData) {
+                        console.log('DEBUG: IdentifyingInformation - No baseline data for getChangedFields()');
+                        return [];
+                    }
+                    
+                    const currentData = getFormData();
+                    const originalData = dataManager.workingData;
+                    const changedFields = [];
+                    
+                    Object.keys(currentData).forEach(field => {
+                        const currentValue = currentData[field] || '';
+                        const baselineValue = originalData[field] || '';
+                        
+                        if (currentValue !== baselineValue) {
+                            changedFields.push({
+                                field: field,
+                                displayName: getFieldDisplayName(field),
+                                oldValue: baselineValue,
+                                newValue: currentValue
+                            });
+                        }
+                    });
+                    
+                    console.log('DEBUG: IdentifyingInformation - Changed fields detected:', changedFields);
+                    return changedFields;
+                } catch (error) {
+                    console.error('DEBUG: IdentifyingInformation - Error in getChangedFields():', error);
+                    return [];
+                }
+            }
+
+            function getFieldDisplayName(fieldName) {
+                const displayNames = {
+                    specName: 'Specification Name',
+                    governingEntity: 'Governing Entity',
+                    contactInfo: 'Contact Information',
+                    sector: 'Sector',
+                    subSector: 'Sub Sector',
+                    country: 'Country',
+                    purpose: 'Purpose',
+                    specId: 'Specification Identifier',
+                    specVersion: 'Specification Version',
+                    implDate: 'Date of Implementation',
+                    coreVersion: 'Core Version',
+                    underlyingSpec: 'Underlying Specification',
+                    sourceLink: 'Specification Source Link',
+                    preferredSyntax: 'Preferred Syntax'
+                };
+                return displayNames[fieldName] || fieldName;
+            }
+
+            function showChangeConfirmationModal(changedFields, onConfirm, onCancel) {
+                // Create modal HTML
+                const modalHtml = `
+                    <div id="changeConfirmModal" style="
+                        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                        background: rgba(0,0,0,0.5); z-index: 1002; display: flex;
+                        align-items: center; justify-content: center;">
+                        <div style="
+                            background: white; border-radius: 8px; padding: 24px; max-width: 500px;
+                            width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                            <h3 style="margin: 0 0 16px 0; color: #333;">
+                                <i class="fa-solid fa-save" style="color: #28a745; margin-right: 8px;"></i>
+                                Confirm Save Changes
+                            </h3>
+                            <p style="margin: 0 0 16px 0; color: #666;">
+                                You have modified <strong>${changedFields.length}</strong> field${changedFields.length !== 1 ? 's' : ''}. 
+                                Do you want to save these changes?
+                            </p>
+                            <div style="max-height: 200px; overflow-y: auto; background: #f8f9fa; 
+                                 border-radius: 4px; padding: 12px; margin: 16px 0;">
+                                ${changedFields.map(change => `
+                                    <div style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e9ecef;">
+                                        <strong style="color: #495057;">${change.displayName}</strong><br>
+                                        <small style="color: #6c757d;">
+                                            From: <span style="background: #f8d7da; padding: 2px 4px; border-radius: 2px;">${change.oldValue || '(empty)'}</span><br>
+                                            To: <span style="background: #d4edda; padding: 2px 4px; border-radius: 2px;">${change.newValue || '(empty)'}</span>
+                                        </small>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+                                <button onclick="cancelSaveChanges()" style="
+                                    padding: 8px 16px; background: #6c757d; color: white; border: none;
+                                    border-radius: 4px; cursor: pointer; font-size: 14px;">
+                                    Cancel
+                                </button>
+                                <button onclick="confirmSaveChanges()" style="
+                                    padding: 8px 16px; background: #28a745; color: white, border: none;
+                                    border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold;">
+                                    <i class="fa-solid fa-save" style="margin-right: 4px;"></i>
+                                    Save Changes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Add modal to page
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                
+                // Store callbacks
+                window.confirmSaveChanges = () => {
+                    document.getElementById('changeConfirmModal').remove();
+                    onConfirm();
+                };
+                
+                window.cancelSaveChanges = () => {
+                    document.getElementById('changeConfirmModal').remove();
+                    if (onCancel) onCancel();
+                };
+            }
+
+            function updateSaveButtonAppearance() {
+                try {
+                    const saveButton = document.querySelector('button[onclick="handleSave()"]');
+                    const hasChanges = hasActualChanges();
+                    
+                    console.log('DEBUG: IdentifyingInformation - updateSaveButtonAppearance called, hasChanges:', hasChanges);
+                    
+                    if (saveButton) {
+                        if (hasChanges) {
+                            saveButton.style.background = '#28a745'; // Green when changes exist
+                            saveButton.style.fontWeight = 'bold';
+                            saveButton.style.boxShadow = '0 2px 4px rgba(40, 167, 69, 0.3)';
+                        } else {
+                            saveButton.style.background = '#6c757d'; // Gray when no changes
+                            saveButton.style.fontWeight = 'normal';
+                            saveButton.style.boxShadow = 'none';
+                        }
+                    }
+                } catch (error) {
+                    console.error('DEBUG: IdentifyingInformation - Error in updateSaveButtonAppearance():', error);
+                }
             }
 
             async function handleSave() {
                 const form = document.getElementById('identifyingForm');
                 if (!form.reportValidity()) return;
 
-                try {
-                    // Debug userGroupID before saving
-                    debugUserGroupID();
+                // Check if there are actual changes
+                const changedFields = getChangedFields();
+                
+                if (changedFields.length === 0) {
+                    // Show "no changes" modal
+                    const modalHtml = `
+                        <div id="noChangesModal" style="
+                            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                            background: rgba(0,0,0,0.5); z-index: 1002; display: flex;
+                            align-items: center; justify-content: center;">
+                            <div style="
+                                background: white; border-radius: 8px; padding: 24px; max-width: 400px;
+                                width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                                <h3 style="margin: 0 0 16px 0; color: #333;">
+                                    <i class="fa-solid fa-info-circle" style="color: #17a2b8; margin-right: 8px;"></i>
+                                    No Changes Detected
+                                </h3>
+                                <p style="margin: 0 0 20px 0; color: #666;">
+                                    There are no unsaved changes to save. The form data matches the last saved version.
+                                </p>
+                                <div style="text-align: center;">
+                                    <button onclick="document.getElementById('noChangesModal').remove()" style="
+                                        padding: 8px 16px; background: #17a2b8; color: white; border: none;
+                                        border-radius: 4px; cursor: pointer; font-size: 14px;">
+                                        OK
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
                     
-                    const formData = getFormData();
-                    
-                    // Show saving indicator
-                    const saveButton = document.querySelector('button[onclick="handleSave()"]');
-                    const originalText = saveButton.textContent;
-                    saveButton.textContent = 'Saving...';
-                    saveButton.disabled = true;
+                    document.body.insertAdjacentHTML('beforeend', modalHtml);
+                    return;
+                }                // Show confirmation modal with change details
+                showChangeConfirmationModal(changedFields, async () => {
+                    try {
+                        const formData = getFormData();
+                        
+                        // Show saving indicator
+                        const saveButton = document.querySelector('button[onclick="handleSave()"]');
+                        const originalText = saveButton.textContent;
+                        saveButton.textContent = 'Saving...';
+                        saveButton.disabled = true;
 
-                    // Save to API
-                    const result = await dataManager.saveSpecificationToAPI(formData);
-                    
-                    // Update working data
-                    dataManager.workingData = dataManager.transformApiToFormData(result);
-                    dataManager.saveWorkingDataToLocalStorage();
-                    
-                    // Success feedback
-                    alert(`Specification ${dataManager.isEditMode() ? 'updated' : 'created'} successfully!`);
-                    isFormDirty = false;
+                        // Save to API
+                        const result = await dataManager.saveSpecificationToAPI(formData);
+                        
+                        // Update working data baseline
+                        dataManager.workingData = dataManager.transformApiToFormData(result);
+                        dataManager.saveWorkingDataToLocalStorage();
+                        console.log('DEBUG: IdentifyingInformation - Baseline updated after save:', dataManager.workingData);
+                        
+                        // Success feedback
+                        alert(`Specification ${dataManager.isEditMode() ? 'updated' : 'created'} successfully!`);
+                        updateSaveButtonAppearance();
 
-                    // Restore button
-                    saveButton.textContent = originalText;
-                    saveButton.disabled = false;
+                        // Restore button
+                        saveButton.textContent = originalText;
+                        saveButton.disabled = false;
 
-                } catch (error) {
-                    console.error('Error saving specification:', error);
-                    
-                    // Provide more user-friendly error messages
-                    let errorMessage = 'Error saving specification: ';
-                    if (error.message.includes('Failed to fetch')) {
-                        errorMessage += 'Unable to connect to the server. Please check your internet connection and try again.';
-                    } else if (error.message.includes('HTTP error! status: 401')) {
-                        errorMessage += 'Authentication failed. Please log in again.';
-                    } else if (error.message.includes('HTTP error! status: 403')) {
-                        errorMessage += 'You don\'t have permission to perform this action.';
-                    } else if (error.message.includes('HTTP error! status: 500')) {
-                        errorMessage += 'Server error. Please try again later or contact support.';
-                    } else if (error.message.includes('Unexpected end of JSON input')) {
-                        errorMessage += 'Server returned an invalid response. The data may have been saved successfully. Please refresh the page to check.';
-                    } else {
-                        errorMessage += error.message;
+                    } catch (error) {
+                        console.error('Error saving specification:', error);
+                        
+                        // Provide more user-friendly error messages
+                        let errorMessage = 'Error saving specification: ';
+                        if (error.message.includes('Failed to fetch')) {
+                            errorMessage += 'Unable to connect to the server. Please check your internet connection and try again.';
+                        } else if (error.message.includes('HTTP error! status: 401')) {
+                            errorMessage += 'Authentication failed. Please log in again.';
+                        } else if (error.message.includes('HTTP error! status: 403')) {
+                            errorMessage += 'You don\'t have permission to perform this action.';
+                        } else if (error.message.includes('HTTP error! status: 500')) {
+                            errorMessage += 'Server error. Please try again later or contact support.';
+                        } else if (error.message.includes('Unexpected end of JSON input')) {
+                            errorMessage += 'Server returned an invalid response. The data may have been saved successfully. Please refresh the page to check.';
+                        } else {
+                            errorMessage += error.message;
+                        }
+                        
+                        alert(errorMessage);
+                        
+                        // Restore button
+                        const saveButton = document.querySelector('button[onclick="handleSave()"]');
+                        saveButton.textContent = 'Save';
+                        saveButton.disabled = false;
                     }
-                    
-                    alert(errorMessage);
-                    
-                    // Restore button
-                    const saveButton = document.querySelector('button[onclick="handleSave()"]');
-                    saveButton.textContent = 'Save';
-                    saveButton.disabled = false;
-                }
+                });
             }
 
             async function saveAndGoToCoreInvoiceModel() {
@@ -586,6 +819,15 @@
                 // Validate form before proceeding
                 if (!form.reportValidity()) {
                     alert("Please fill in all required fields before proceeding to Core Invoice Model.");
+                    return;
+                }
+
+                // Check if there are actual changes
+                const hasChanges = hasActualChanges();
+                
+                if (!hasChanges) {
+                    // No changes detected, just navigate
+                    window.location.href = 'coreInvoiceModel.html';
                     return;
                 }
 
@@ -605,12 +847,10 @@
                     // Save to API first
                     const result = await dataManager.saveSpecificationToAPI(formData);
                     
-                    // Update working data
+                    // Update working data baseline
                     dataManager.workingData = dataManager.transformApiToFormData(result);
                     dataManager.saveWorkingDataToLocalStorage();
-                    
-                    // Clear the dirty flag
-                    isFormDirty = false;
+                    console.log('DEBUG: IdentifyingInformation - Baseline updated after save and navigate:', dataManager.workingData);
                     
                     // Navigate to Core Invoice Model
                     window.location.href = 'coreInvoiceModel.html';
@@ -645,7 +885,7 @@
             }
 
             function handleCancel() {
-                if (isFormDirty && !confirm("You have unsaved changes. Are you sure you want to cancel?")) {
+                if (hasActualChanges() && !confirm("You have unsaved changes. Are you sure you want to cancel?")) {
                     return;
                 }
                 
@@ -653,8 +893,6 @@
                 if (dataManager) {
                     dataManager.clearEditingState();
                 }
-                
-                isFormDirty = false;
                 
                 // Smart navigation: return to calling page or default to mySpecifications.html
                 let targetPage = 'mySpecifications.html'; // Default fallback
@@ -710,17 +948,24 @@
 
                 elements.forEach(element => {
                     element.addEventListener('change', () => {
-                        isFormDirty = true;
+                        // Note: Don't set isFormDirty anymore - rely on hasActualChanges()
+                        updateSaveButtonAppearance(); // Update save button appearance when form changes
                     });
                 });
 
                 // Initialize data manager after DOM is ready
-                initializeDataManager();
+                initializeDataManager().then(() => {
+                    // Update button appearance after data is loaded with small delay for DOM stability
+                    setTimeout(() => {
+                        updateSaveButtonAppearance();
+                        console.log('DEBUG: IdentifyingInformation - Initial save button appearance updated after data load');
+                    }, 100);
+                });
             });
 
             // Prevent accidental navigation
             window.addEventListener('beforeunload', function (e) {
-                if (isFormDirty) {
+                if (hasActualChanges()) {
                     e.preventDefault();
                     e.returnValue = '';
                 }
@@ -730,7 +975,7 @@
             document.addEventListener('DOMContentLoaded', function() {
                 document.querySelectorAll('.sidebar a').forEach(link => {
                     link.addEventListener('click', (e) => {
-                        if (isFormDirty && !link.href.includes('IdentifyingInformation.html')) {
+                        if (hasActualChanges() && !link.href.includes('IdentifyingInformation.html')) {
                             if (!confirm('You have unsaved changes. Are you sure you want to leave this page?')) {
                                 e.preventDefault();
                             }
@@ -741,44 +986,151 @@
         </script>
         
         <script>
+            // Proactive token refresh for long workflow process
+            async function checkAndRefreshForWorkflow() {
+                console.log('DEBUG: checkAndRefreshForWorkflow - Starting workflow token check');
+                
+                if (!window.authManager || !window.authManager.tokenExpiryTime) {
+                    console.log('DEBUG: checkAndRefreshForWorkflow - No token or auth manager available for workflow refresh check');
+                    return;
+                }
+                
+                const timeToExpiry = window.authManager.tokenExpiryTime - Date.now();
+                const thirtyMinutesMs = 30 * 60 * 1000; // 30 minutes in milliseconds
+                const minutesRemaining = Math.ceil(timeToExpiry / (60 * 1000));
+                
+                console.log('DEBUG: checkAndRefreshForWorkflow - Token expires in', minutesRemaining, 'minutes');
+                console.log('DEBUG: checkAndRefreshForWorkflow - 30-minute threshold check:', timeToExpiry < thirtyMinutesMs);
+                
+                if (timeToExpiry < thirtyMinutesMs) {
+                    console.log('DEBUG: checkAndRefreshForWorkflow - Token expires in less than 30 minutes, refreshing for workflow...');
+                    
+                    try {
+                        const success = await window.authManager.attemptBackgroundRefresh();
+                        if (success) {
+                            console.log('DEBUG: checkAndRefreshForWorkflow - Token successfully refreshed for extended workflow');
+                            
+                            // Show brief success notification
+                            showWorkflowRefreshNotification('Session refreshed for extended workflow', 'success');
+                            
+                        } else {
+                            console.warn('DEBUG: checkAndRefreshForWorkflow - Token refresh failed - workflow may be interrupted');
+                            
+                            // Show warning notification
+                            showWorkflowRefreshNotification('Session refresh failed - workflow may be interrupted', 'warning');
+                        }
+                    } catch (error) {
+                        console.error('DEBUG: checkAndRefreshForWorkflow - Error refreshing token for workflow:', error);
+                        
+                        // Show error notification
+                        showWorkflowRefreshNotification('Session refresh error - please save your work frequently', 'error');
+                    }
+                } else {
+                    console.log('DEBUG: checkAndRefreshForWorkflow - Token has sufficient time remaining for workflow (', minutesRemaining, 'minutes)');
+                }
+            }
+
+            // Show brief notification for workflow token refresh
+            function showWorkflowRefreshNotification(message, type = 'success') {
+                console.log('DEBUG: showWorkflowRefreshNotification -', type + ':', message);
+                
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed; top: 60px; right: 20px; z-index: 1001;
+                    padding: 12px 16px; border-radius: 5px; font-size: 14px;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+                    max-width: 350px; word-wrap: break-word;
+                `;
+                
+                // Set colors based on type
+                switch (type) {
+                    case 'success':
+                        notification.style.background = '#d4edda';
+                        notification.style.color = '#155724';
+                        notification.style.border = '1px solid #c3e6cb';
+                        notification.innerHTML = `<i class="fa-solid fa-check-circle"></i> ${message}`;
+                        break;
+                    case 'warning':
+                        notification.style.background = '#fff3cd';
+                        notification.style.color = '#856404';
+                        notification.style.border = '1px solid #ffeaa7';
+                        notification.innerHTML = `<i class="fa-solid fa-exclamation-triangle"></i> ${message}`;
+                        break;
+                    case 'error':
+                        notification.style.background = '#f8d7da';
+                        notification.style.color = '#721c24';
+                        notification.style.border = '1px solid #f5c6cb';
+                        notification.innerHTML = `<i class="fa-solid fa-exclamation-circle"></i> ${message}`;
+                        break;
+                }
+                
+                document.body.appendChild(notification);
+                
+                // Auto-remove after 4 seconds
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 4000);
+            }
+
             // Initialize the sidebar and authentication when the page loads
             document.addEventListener('DOMContentLoaded', function() {
-                // Initialize auth manager
-                window.authManager.init();
-                
-                // Initialize sidebar
-                window.sidebarManager.initializeSidebar(window.authManager);
-                
-                // Initialize breadcrumb system
-                window.breadcrumbManager.init();
-                
-                // Check if there's already a breadcrumb context set (from navigation)
-                const existingContext = window.breadcrumbManager.getContext();
-                
-                if (existingContext && existingContext.timestamp && (Date.now() - existingContext.timestamp) < 5000) {
-                    // Recent context exists (set within last 5 seconds), preserve it but update the current page
-                    console.log('DEBUG: Preserving existing breadcrumb context from navigation');
-                    existingContext.currentPage = 'IdentifyingInformation.html';
-                    window.breadcrumbManager.updateContext(existingContext);
-                } else {
-                    // No recent context, set new context for this page (new specification workflow)
-                    console.log('DEBUG: Setting new breadcrumb context for identifying information');
-                    const context = {
-                        currentPage: 'IdentifyingInformation.html',
-                        action: 'new', // Default to new when no existing context
-                        source: 'mySpecs' // Default source
-                    };
-                    
-                    // Determine source from referrer if no existing context
-                    const referrer = document.referrer;
-                    if (referrer.includes('eInvoicingSpecificationRegistry.html')) {
-                        context.source = 'registry';
-                    } else if (referrer.includes('mySpecifications.html')) {
-                        context.source = 'mySpecs';
+                // Wait a brief moment to ensure all DOM elements are ready
+                setTimeout(() => {
+                    try {
+                        // Initialize auth manager
+                        window.authManager.init();
+                        
+                        // ⭐ NEW: Check and refresh token for long workflow (30-minute threshold)
+                        checkAndRefreshForWorkflow();
+                        
+                        // Initialize session manager for this workflow step
+                        if (window.workflowSessionManager) {
+                            console.log('DEBUG: Initializing workflow session manager');
+                            window.workflowSessionManager.init('specification-creation');
+                        } else {
+                            console.error('DEBUG: workflowSessionManager not available!');
+                        }
+                        
+                        // Initialize sidebar
+                        window.sidebarManager.initializeSidebar(window.authManager);                        
+                        // Initialize breadcrumb system
+                        window.breadcrumbManager.init();
+                        
+                        // Check if there's already a breadcrumb context set (from navigation)
+                        const existingContext = window.breadcrumbManager.getContext();
+                        
+                        if (existingContext && existingContext.timestamp && (Date.now() - existingContext.timestamp) < 5000) {
+                            // Recent context exists (set within last 5 seconds), preserve it but update the current page
+                            console.log('DEBUG: Preserving existing breadcrumb context from navigation');
+                            existingContext.currentPage = 'IdentifyingInformation.html';
+                            window.breadcrumbManager.updateContext(existingContext);
+                        } else {
+                            // No recent context, set new context for this page (new specification workflow)
+                            console.log('DEBUG: Setting new breadcrumb context for identifying information');
+                            const context = {
+                                currentPage: 'IdentifyingInformation.html',
+                                action: 'new', // Default to new when no existing context
+                                source: 'mySpecs' // Default source
+                            };
+                            
+                            // Determine source from referrer if no existing context
+                            const referrer = document.referrer;
+                            if (referrer.includes('eInvoicingSpecificationRegistry.html')) {
+                                context.source = 'registry';
+                            } else if (referrer.includes('mySpecifications.html')) {
+                                context.source = 'mySpecs';
+                            }
+                            
+                            window.breadcrumbManager.setContext(context);
+                        }
+                        
+                    } catch (error) {
+                        console.error('DEBUG: Error during page initialization:', error);
+                        // Continue with basic functionality even if some components fail
                     }
-                    
-                    window.breadcrumbManager.setContext(context);
-                }
+                }, 50); // Wait 50ms for DOM to be fully ready
             });
         </script>
     </body>

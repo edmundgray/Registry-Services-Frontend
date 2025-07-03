@@ -385,8 +385,20 @@ class BreadcrumbManager {
      * @returns {boolean} True if there are unsaved changes
      */
     hasUnsavedChanges() {
-        // Check if isFormDirty exists and is true
-        return typeof window.isFormDirty !== 'undefined' && window.isFormDirty === true;
+        // Add comprehensive debugging
+        console.log('BreadcrumbManager: hasUnsavedChanges() called');
+        
+        // First, check if there's a global hasActualChanges function (more accurate)
+        if (typeof window.hasActualChanges === 'function') {
+            const actualChanges = window.hasActualChanges();
+            console.log('BreadcrumbManager: hasActualChanges() returned:', actualChanges);
+            return actualChanges;
+        }
+        
+        // Fall back to checking isFormDirty for pages that don't have hasActualChanges
+        const isFormDirtyValue = typeof window.isFormDirty !== 'undefined' && window.isFormDirty === true;
+        console.log('BreadcrumbManager: hasActualChanges not available, isFormDirty:', window.isFormDirty, 'result:', isFormDirtyValue);
+        return isFormDirtyValue;
     }
 
     /**

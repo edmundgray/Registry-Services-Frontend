@@ -1,4 +1,6 @@
-let unsavedChanges = false;
+// Change detection system using baseline comparison approach
+// Note: Deprecated unsavedChanges flag replaced with hasActualChanges() pattern
+let baselineData = null;
 let dataManager = null;
 
 /**************************************************************
@@ -124,8 +126,12 @@ function loadSavedRequirements(savedRequirements) {
             setUnsavedListeners(newRow);
         });
         
-        // Reset unsaved changes flag since we just loaded saved data
-        unsavedChanges = false;
+        // Reset change detection since we just loaded saved data
+        // Set up baseline for change detection with a delay for DOM stability
+        setTimeout(() => {
+            updateBaselineData();
+            setupChangeDetection();
+        }, 100);
         
     } catch (error) {
         console.error('AdditionalRequirements: Error loading saved requirements:', error);
@@ -133,13 +139,17 @@ function loadSavedRequirements(savedRequirements) {
 }
 
 /**************************************************************
-    Set unsaved changes listeners on input elements
+    Set change detection listeners on input elements
  **************************************************************/
 function setUnsavedListeners(row) 
 {
     row.querySelectorAll('input, select, textarea').forEach(el => {
-        el.addEventListener('input', () => { unsavedChanges = true; });
-        el.addEventListener('change', () => { unsavedChanges = true; });
+        el.addEventListener('input', () => { 
+            updateSaveButtonAppearance();
+        });
+        el.addEventListener('change', () => { 
+            updateSaveButtonAppearance();
+        });
     });
 }
 
@@ -169,7 +179,7 @@ function addRow()
         <td><button onclick="deleteRow(this)">Delete</button></td>
     `;
     setUnsavedListeners(newRow);
-    unsavedChanges = true;
+    updateSaveButtonAppearance();
 }
 
 /**************************************************************
@@ -179,7 +189,7 @@ function deleteRow(button)
 {
     const row = button.parentElement.parentElement;
     row.remove();
-    unsavedChanges = true;
+    updateSaveButtonAppearance();
 }
 
 /**************************************************************
@@ -189,103 +199,154 @@ async function saveTable()
 {
     console.log('AdditionalRequirements: saveTable called');
     
-    const table = document.getElementById("additionalRequirementsTable");
-    const rows = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
-
-    // If there are no rows, save empty array
-    const data = [];
-
-    for (let row of rows) 
-    {
-        const cells = row.getElementsByTagName("td");
-
-        const rowData = 
-        {
-            ID: cells[0].querySelector("input") ? cells[0].querySelector("input").value : "",
-            Level: cells[1].querySelector("input") ? cells[1].querySelector("input").value : "",
-            Cardinality: cells[2].querySelector("input") ? cells[2].querySelector("input").value : "",
-            BusinessTerm: cells[3].querySelector("input") ? cells[3].querySelector("input").value : "",
-            Description: cells[4].querySelector("textarea") ? cells[4].querySelector("textarea").value : "",
-            TypeOfChange: cells[5].querySelector("select") ? cells[5].querySelector("select").value : ""
-        };
-
-        // Only add rows that have at least some data
-        if (rowData.ID || rowData.BusinessTerm || rowData.Description) {
-            data.push(rowData);
-        }
-    }
-
-    console.log('AdditionalRequirements: Collected data:', data);
-
-    if (!dataManager) {
-        console.error('AdditionalRequirements: Data manager not initialized');
-        alert("Error: Data manager not initialized.");
+    // Check if there are actual changes
+    const changedFields = getChangedFields();
+    
+    if (changedFields.length === 0) {
+        // Update save button appearance since there are no actual changes
+        updateSaveButtonAppearance();
+        
+        // Show "no changes" modal
+        const modalHtml = `
+            <div id="noChangesModal" style="
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.5); z-index: 1002; display: flex;
+                align-items: center; justify-content: center;">
+                <div style="
+                    background: white; border-radius: 8px; padding: 24px; max-width: 400px;
+                    width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                    <h3 style="margin: 0 0 16px 0; color: #333;">
+                        <i class="fa-solid fa-info-circle" style="color: #17a2b8; margin-right: 8px;"></i>
+                        No Changes Detected
+                    </h3>
+                    <p style="margin: 0 0 20px 0; color: #666;">
+                        There are no unsaved changes to your additional requirements. The current data matches the last saved version.
+                    </p>
+                    <div style="text-align: center;">
+                        <button onclick="document.getElementById('noChangesModal').remove()" style="
+                            padding: 8px 16px; background: #17a2b8; color: white; border: none;
+                            border-radius: 4px; cursor: pointer; font-size: 14px;">
+                            OK
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
         return;
     }
 
-    try {
-        // Show loading indicator
-        const saveButton = document.querySelector('button[onclick="saveTable()"]');
-        const originalText = saveButton ? saveButton.textContent : '';
-        if (saveButton) {
-            saveButton.disabled = true;
-            saveButton.textContent = 'Saving...';
-        }
+    return new Promise((resolve) => {
+        // Show confirmation modal with change details
+        showChangeConfirmationModal(changedFields, async () => {
+            // User confirmed, proceed with save
+            
+            const table = document.getElementById("additionalRequirementsTable");
+            const rows = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
 
-        // Update the working data with additional requirements
-        if (!dataManager.workingData) {
-            dataManager.workingData = dataManager.loadWorkingDataFromLocalStorage() || {};
-        }
-        
-        dataManager.workingData.additionalRequirements = data;
-        
-        // Save to localStorage (working data)
-        dataManager.saveWorkingDataToLocalStorage();
-        
-        // If in edit mode and we have a specification ID, save to API
-        if (dataManager.isEditMode() && dataManager.currentSpecId) {
-            console.log('AdditionalRequirements: Saving to API...');
-            await dataManager.saveAdditionalRequirementsToAPI(dataManager.currentSpecId, data);
-            console.log('AdditionalRequirements: Successfully saved to API');
-        }
-        
-        console.log('AdditionalRequirements: Additional requirements saved successfully');
-        
-        alert("Additional requirements saved successfully!");
-        unsavedChanges = false;
-        
-        // Restore button state
-        if (saveButton) {
-            saveButton.disabled = false;
-            saveButton.textContent = originalText;
-        }
-        
-    } catch (error) {
-        console.error('AdditionalRequirements: Error saving:', error);
-        
-        // Restore button state
-        const saveButton = document.querySelector('button[onclick="saveTable()"]');
-        if (saveButton) {
-            saveButton.disabled = false;
-            saveButton.textContent = originalText || 'Save';
-        }
-        
-        // Show user-friendly error message
-        let errorMessage = "Error saving additional requirements: ";
-        if (error.message.includes('Permission denied')) {
-            errorMessage += "You don't have permission to modify this specification.";
-        } else if (error.message.includes('HTTP 404')) {
-            errorMessage += "The specification was not found. It may have been deleted.";
-        } else if (error.message.includes('HTTP 401')) {
-            errorMessage += "Your session has expired. Please log in again.";
-        } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-            errorMessage += "Network error. Please check your internet connection and try again.";
-        } else {
-            errorMessage += error.message;
-        }
-        
-        alert(errorMessage);
-    }
+            // If there are no rows, save empty array
+            const data = [];
+
+            for (let row of rows) 
+            {
+                const cells = row.getElementsByTagName("td");
+
+                const rowData = 
+                {
+                    ID: cells[0].querySelector("input") ? cells[0].querySelector("input").value : "",
+                    Level: cells[1].querySelector("input") ? cells[1].querySelector("input").value : "",
+                    Cardinality: cells[2].querySelector("input") ? cells[2].querySelector("input").value : "",
+                    BusinessTerm: cells[3].querySelector("input") ? cells[3].querySelector("input").value : "",
+                    Description: cells[4].querySelector("textarea") ? cells[4].querySelector("textarea").value : "",
+                    TypeOfChange: cells[5].querySelector("select") ? cells[5].querySelector("select").value : ""
+                };
+
+                // Only add rows that have at least some data
+                if (rowData.ID || rowData.BusinessTerm || rowData.Description) {
+                    data.push(rowData);
+                }
+            }
+
+            console.log('AdditionalRequirements: Collected data:', data);
+
+            if (!dataManager) {
+                console.error('AdditionalRequirements: Data manager not initialized');
+                alert("Error: Data manager not initialized.");
+                resolve(false);
+                return;
+            }
+
+            try {
+                // Show loading indicator
+                const saveButton = document.querySelector('button[onclick*="saveTable"]');
+                const originalText = saveButton ? saveButton.textContent : '';
+                if (saveButton) {
+                    saveButton.disabled = true;
+                    saveButton.textContent = 'Saving...';
+                }
+
+                // Update the working data with additional requirements
+                if (!dataManager.workingData) {
+                    dataManager.workingData = dataManager.loadWorkingDataFromLocalStorage() || {};
+                }
+                
+                dataManager.workingData.additionalRequirements = data;
+                
+                // Save to localStorage (working data)
+                dataManager.saveWorkingDataToLocalStorage();
+                
+                // If in edit mode and we have a specification ID, save to API
+                if (dataManager.isEditMode() && dataManager.currentSpecId) {
+                    console.log('AdditionalRequirements: Saving to API...');
+                    await dataManager.saveAdditionalRequirementsToAPI(dataManager.currentSpecId, data);
+                    console.log('AdditionalRequirements: Successfully saved to API');
+                }
+                
+                console.log('AdditionalRequirements: Additional requirements saved successfully');
+                
+                alert("Additional requirements saved successfully!");
+                
+                // Update baseline for change detection
+                updateBaselineData();
+                
+                // Restore button state
+                if (saveButton) {
+                    saveButton.disabled = false;
+                    saveButton.textContent = originalText;
+                }
+                
+                resolve(true);
+                
+            } catch (error) {
+                console.error('AdditionalRequirements: Error saving:', error);
+                
+                // Restore button state
+                const saveButton = document.querySelector('button[onclick*="saveTable"]');
+                if (saveButton) {
+                    saveButton.disabled = false;
+                    saveButton.textContent = originalText || 'Save';
+                }
+                
+                // Show user-friendly error message
+                let errorMessage = "Error saving additional requirements: ";
+                if (error.message.includes('Permission denied')) {
+                    errorMessage += "You don't have permission to modify this specification.";
+                } else if (error.message.includes('HTTP 404')) {
+                    errorMessage += "The specification was not found. It may have been deleted.";
+                } else if (error.message.includes('HTTP 401')) {
+                    errorMessage += "Your session has expired. Please log in again.";
+                } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    errorMessage += "Network error. Please check your internet connection and try again.";
+                } else {
+                    errorMessage += error.message;
+                }
+                
+                alert(errorMessage);
+                resolve(false);
+            }
+        });
+    });
 }
 
 /**************************************************************
@@ -296,7 +357,7 @@ function cancelAction()
 {
     console.log('AdditionalRequirements: cancelAction called');
     
-    if (unsavedChanges) 
+    if (hasActualChanges()) 
     {
         if (!confirm("You have unsaved changes. Are you sure you want to leave?")) 
         {
@@ -386,9 +447,6 @@ async function refreshFromAPI()
         dataManager.workingData.additionalRequirements = tableRequirements;
         dataManager.saveWorkingDataToLocalStorage();
         
-        // Reset unsaved changes flag
-        unsavedChanges = false;
-        
         console.log('AdditionalRequirements: Successfully refreshed from API');
         alert("Additional requirements refreshed from server!");
         
@@ -425,6 +483,260 @@ async function refreshFromAPI()
 }
 
 /**************************************************************
+    Change Detection System
+ **************************************************************/
+
+// Collect current additional requirements from the table
+function collectAdditionalRequirements() {
+    const table = document.getElementById("additionalRequirementsTable");
+    if (!table) {
+        console.log('DEBUG: AdditionalRequirements - Table not found');
+        return [];
+    }
+    
+    const rows = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
+    const currentState = [];
+    
+    for (let row of rows) {
+        const cells = row.getElementsByTagName("td");
+        const rowData = {
+            ID: cells[0].querySelector("input") ? cells[0].querySelector("input").value.trim() : "",
+            Level: cells[1].querySelector("input") ? cells[1].querySelector("input").value.trim() : "",
+            Cardinality: cells[2].querySelector("input") ? cells[2].querySelector("input").value.trim() : "",
+            BusinessTerm: cells[3].querySelector("input") ? cells[3].querySelector("input").value.trim() : "",
+            Description: cells[4].querySelector("textarea") ? cells[4].querySelector("textarea").value.trim() : "",
+            TypeOfChange: cells[5].querySelector("select") ? cells[5].querySelector("select").value : ""
+        };
+        
+        // Include all rows (even empty ones) to maintain position consistency
+        currentState.push(rowData);
+    }
+    
+    console.log('DEBUG: AdditionalRequirements - Collected current requirements:', currentState);
+    return currentState;
+}
+
+// Check if there are actual changes compared to baseline data
+function hasActualChanges() {
+    console.log('DEBUG: AdditionalRequirements - hasActualChanges() called');
+    
+    try {
+        const currentState = collectAdditionalRequirements();
+        
+        if (!baselineData) {
+            console.log('DEBUG: AdditionalRequirements - No baseline data, checking if current state has any content');
+            // If no baseline, consider it changed if there's any meaningful data
+            const hasData = currentState.length > 0 && currentState.some(req => 
+                req.ID || req.BusinessTerm || req.Description
+            );
+            console.log('DEBUG: AdditionalRequirements - Has data without baseline:', hasData);
+            return hasData;
+        }
+        
+        // Compare arrays length first
+        if (currentState.length !== baselineData.length) {
+            console.log('DEBUG: AdditionalRequirements - Length difference detected:', {
+                current: currentState.length,
+                baseline: baselineData.length
+            });
+            return true;
+        }
+        
+        // Compare each row
+        for (let i = 0; i < currentState.length; i++) {
+            const current = currentState[i];
+            const baseline = baselineData[i];
+            
+            if (!baseline || 
+                current.ID !== baseline.ID ||
+                current.Level !== baseline.Level ||
+                current.Cardinality !== baseline.Cardinality ||
+                current.BusinessTerm !== baseline.BusinessTerm ||
+                current.Description !== baseline.Description ||
+                current.TypeOfChange !== baseline.TypeOfChange) {
+                console.log('DEBUG: AdditionalRequirements - Row difference detected at index:', i, {
+                    current: current,
+                    baseline: baseline
+                });
+                return true;
+            }
+        }
+        
+        console.log('DEBUG: AdditionalRequirements - No changes detected');
+        return false;
+    } catch (error) {
+        console.error('DEBUG: AdditionalRequirements - Error in hasActualChanges():', error);
+        return false;
+    }
+}
+
+// Make hasActualChanges globally accessible for breadcrumb manager
+window.hasActualChanges = hasActualChanges;
+
+// Get detailed list of changes compared to baseline
+function getChangedFields() {
+    console.log('DEBUG: AdditionalRequirements - getChangedFields() called');
+    
+    try {
+        const currentState = collectAdditionalRequirements();
+        const changes = [];
+        
+        if (!baselineData) {
+            if (currentState.length > 0) {
+                const meaningfulRows = currentState.filter(req => req.ID || req.BusinessTerm || req.Description);
+                if (meaningfulRows.length > 0) {
+                    changes.push(`Added ${meaningfulRows.length} additional requirement(s)`);
+                }
+            }
+            return changes;
+        }
+        
+        // Check for added rows
+        if (currentState.length > baselineData.length) {
+            const addedCount = currentState.length - baselineData.length;
+            changes.push(`Added ${addedCount} requirement(s)`);
+        }
+        
+        // Check for removed rows
+        if (currentState.length < baselineData.length) {
+            const removedCount = baselineData.length - currentState.length;
+            changes.push(`Removed ${removedCount} requirement(s)`);
+        }
+        
+        // Check for modified rows
+        const minLength = Math.min(currentState.length, baselineData.length);
+        let modifiedCount = 0;
+        
+        for (let i = 0; i < minLength; i++) {
+            const current = currentState[i];
+            const baseline = baselineData[i];
+            
+            if (baseline && (
+                current.ID !== baseline.ID ||
+                current.Level !== baseline.Level ||
+                current.Cardinality !== baseline.Cardinality ||
+                current.BusinessTerm !== baseline.BusinessTerm ||
+                current.Description !== baseline.Description ||
+                current.TypeOfChange !== baseline.TypeOfChange)) {
+                modifiedCount++;
+            }
+        }
+        
+        if (modifiedCount > 0) {
+            changes.push(`Modified ${modifiedCount} requirement(s)`);
+        }
+        
+        console.log('DEBUG: AdditionalRequirements - Changes detected:', changes);
+        return changes;
+    } catch (error) {
+        console.error('DEBUG: AdditionalRequirements - Error in getChangedFields():', error);
+        return [];
+    }
+}
+
+// Update save button appearance based on dirty state
+function updateSaveButtonAppearance() {
+    const saveButton = document.querySelector('button[onclick*="saveTable"]');
+    if (saveButton) {
+        const isDirty = hasActualChanges();
+        
+        if (isDirty) {
+            saveButton.style.background = '#28a745'; // Green when dirty
+            saveButton.style.fontWeight = 'bold';
+            saveButton.style.boxShadow = '0 2px 4px rgba(40, 167, 69, 0.3)';
+        } else {
+            saveButton.style.background = '#6c757d'; // Gray when no changes
+            saveButton.style.fontWeight = 'normal';
+            saveButton.style.boxShadow = 'none';
+        }
+    }
+}
+
+// Show change confirmation modal
+function showChangeConfirmationModal(changes, onConfirm) {
+    const changesList = changes.map(change => `<li style="margin-bottom: 4px;">${change}</li>`).join('');
+    
+    const modalHtml = `
+        <div id="changeConfirmModal" style="
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 1002; display: flex;
+            align-items: center; justify-content: center;">
+            <div style="
+                background: white; border-radius: 8px; padding: 24px; max-width: 500px;
+                width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                <h3 style="margin: 0 0 16px 0; color: #333;">
+                    <i class="fa-solid fa-save" style="color: #28a745; margin-right: 8px;"></i>
+                    Confirm Save Changes
+                </h3>
+                <p style="margin: 0 0 12px 0; color: #666;">
+                    The following changes will be saved to your additional requirements:
+                </p>
+                <ul style="margin: 0 0 20px 0; padding-left: 20px; color: #555;">
+                    ${changesList}
+                </ul>
+                <div style="text-align: center; gap: 12px; display: flex; justify-content: center;">
+                    <button id="confirmSaveBtn" style="
+                        padding: 8px 16px; background: #28a745; color: white; border: none;
+                        border-radius: 4px; cursor: pointer; font-size: 14px; margin-right: 8px;">
+                        Save Changes
+                    </button>
+                    <button id="cancelSaveBtn" style="
+                        padding: 8px 16px; background: #6c757d; color: white; border: none;
+                        border-radius: 4px; cursor: pointer; font-size: 14px;">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Add event listeners
+    document.getElementById('confirmSaveBtn').addEventListener('click', () => {
+        document.getElementById('changeConfirmModal').remove();
+        onConfirm();
+    });
+    
+    document.getElementById('cancelSaveBtn').addEventListener('click', () => {
+        document.getElementById('changeConfirmModal').remove();
+    });
+}
+
+// Set up change detection listeners
+function setupChangeDetection() {
+    const table = document.getElementById("additionalRequirementsTable");
+    if (table) {
+        // Listen for all input changes in the table
+        table.addEventListener('input', () => {
+            updateSaveButtonAppearance();
+        });
+        
+        table.addEventListener('change', () => {
+            updateSaveButtonAppearance();
+        });
+    }
+    
+    // Initial button appearance update
+    updateSaveButtonAppearance();
+}
+
+// Function to update baseline data after UI is populated or saved
+function updateBaselineData() {
+    try {
+        const currentRequirements = collectAdditionalRequirements();
+        baselineData = currentRequirements;
+        console.log('DEBUG: AdditionalRequirements - Baseline data updated:', currentRequirements);
+        console.log('DEBUG: AdditionalRequirements - Baseline requirements count:', currentRequirements.length);
+        
+        // Update save button appearance since baseline has changed
+        updateSaveButtonAppearance();
+    } catch (error) {
+        console.error('DEBUG: AdditionalRequirements - Error updating baseline data:', error);
+    }
+}
+
+/**************************************************************
     Initialize the additional requirements table and set listeners
     This function is called when the DOM content is fully loaded
  **************************************************************/
@@ -443,9 +755,25 @@ document.addEventListener("DOMContentLoaded", async function ()
             setUnsavedListeners(firstRow);
         }
         
+        // Set up change detection if no baseline data was set (new form)
+        if (!baselineData) {
+            setTimeout(() => {
+                updateBaselineData();
+                setupChangeDetection();
+            }, 100);
+        }
+        
         console.log('AdditionalRequirements: Initialization complete');
         
     } catch (error) {
         console.error('AdditionalRequirements: Error during initialization:', error);
+    }
+});
+
+// Add beforeunload warning for unsaved changes
+window.addEventListener('beforeunload', (e) => {
+    if (hasActualChanges()) {
+        e.preventDefault();
+        e.returnValue = '';
     }
 });
