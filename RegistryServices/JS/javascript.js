@@ -69,58 +69,64 @@ document.addEventListener("DOMContentLoaded", function ()
 
     // Populate the country dropdown
     const countryFilter = document.getElementById("countryFilter");
-    const countries = 
-    [
-        // European Union (EU)
-        { name: "Belgium", code: "BE" },
-        { name: "Bulgaria", code: "BG" },
-        { name: "Czechia", code: "CZ" },
-        { name: "Denmark", code: "DK" },
-        { name: "Germany", code: "DE" },
-        { name: "Estonia", code: "EE" },
-        { name: "Ireland", code: "IE" },
-        { name: "Greece", code: "EL" },
-        { name: "Spain", code: "ES" },
-        { name: "France", code: "FR" },
-        { name: "Croatia", code: "HR" },
-        { name: "Italy", code: "IT" },
-        { name: "Cyprus", code: "CY" },
-        { name: "Latvia", code: "LV" },
-        { name: "Lithuania", code: "LT" },
-        { name: "Luxembourg", code: "LU" },
-        { name: "Hungary", code: "HU" },
-        { name: "Malta", code: "MT" },
-        { name: "Netherlands", code: "NL" },
-        { name: "Austria", code: "AT" },
-        { name: "Poland", code: "PL" },
-        { name: "Portugal", code: "PT" },
-        { name: "Romania", code: "RO" },
-        { name: "Slovenia", code: "SI" },
-        { name: "Slovakia", code: "SK" },
-        { name: "Finland", code: "FI" },
-        { name: "Sweden", code: "SE" },
+    
+    // Only populate country filter if the element exists on this page
+    if (!countryFilter) {
+        console.log('DEBUG: countryFilter element not found - skipping country filter population');
+    } else {
+        const countries = 
+        [
+            // European Union (EU)
+            { name: "Belgium", code: "BE" },
+            { name: "Bulgaria", code: "BG" },
+            { name: "Czechia", code: "CZ" },
+            { name: "Denmark", code: "DK" },
+            { name: "Germany", code: "DE" },
+            { name: "Estonia", code: "EE" },
+            { name: "Ireland", code: "IE" },
+            { name: "Greece", code: "EL" },
+            { name: "Spain", code: "ES" },
+            { name: "France", code: "FR" },
+            { name: "Croatia", code: "HR" },
+            { name: "Italy", code: "IT" },
+            { name: "Cyprus", code: "CY" },
+            { name: "Latvia", code: "LV" },
+            { name: "Lithuania", code: "LT" },
+            { name: "Luxembourg", code: "LU" },
+            { name: "Hungary", code: "HU" },
+            { name: "Malta", code: "MT" },
+            { name: "Netherlands", code: "NL" },
+            { name: "Austria", code: "AT" },
+            { name: "Poland", code: "PL" },
+            { name: "Portugal", code: "PT" },
+            { name: "Romania", code: "RO" },
+            { name: "Slovenia", code: "SI" },
+            { name: "Slovakia", code: "SK" },
+            { name: "Finland", code: "FI" },
+            { name: "Sweden", code: "SE" },
 
-        // European Free Trade Association (EFTA)
-        { name: "Iceland", code: "IS" },
-        { name: "Norway", code: "NO" },
-        { name: "Liechtenstein", code: "LI" },
-        { name: "Switzerland", code: "CH" }
-    ];
+            // European Free Trade Association (EFTA)
+            { name: "Iceland", code: "IS" },
+            { name: "Norway", code: "NO" },
+            { name: "Liechtenstein", code: "LI" },
+            { name: "Switzerland", code: "CH" }
+        ];
 
-    // Add the default "All Countries" option
-    const defaultOption = document.createElement("option");
-    defaultOption.value = "";
-    defaultOption.textContent = "All Countries";
-    countryFilter.appendChild(defaultOption);
+        // Add the default "All Countries" option
+        const defaultOption = document.createElement("option");
+        defaultOption.value = "";
+        defaultOption.textContent = "All Countries";
+        countryFilter.appendChild(defaultOption);
 
-    // Add the countries as options
-    countries.forEach(country => 
-    {
-        const option = document.createElement("option");
-        option.value = country.code;
-        option.textContent = `${country.name} (${country.code})`;
-        countryFilter.appendChild(option);
-    });
+        // Add the countries as options
+        countries.forEach(country => 
+        {
+            const option = document.createElement("option");
+            option.value = country.code;
+            option.textContent = `${country.name} (${country.code})`;
+            countryFilter.appendChild(option);
+        });
+    }
 
 /******************************************************************************
     2/2 Country and Extension Component Dropdown Population
@@ -329,19 +335,21 @@ document.addEventListener("DOMContentLoaded", function ()
     const lastPageButton = document.getElementById("lastPage");
     const pageNumbersDiv = document.getElementById("pageNumbers");
 
-    // Rows per page select
-    rowsPerPageSelect.addEventListener("change", function () 
-    {
-        rowsPerPage = parseInt(this.value, 10);
-        currentPage = 1; // Reset to first page
-        console.log(`Rows per page changed to ${rowsPerPage}, resetting to page 1`);
-        applyFilters();
-    });
+    // Only set up pagination if all required elements exist
+    if (rowsPerPageSelect && prevPageButton && nextPageButton && firstPageButton && lastPageButton && pageNumbersDiv) {
+        // Rows per page select
+        rowsPerPageSelect.addEventListener("change", function () 
+        {
+            rowsPerPage = parseInt(this.value, 10);
+            currentPage = 1; // Reset to first page
+            console.log(`Rows per page changed to ${rowsPerPage}, resetting to page 1`);
+            applyFilters();
+        });
 
-    // First Page Button
-    firstPageButton.addEventListener("click", function (e) 
-    {
-        e.preventDefault();
+        // First Page Button
+        firstPageButton.addEventListener("click", function (e) 
+        {
+            e.preventDefault();
         if (currentPage !== 1) {
             currentPage = 1;
             console.log("First page clicked, moving to page 1");
@@ -385,20 +393,39 @@ document.addEventListener("DOMContentLoaded", function ()
             applyFilters();
         }
     });
+    } // End of pagination null check
 
     // Fetch the data from API and populate the table
     fetchSpecifications();
 
-    // Add event listeners for the filters
-    document.getElementById("searchInput").addEventListener("input", debounce(applyFilters, 300));
-    document.getElementById("typeFilter").addEventListener("change", applyFilters);
-    document.getElementById("sectorFilter").addEventListener("change", applyFilters);
-    document.getElementById("countryFilter").addEventListener("change", applyFilters);
+    // Add event listeners for the filters (with null checks)
+    const searchInput = document.getElementById("searchInput");
+    const typeFilter = document.getElementById("typeFilter");
+    const sectorFilter = document.getElementById("sectorFilter");
+    const countryFilterElement = document.getElementById("countryFilter");
+    
+    if (searchInput) {
+        searchInput.addEventListener("input", debounce(applyFilters, 300));
+    }
+    if (typeFilter) {
+        typeFilter.addEventListener("change", applyFilters);
+    }
+    if (sectorFilter) {
+        sectorFilter.addEventListener("change", applyFilters);
+    }
+    if (countryFilterElement) {
+        countryFilterElement.addEventListener("change", applyFilters);
+    }
     // Comment out Extension Component filter - will be part of Advanced search instead
     // document.getElementById("extensionComponentFilter").addEventListener("change", applyFilters);    // Populating the table
     function populateTable(data) 
     {
         const table = document.getElementById("myTable");
+        if (!table) {
+            console.log('DEBUG: myTable element not found - skipping table population');
+            return; // Exit early if this page doesn't have the table
+        }
+        
         table.innerHTML = "";
 
         if (data.length > 0) 

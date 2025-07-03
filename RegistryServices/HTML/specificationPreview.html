@@ -9,12 +9,33 @@
         <!-- Add authManager.js for global AuthManager and AUTH_CONFIG -->
         <script src="../JS/auth/authManager.js"></script>
         <script>
-            // Create a global authManager instance
+            // Create a global authManager instance and enhanced authenticatedFetch
             window.authManager = new AuthManager();
-            // Define authenticatedFetch globally
-            function authenticatedFetch(url, options = {}) {
-                const headers = { ...(options.headers || {}), ...window.authManager.getAuthHeaders() };
-                return fetch(url, { ...options, headers });
+            
+            async function authenticatedFetch(url, options = {}) {
+                try {
+                    const headers = { ...(options.headers || {}), ...window.authManager.getAuthHeaders() };
+                    let response = await fetch(url, { ...options, headers });
+                    
+                    if (response.status === 401) {
+                        // Try to refresh the token
+                        const refreshed = await window.authManager.refreshToken();
+                        if (refreshed) {
+                            // Retry with new token
+                            const newHeaders = { ...(options.headers || {}), ...window.authManager.getAuthHeaders() };
+                            response = await fetch(url, { ...options, headers: newHeaders });
+                        } else {
+                            // Show re-authentication modal
+                            window.authManager.showReAuthModal();
+                            throw new Error('Authentication failed');
+                        }
+                    }
+                    
+                    return response;
+                } catch (error) {
+                    console.error('Authenticated fetch error:', error);
+                    throw error;
+                }
             }
         </script>
         <script src="../JS/sidebarManager.js"></script>
@@ -22,6 +43,7 @@
         <script src="../JS/dataManager.js"></script>
         <script src="../JS/javascript.js"></script>
         <script src="../JS/specificationPreview.js"></script>
+        <script src="../JS/workflowSessionManager.js"></script>
         
         <title>Specification Preview</title>
         <style>
@@ -173,6 +195,12 @@
             document.addEventListener('DOMContentLoaded', function() {
                 // Initialize auth manager
                 window.authManager.init();
+                
+                // Initialize session manager for this workflow step
+                if (window.WorkflowSessionManager) {
+                    window.sessionManager = new WorkflowSessionManager('specificationPreview');
+                    window.sessionManager.init();
+                }
                 
                 // Initialize sidebar
                 window.sidebarManager.initializeSidebar(window.authManager);

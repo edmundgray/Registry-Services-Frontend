@@ -24,6 +24,19 @@ window.AuthManager = class {
         this.userGroupID = null;
         this.groupName = null;
         this.accessToken = null;
+        this.refreshToken = null;
+        
+        // Session timeout management
+        this.tokenExpiryTime = null;
+        this.tokenRefreshTimer = null;
+        this.warningTimer = null;
+        this.isRefreshing = false;
+        this.warningShown = false;
+        
+        // Configuration
+        this.WARNING_MINUTES_BEFORE_EXPIRY = 5; // Warn 5 minutes before expiry
+        this.AUTO_REFRESH_MINUTES_BEFORE_EXPIRY = 2; // Auto-refresh 2 minutes before expiry
+        
         this.init();
     }
 
@@ -35,6 +48,8 @@ window.AuthManager = class {
         const userId = localStorage.getItem('userId');
         const userGroupID = localStorage.getItem('userGroupID');
         const groupName = localStorage.getItem('groupName');
+        const tokenExpiry = localStorage.getItem('token_expiry');
+        const refreshToken = localStorage.getItem('refresh_token');
         
         console.log('DEBUG: AuthManager init - loading from localStorage:', {
             tokenPresent: !!token,
@@ -43,7 +58,9 @@ window.AuthManager = class {
             username: username,
             userId: userId,
             userGroupID: userGroupID,
-            groupName: groupName
+            groupName: groupName,
+            tokenExpiry: tokenExpiry,
+            refreshTokenPresent: !!refreshToken
         });
         
         if (token && role && username) {
@@ -53,12 +70,413 @@ window.AuthManager = class {
             this.userID = userId ? parseInt(userId) : null;
             this.userGroupID = userGroupID ? parseInt(userGroupID) : null;
             this.groupName = groupName;
+            this.refreshToken = refreshToken;
+            this.tokenExpiryTime = tokenExpiry ? parseInt(tokenExpiry) : null;
             this.isAuthenticated = true;
+            
+            // Set up session timers if we have expiry time
+            if (this.tokenExpiryTime) {
+                this.setupTokenRefreshTimers();
+            } else {
+                // If no expiry time, assume 1 hour from now
+                this.setTokens(token, refreshToken, 3600);
+            }
             
             console.log('DEBUG: AuthManager initialized with stored credentials');
         } else {
             console.log('DEBUG: No valid stored credentials found');
             this.isAuthenticated = false;
+        }
+    }
+
+    // Enhanced token storage with expiry tracking
+    setTokens(accessToken, refreshToken = null, expiresIn = 3600) {
+        this.accessToken = accessToken;
+        this.refreshToken = refreshToken;
+        this.isAuthenticated = true;
+        
+        // Calculate expiry time
+        this.tokenExpiryTime = Date.now() + (expiresIn * 1000);
+        
+        // Store in localStorage
+        localStorage.setItem('access_token', accessToken);
+        localStorage.setItem('token_expiry', this.tokenExpiryTime.toString());
+        if (refreshToken) {
+            localStorage.setItem('refresh_token', refreshToken);
+        }
+        
+        // Set up automatic refresh timers
+        this.setupTokenRefreshTimers();
+    }
+
+    // Set up timers for warning and auto-refresh
+    setupTokenRefreshTimers() {
+        this.clearTokenTimers();
+        
+        if (!this.tokenExpiryTime) return;
+        
+        const timeToExpiry = this.tokenExpiryTime - Date.now();
+        const warningTime = timeToExpiry - (this.WARNING_MINUTES_BEFORE_EXPIRY * 60 * 1000);
+        const refreshTime = timeToExpiry - (this.AUTO_REFRESH_MINUTES_BEFORE_EXPIRY * 60 * 1000);
+        
+        console.log('DEBUG: Setting up token timers:', {
+            timeToExpiry: Math.floor(timeToExpiry / 1000),
+            warningIn: Math.floor(warningTime / 1000),
+            refreshIn: Math.floor(refreshTime / 1000)
+        });
+        
+        // Set warning timer
+        if (warningTime > 0) {
+            this.warningTimer = setTimeout(() => {
+                this.showSessionWarning();
+            }, warningTime);
+        }
+        
+        // Set auto-refresh timer
+        if (refreshTime > 0) {
+            this.tokenRefreshTimer = setTimeout(() => {
+                this.attemptBackgroundRefresh();
+            }, refreshTime);
+        }
+    }
+
+    // Clear existing timers
+    clearTokenTimers() {
+        if (this.warningTimer) {
+            clearTimeout(this.warningTimer);
+            this.warningTimer = null;
+        }
+        if (this.tokenRefreshTimer) {
+            clearTimeout(this.tokenRefreshTimer);
+            this.tokenRefreshTimer = null;
+        }
+    }
+
+    // Check if token is close to expiry
+    isTokenNearExpiry(minutesBuffer = 5) {
+        if (!this.tokenExpiryTime) return false;
+        const timeToExpiry = this.tokenExpiryTime - Date.now();
+        return timeToExpiry < (minutesBuffer * 60 * 1000);
+    }
+
+    // Check if token is expired
+    isTokenExpired() {
+        if (!this.tokenExpiryTime) return false;
+        return Date.now() >= this.tokenExpiryTime;
+    }
+
+    // Show session timeout warning
+    showSessionWarning() {
+        if (this.warningShown) return;
+        this.warningShown = true;
+        
+        const timeLeft = Math.ceil((this.tokenExpiryTime - Date.now()) / (60 * 1000));
+        
+        this.showSessionWarningModal(timeLeft).then((continueSession) => {
+            if (continueSession) {
+                // User chose to continue - attempt refresh
+                this.attemptBackgroundRefresh();
+            }
+        });
+    }
+
+    // Background token refresh
+    async attemptBackgroundRefresh() {
+        if (this.isRefreshing) return;
+        this.isRefreshing = true;
+        
+        try {
+            console.log('Attempting background token refresh...');
+            
+            if (this.refreshToken) {
+                await this.refreshAccessToken();
+            } else {
+                await this.validateAndExtendSession();
+            }
+            
+            console.log('Background token refresh successful');
+            this.warningShown = false;
+            
+            // Dispatch event for other components
+            window.dispatchEvent(new CustomEvent('tokenRefreshed'));
+            
+        } catch (error) {
+            console.error('Background token refresh failed:', error);
+            this.handleRefreshFailure();
+        } finally {
+            this.isRefreshing = false;
+        }
+    }
+
+    // Refresh using refresh token
+    async refreshAccessToken() {
+        const response = await fetch(`${AUTH_CONFIG.baseUrl}/auth/refresh`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                refreshToken: this.refreshToken
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Token refresh failed');
+        }
+        
+        const data = await response.json();
+        this.setTokens(data.accessToken, data.refreshToken, data.expiresIn);
+    }
+
+    // Validate current session and extend if possible
+    async validateAndExtendSession() {
+        const response = await fetch(`${AUTH_CONFIG.baseUrl}/auth/validate`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${this.accessToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Session validation failed');
+        }
+        
+        const data = await response.json();
+        if (data.accessToken) {
+            this.setTokens(data.accessToken, data.refreshToken, data.expiresIn);
+        }
+    }
+
+    // Handle refresh failure
+    handleRefreshFailure() {
+        console.warn('Token refresh failed - user will need to re-authenticate');
+        this.showReauthenticationModal();
+        
+        // Dispatch event for other components
+        window.dispatchEvent(new CustomEvent('authenticationFailed'));
+    }
+
+    // Show session warning modal
+    showSessionWarningModal(minutesLeft) {
+        return new Promise((resolve) => {
+            const modalHtml = `
+                <div id="sessionWarningModal" class="modal" style="display: block; z-index: 10000;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>Session Expiring Soon</h3>
+                        </div>
+                        <div class="modal-body">
+                            <p>Your session will expire in <strong>${minutesLeft} minute(s)</strong>.</p>
+                            <p>Do you want to extend your session?</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button id="extendSession" class="btn btn-primary">Extend Session</button>
+                            <button id="endSession" class="btn btn-secondary">End Session</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            const modal = document.getElementById('sessionWarningModal');
+            const extendBtn = document.getElementById('extendSession');
+            const endBtn = document.getElementById('endSession');
+            
+            const cleanup = () => {
+                if (modal && modal.parentNode) {
+                    modal.parentNode.removeChild(modal);
+                }
+            };
+            
+            extendBtn.onclick = () => {
+                cleanup();
+                resolve(true);
+            };
+            
+            endBtn.onclick = () => {
+                cleanup();
+                this.logout();
+                resolve(false);
+            };
+        });
+    }
+
+    // Show re-authentication modal
+    showReauthenticationModal() {
+        const modalHtml = `
+            <div id="reauthModal" class="modal" style="display: block; z-index: 10000;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Session Expired</h3>
+                    </div>
+                    <div class="modal-body">
+                        <p>Your session has expired. Please log in again to continue.</p>
+                        <div id="loginForm">
+                            <input type="text" id="modalUsername" placeholder="Username" class="form-control mb-2">
+                            <input type="password" id="modalPassword" placeholder="Password" class="form-control mb-2">
+                            <div id="modalLoginError" class="alert alert-danger" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button id="modalLogin" class="btn btn-primary">Login</button>
+                        <button id="modalCancel" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        const modal = document.getElementById('reauthModal');
+        const loginBtn = document.getElementById('modalLogin');
+        const cancelBtn = document.getElementById('modalCancel');
+        const usernameInput = document.getElementById('modalUsername');
+        const passwordInput = document.getElementById('modalPassword');
+        const errorDiv = document.getElementById('modalLoginError');
+        
+        const cleanup = () => {
+            if (modal && modal.parentNode) {
+                modal.parentNode.removeChild(modal);
+            }
+        };
+        
+        loginBtn.onclick = async () => {
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value.trim();
+            
+            if (!username || !password) {
+                errorDiv.textContent = 'Please enter both username and password';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            try {
+                loginBtn.disabled = true;
+                loginBtn.textContent = 'Logging in...';
+                
+                await this.performLogin(username, password);
+                cleanup();
+                
+                // Dispatch success event
+                window.dispatchEvent(new CustomEvent('reauthenticationSuccess'));
+                
+            } catch (error) {
+                errorDiv.textContent = error.message || 'Login failed. Please try again.';
+                errorDiv.style.display = 'block';
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Login';
+            }
+        };
+        
+        cancelBtn.onclick = () => {
+            cleanup();
+            this.logout();
+            window.location.href = '/';
+        };
+        
+        // Allow Enter key to submit
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                loginBtn.click();
+            }
+        });
+    }
+
+    // Perform login operation
+    async performLogin(username, password) {
+        const response = await fetch(`${AUTH_CONFIG.baseUrl}${AUTH_CONFIG.endpoints.login}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, password })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Invalid credentials');
+        }
+        
+        const data = await response.json();
+        
+        // Store authentication data
+        this.accessToken = data.accessToken;
+        this.refreshToken = data.refreshToken;
+        this.userRole = data.role;
+        this.username = data.username;
+        this.userID = data.userId;
+        this.userGroupID = data.userGroupID;
+        this.groupName = data.groupName;
+        this.isAuthenticated = true;
+        
+        // Store in localStorage
+        localStorage.setItem('access_token', data.accessToken);
+        localStorage.setItem('refresh_token', data.refreshToken || '');
+        localStorage.setItem('userRole', data.role);
+        localStorage.setItem('username', data.username);
+        localStorage.setItem('userId', data.userId.toString());
+        localStorage.setItem('userGroupID', data.userGroupID?.toString() || '');
+        localStorage.setItem('groupName', data.groupName || '');
+        
+        // Set up tokens with expiry
+        this.setTokens(data.accessToken, data.refreshToken, data.expiresIn || 3600);
+    }
+
+    // Enhanced authenticatedFetch with automatic retry on 401
+    async authenticatedFetch(url, options = {}) {
+        // Check if token is expired before making request
+        if (this.isTokenExpired()) {
+            throw new Error('Authentication token has expired');
+        }
+        
+        // Add auth headers
+        const headers = {
+            ...options.headers,
+            ...this.getAuthHeaders()
+        };
+        
+        const fetchOptions = {
+            ...options,
+            headers
+        };
+        
+        try {
+            const response = await fetch(url, fetchOptions);
+            
+            // If 401, try to refresh token and retry once
+            if (response.status === 401 && !options._retryAttempted) {
+                console.log('Received 401, attempting token refresh...');
+                
+                try {
+                    await this.attemptBackgroundRefresh();
+                    
+                    // Retry with new token
+                    const newHeaders = {
+                        ...options.headers,
+                        ...this.getAuthHeaders()
+                    };
+                    
+                    const retryOptions = {
+                        ...options,
+                        headers: newHeaders,
+                        _retryAttempted: true
+                    };
+                    
+                    return await fetch(url, retryOptions);
+                    
+                } catch (refreshError) {
+                    console.error('Token refresh failed:', refreshError);
+                    this.handleRefreshFailure();
+                    throw new Error('Authentication failed');
+                }
+            }
+            
+            return response;
+            
+        } catch (error) {
+            console.error('Authenticated fetch failed:', error);
+            throw error;
         }
     }
 
@@ -83,6 +501,11 @@ window.AuthManager = class {
 
     logout() {
         console.log('DEBUG: AuthManager logout called');
+        
+        // Clear timers
+        this.clearTokenTimers();
+        
+        // Clear properties
         this.isAuthenticated = false;
         this.userRole = null;
         this.userID = null;
@@ -90,13 +513,46 @@ window.AuthManager = class {
         this.userGroupID = null;
         this.groupName = null;
         this.accessToken = null;
+        this.refreshToken = null;
+        this.tokenExpiryTime = null;
+        this.warningShown = false;
+        
+        // Clear localStorage
         localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('token_expiry');
         localStorage.removeItem('userRole');
         localStorage.removeItem('username');
         localStorage.removeItem('userId');
         localStorage.removeItem('userGroupID');
         localStorage.removeItem('groupName');
+        
         console.log('DEBUG: AuthManager logout completed, all data cleared');
+        
+        // Dispatch logout event
+        window.dispatchEvent(new CustomEvent('userLoggedOut'));
+    }
+
+    // Get session status for UI indicators
+    getSessionStatus() {
+        if (!this.isAuthenticated) {
+            return { status: 'unauthenticated', timeLeft: 0 };
+        }
+        
+        if (!this.tokenExpiryTime) {
+            return { status: 'authenticated', timeLeft: 0 };
+        }
+        
+        const timeLeft = Math.max(0, this.tokenExpiryTime - Date.now());
+        const minutesLeft = Math.ceil(timeLeft / (60 * 1000));
+        
+        if (timeLeft <= 0) {
+            return { status: 'expired', timeLeft: 0 };
+        } else if (timeLeft <= (this.WARNING_MINUTES_BEFORE_EXPIRY * 60 * 1000)) {
+            return { status: 'expiring', timeLeft: minutesLeft };
+        } else {
+            return { status: 'active', timeLeft: minutesLeft };
+        }
     }
 }
 

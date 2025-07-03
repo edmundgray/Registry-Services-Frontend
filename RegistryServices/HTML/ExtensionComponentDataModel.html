@@ -9,18 +9,40 @@
         <!-- Add authManager.js for global AuthManager and AUTH_CONFIG -->
         <script src="../JS/auth/authManager.js"></script>
         <script>
-            // Create a global authManager instance
+            // Create a global authManager instance and enhanced authenticatedFetch
             window.authManager = new AuthManager();
-            // Define authenticatedFetch globally
-            function authenticatedFetch(url, options = {}) {
-                const headers = { ...(options.headers || {}), ...window.authManager.getAuthHeaders() };
-                return fetch(url, { ...options, headers });
+            
+            async function authenticatedFetch(url, options = {}) {
+                try {
+                    const headers = { ...(options.headers || {}), ...window.authManager.getAuthHeaders() };
+                    let response = await fetch(url, { ...options, headers });
+                    
+                    if (response.status === 401) {
+                        // Try to refresh the token
+                        const refreshed = await window.authManager.refreshToken();
+                        if (refreshed) {
+                            // Retry with new token
+                            const newHeaders = { ...(options.headers || {}), ...window.authManager.getAuthHeaders() };
+                            response = await fetch(url, { ...options, headers: newHeaders });
+                        } else {
+                            // Show re-authentication modal
+                            window.authManager.showReAuthModal();
+                            throw new Error('Authentication failed');
+                        }
+                    }
+                    
+                    return response;
+                } catch (error) {
+                    console.error('Authenticated fetch error:', error);
+                    throw error;
+                }
             }
         </script>
         <script src="../JS/sidebarManager.js"></script>
         <script src="../JS/breadcrumbManager.js"></script>
         <script src="../JS/javascript.js"></script>
         <script src="../JS/dataManager.js"></script>
+        <script src="../JS/workflowSessionManager.js"></script>
         
         <title>Registry Services</title>
         <style>
@@ -63,7 +85,8 @@
         </div>
 
         <script>
-            let isFormDirty = false;
+            // Note: isFormDirty is deprecated in favor of hasActualChanges()
+            // let isFormDirty = false;
             let dataManager = null;
             // Cache for storing fetched extension component elements to avoid re-fetching
             let extensionComponentElementsCache = {}; // Changed from extensionComponentData
@@ -178,10 +201,23 @@
                             await addNewComponentSection(savedExt.extensionComponentID, savedExt.selectedElements, availableComponents);
                         }
                         console.log('DEBUG: Restored', savedExtensions.length, 'saved extension components');
+                        
+                        // Set baseline data after sections are loaded with longer delay to ensure DOM is fully updated
+                        setTimeout(() => {
+                            console.log('DEBUG: ExtensionComponentDataModel - About to update baseline data after loading all sections');
+                            updateBaselineData();
+                        }, 300);
                     } else {
                         // If no saved extensions, create one empty section
                         console.log('DEBUG: No saved extensions, creating empty section');
                         await addNewComponentSection('', [], availableComponents);
+                        
+                        // Set empty baseline data for new form
+                        dataManager.extensionComponentsData = {
+                            selectedElements: [],
+                            componentAssignments: []
+                        };
+                        console.log('DEBUG: ExtensionComponentDataModel - Empty baseline data initialized');
                     }
 
                 } catch (error) {
@@ -254,7 +290,7 @@
                         const selected = comp.id === preSelectedComponentId ? 'selected' : '';
                         options += `<option value="${comp.id}" ${selected}>${comp.name || comp.id}</option>`;
                     });
-                    dropdownHtml = `<select class="component-select" onchange="populateComponentTable(this, [])">${options}</select>`;
+                    dropdownHtml = `<select class="component-select" onchange="handleComponentChange(this)">${options}</select>`;
                 }
 
                 section.innerHTML = `
@@ -274,7 +310,7 @@
                             </td></tr>
                         </tbody>
                     </table>
-                    <button onclick="document.getElementById('${sectionId}').remove(); isFormDirty=true; updateComponentSections();" class="view-button" style="margin-top: 10px; background: #dc3545;">Remove Selection</button>
+                    <button onclick="document.getElementById('${sectionId}').remove(); updateComponentSections(); updateBaselineData();" class="view-button" style="margin-top: 10px; background: #dc3545;">Remove Selection</button>
                 `;
                 componentsContainer.appendChild(section);
 
@@ -293,6 +329,27 @@
                 if (sections.length === 0) {
                     addNewComponentSection(); // Add a new empty section if all are removed
                 }
+            }
+
+            // Function to handle component dropdown changes and restore previously selected elements
+            async function handleComponentChange(selectElement) {
+                const selectedComponentId = selectElement.value;
+                
+                // Get previously selected element IDs for this component from baseline data
+                const previouslySelectedIds = [];
+                if (dataManager && dataManager.extensionComponentsData && dataManager.extensionComponentsData.selectedElements) {
+                    dataManager.extensionComponentsData.selectedElements.forEach(selectedElement => {
+                        const [componentId, businessTermId] = selectedElement.split(':');
+                        if (componentId === selectedComponentId) {
+                            previouslySelectedIds.push(businessTermId);
+                        }
+                    });
+                }
+                
+                console.log('DEBUG: handleComponentChange - Component:', selectedComponentId, 'Previously selected IDs:', previouslySelectedIds);
+                
+                // Populate table with previously selected elements restored
+                await populateComponentTable(selectElement, previouslySelectedIds);
             }
 
             // populateComponentTable now fetches elements for the selected component and restores selections
@@ -380,16 +437,237 @@
                         <td>${mappedEl['Business Term']}<i class="fa-solid fa-circle-question" title="${mappedEl['Usage Note']}"></i></td>
                         <td>${mappedEl['Usage Note']}</td><td>${mappedEl.Justification}</td><td>${mappedEl['Data Type']}</td>
                         <td>${mappedEl['Type of Extension']}</td><td>${mappedEl['Core Conformant/Rules broken']}</td>
-                        <td style="text-align:center;"><input type="checkbox" class="element-selector" data-id="${businessTermID}" ${isChecked ? 'checked' : ''} onchange="isFormDirty=true;"></td>
+                        <td style="text-align:center;"><input type="checkbox" class="element-selector" data-id="${businessTermID}"></td>
                     `;
                     tableBody.appendChild(row);
+                    
+                    // Set the checked property programmatically (not just the attribute)
+                    const addedCheckbox = row.querySelector('.element-selector');
+                    if (addedCheckbox && isChecked) {
+                        addedCheckbox.checked = true;
+                        console.log(`DEBUG: Checkbox for ${businessTermID} set to checked`);
+                    }
                 });
                 
                 console.log('DEBUG: Table populated with', componentElements.length, 'elements,', selectedIds.filter(id => componentElements.some(el => el.businessTermID === id)).length, 'pre-selected');
-                isFormDirty = true; // Mark form as dirty after population
+                
+                // Update baseline data after elements are applied with a short delay for DOM stability
+                setTimeout(() => {
+                    updateBaselineData();
+                }, 50);
             }
 
-            async function handleSave(showAlert = true) {
+            // Enhanced change detection functions
+            function hasActualChanges() {
+                console.log('DEBUG: ExtensionComponentDataModel - hasActualChanges() called');
+                
+                if (!dataManager || !dataManager.extensionComponentsData) {
+                    console.log('DEBUG: ExtensionComponentDataModel - No baseline data available');
+                    console.log('DEBUG: ExtensionComponentDataModel - dataManager exists:', !!dataManager);
+                    console.log('DEBUG: ExtensionComponentDataModel - dataManager.extensionComponentsData exists:', !!(dataManager && dataManager.extensionComponentsData));
+                    return true; // If no baseline data, assume changes exist
+                }
+                
+                const currentData = collectExtensionComponentSelections();
+                const originalData = dataManager.extensionComponentsData;
+                
+                console.log('DEBUG: ExtensionComponentDataModel - Current data:', currentData);
+                console.log('DEBUG: ExtensionComponentDataModel - Baseline data:', originalData);
+                console.log('DEBUG: ExtensionComponentDataModel - Baseline selectedElements count:', originalData.selectedElements ? originalData.selectedElements.length : 'N/A');
+                
+                // Compare number of selected elements
+                if (currentData.selectedElements.length !== originalData.selectedElements.length) {
+                    console.log('DEBUG: ExtensionComponentDataModel - Different number of selected elements:', currentData.selectedElements.length, 'vs', originalData.selectedElements.length);
+                    return true;
+                }
+                
+                // Check if same elements are selected
+                const currentSet = new Set(currentData.selectedElements);
+                const originalSet = new Set(originalData.selectedElements);
+                for (const element of currentSet) {
+                    if (!originalSet.has(element)) {
+                        console.log('Change detected: New extension component selected:', element);
+                        return true;
+                    }
+                }
+                for (const element of originalSet) {
+                    if (!currentSet.has(element)) {
+                        console.log('Change detected: Extension component deselected:', element);
+                        return true;
+                    }
+                }
+                
+                // Compare component assignments (extension component selections)
+                if (originalData.componentAssignments && currentData.componentAssignments) {
+                    const originalComponents = JSON.stringify(originalData.componentAssignments);
+                    const currentComponents = JSON.stringify(currentData.componentAssignments);
+                    if (originalComponents !== currentComponents) {
+                        console.log('DEBUG: ExtensionComponentDataModel - Change detected in component assignments');
+                        return true;
+                    }
+                } else if (!originalData.componentAssignments && currentData.componentAssignments.length > 0) {
+                    console.log('DEBUG: ExtensionComponentDataModel - Change detected: new component assignments added');
+                    return true;
+                } else if (originalData.componentAssignments && currentData.componentAssignments.length === 0) {
+                    console.log('DEBUG: ExtensionComponentDataModel - Change detected: component assignments removed');
+                    return true;
+                }
+                
+                console.log('DEBUG: ExtensionComponentDataModel - No changes detected, returning false');
+                return false;
+            }
+            
+            // Function to collect current extension component selections
+            function collectExtensionComponentSelections() {
+                const selectedElements = [];
+                const componentAssignments = [];
+                
+                document.querySelectorAll('.component-section').forEach((section, sectionIndex) => {
+                    const extensionComponentID = section.querySelector('.component-select').value;
+                    
+                    if (extensionComponentID) {
+                        // Track which extension component is selected for this section
+                        componentAssignments.push(extensionComponentID);
+                        
+                        // Collect selected elements for this component
+                        const checkedBoxes = section.querySelectorAll('.element-selector:checked');
+                        
+                        checkedBoxes.forEach((checkbox) => {
+                            const businessTermID = checkbox.getAttribute('data-id');
+                            if (businessTermID) {
+                                const elementId = `${extensionComponentID}:${businessTermID}`;
+                                selectedElements.push(elementId);
+                            }
+                        });
+                    }
+                });
+                
+                console.log('DEBUG: collectExtensionComponentSelections() - Collected:', {
+                    selectedElementsCount: selectedElements.length,
+                    componentAssignmentsCount: componentAssignments.length,
+                    selectedElements: selectedElements
+                });
+                
+                return {
+                    selectedElements,
+                    componentAssignments
+                };
+            }
+            
+            // Function to update baseline data after UI is populated
+            function updateBaselineData() {
+                try {
+                    const currentSelections = collectExtensionComponentSelections();
+                    dataManager.extensionComponentsData = currentSelections;
+                    console.log('DEBUG: ExtensionComponentDataModel - Baseline data updated after UI population:', currentSelections);
+                    console.log('DEBUG: ExtensionComponentDataModel - Baseline selectedElements count:', currentSelections.selectedElements.length);
+                    console.log('DEBUG: ExtensionComponentDataModel - Baseline componentAssignments count:', currentSelections.componentAssignments.length);
+                    
+                    // Update save button appearance since baseline has changed
+                    updateSaveButtonAppearance();
+                } catch (error) {
+                    console.error('DEBUG: ExtensionComponentDataModel - Error updating baseline data:', error);
+                }
+            }
+            
+            // Legacy function for backward compatibility
+            function getSelectedExtensionComponentIds() {
+                const selections = collectExtensionComponentSelections();
+                return selections.selectedElements;
+            }
+
+            // Make hasActualChanges globally accessible for breadcrumb manager
+            window.hasActualChanges = hasActualChanges;
+
+            function getChangedFields() {
+                if (!dataManager || !dataManager.extensionComponentsData) return [];
+                
+                const currentData = collectExtensionComponentSelections();
+                const originalData = dataManager.extensionComponentsData;
+                const changedFields = [];
+                
+                // Check for selection changes
+                const currentSet = new Set(currentData.selectedElements);
+                const originalSet = new Set(originalData.selectedElements || []);
+                
+                // New selections
+                for (const element of currentSet) {
+                    if (!originalSet.has(element)) {
+                        const [componentId, elementId] = element.split(':');
+                        changedFields.push({
+                            field: element,
+                            displayName: `Extension Component ${componentId}: Element ${elementId}`,
+                            oldValue: 'Not selected',
+                            newValue: 'Selected'
+                        });
+                    }
+                }
+                
+                // Removed selections
+                for (const element of originalSet) {
+                    if (!currentSet.has(element)) {
+                        const [componentId, elementId] = element.split(':');
+                        changedFields.push({
+                            field: element,
+                            displayName: `Extension Component ${componentId}: Element ${elementId}`,
+                            oldValue: 'Selected',
+                            newValue: 'Not selected'
+                        });
+                    }
+                }
+                
+                // Check for component assignment changes
+                const originalComponents = originalData.componentAssignments || [];
+                const currentComponents = currentData.componentAssignments || [];
+                
+                // Find added components
+                const originalComponentSet = new Set(originalComponents);
+                const currentComponentSet = new Set(currentComponents);
+                
+                for (const component of currentComponentSet) {
+                    if (!originalComponentSet.has(component)) {
+                        changedFields.push({
+                            field: `component_${component}`,
+                            displayName: `Extension Component Assignment`,
+                            oldValue: 'Not assigned',
+                            newValue: component
+                        });
+                    }
+                }
+                
+                // Find removed components
+                for (const component of originalComponentSet) {
+                    if (!currentComponentSet.has(component)) {
+                        changedFields.push({
+                            field: `component_${component}`,
+                            displayName: `Extension Component Assignment`,
+                            oldValue: component,
+                            newValue: 'Not assigned'
+                        });
+                    }
+                }
+                
+                return changedFields;
+            }
+
+            function updateSaveButtonAppearance() {
+                const saveButton = document.querySelector('button[onclick="handleSave()"]');
+                const hasChanges = hasActualChanges();
+                
+                if (saveButton) {
+                    if (hasChanges) {
+                        saveButton.style.background = '#28a745'; // Green when changes exist
+                        saveButton.style.fontWeight = 'bold';
+                        saveButton.style.boxShadow = '0 2px 4px rgba(40, 167, 69, 0.3)';
+                    } else {
+                        saveButton.style.background = '#6c757d'; // Gray when no changes
+                        saveButton.style.fontWeight = 'normal';
+                        saveButton.style.boxShadow = 'none';
+                    }
+                }
+            }
+
+            async function handleSave(showAlert = true, allowNavigationWithoutChanges = false) {
                 console.log('DEBUG: ExtensionComponentDataModel - handleSave called');
                 
                 // Validate that we have a specification ID
@@ -405,6 +683,53 @@
                     return false;
                 }
 
+                // Check if there are actual changes
+                const changedFields = getChangedFields();
+                
+                if (changedFields.length === 0) {
+                    // If this is for navigation and no changes are detected, allow proceeding
+                    if (allowNavigationWithoutChanges) {
+                        console.log('DEBUG: ExtensionComponentDataModel - No changes detected, but allowing navigation');
+                        return true;
+                    }
+                    
+                    // Update save button appearance since no actual changes exist
+                    updateSaveButtonAppearance();
+                    
+                    // Show "no changes" modal only for direct save attempts
+                    const modalHtml = `
+                        <div id="noChangesModal" style="
+                            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                            background: rgba(0,0,0,0.5); z-index: 1002; display: flex;
+                            align-items: center; justify-content: center;">
+                            <div style="
+                                background: white; border-radius: 8px; padding: 24px; max-width: 400px;
+                                width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                                <h3 style="margin: 0 0 16px 0; color: #333;">
+                                    <i class="fa-solid fa-info-circle" style="color: #17a2b8; margin-right: 8px;"></i>
+                                    No Changes Detected
+                                </h3>
+                                <p style="margin: 0 0 20px 0; color: #666;">
+                                    There are no unsaved changes to your extension component selections. The current selections match the last saved version.
+                                </p>
+                                <div style="text-align: center;">
+                                    <button onclick="document.getElementById('noChangesModal').remove()" style="
+                                        padding: 8px 16px; background: #17a2b8; color: white; border: none;
+                                        border-radius: 4px; cursor: pointer; font-size: 14px;">
+                                        OK
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.body.insertAdjacentHTML('beforeend', modalHtml);
+                    return false;
+                }
+
+                // Save directly without confirmation modal
+                console.log('DEBUG: ExtensionComponentDataModel - Proceeding with save operation');
+                
                 // Collect extension elements data for API submission
                 const apiExtensionElements = [];
                 
@@ -454,7 +779,11 @@
                         }
                     }
                     
-                    isFormDirty = false;
+                    // Update baseline data after successful save to prevent "unsaved changes" warnings
+                    updateBaselineData();
+                    console.log('DEBUG: ExtensionComponentDataModel - Baseline updated after successful save');
+                    
+                    updateSaveButtonAppearance();
                     return true; // Return success status
                     
                 } catch (error) {
@@ -465,10 +794,9 @@
             }
 
             function handleCancel() {
-                if (isFormDirty && !confirm("You have unsaved changes. Are you sure you want to cancel?")) {
+                if (hasActualChanges() && !confirm("You have unsaved changes. Are you sure you want to cancel?")) {
                     return;
                 }
-                isFormDirty = false;
                 
                 // Use the proper return page logic
                 const returnPage = localStorage.getItem("returnToPage") || "mySpecifications.html";
@@ -477,7 +805,7 @@
             }
 
             async function saveAndGoToNextStep() {
-                const saveSuccessful = await handleSave(false); // Don't show alert for intermediate save
+                const saveSuccessful = await handleSave(false, true); // Don't show alert, allow navigation without changes
                 if (saveSuccessful) {
                     window.location.href = 'additionalRequirements.html';
                 }
@@ -505,12 +833,12 @@
                 // Load extension data
                 loadExtensionData(); // Initial load of components for dropdown
 
-                // Listen for changes anywhere in the container to mark form dirty
-                componentsContainer.addEventListener('change', () => { isFormDirty = true; });
+                // Listen for changes anywhere in the container to update save button appearance
+                componentsContainer.addEventListener('change', () => { updateSaveButtonAppearance(); });
             });
 
             window.addEventListener('beforeunload', (e) => {
-                if (isFormDirty) {
+                if (hasActualChanges()) {
                     e.preventDefault();
                     e.returnValue = '';
                 }
@@ -522,6 +850,12 @@
             document.addEventListener('DOMContentLoaded', function() {
                 // Initialize auth manager
                 window.authManager.init();
+                
+                // Initialize session manager for this workflow step
+                if (window.WorkflowSessionManager) {
+                    window.sessionManager = new WorkflowSessionManager('extensionComponentDataModel');
+                    window.sessionManager.init();
+                }
                 
                 // Initialize sidebar
                 window.sidebarManager.initializeSidebar(window.authManager);

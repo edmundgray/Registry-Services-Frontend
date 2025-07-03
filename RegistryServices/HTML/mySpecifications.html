@@ -9,27 +9,58 @@
         <!-- Add authManager.js for global AuthManager and AUTH_CONFIG -->
         <script src="../JS/auth/authManager.js"></script>
         <script>
-            // Create a global authManager instance and authenticatedFetch
+            // Create a global authManager instance and enhanced authenticatedFetch
             window.authManager = new AuthManager();
-            function authenticatedFetch(url, options = {}) {
-                const authHeaders = window.authManager.getAuthHeaders();
+            async function authenticatedFetch(url, options = {}) {
                 console.log('DEBUG: authenticatedFetch called with URL:', url);
-                console.log('DEBUG: Auth headers:', authHeaders);
                 console.log('DEBUG: AuthManager state:', {
                     isAuthenticated: window.authManager.isAuthenticated,
                     accessToken: window.authManager.accessToken ? 'Present' : 'Not present',
                     username: window.authManager.username,
                     userRole: window.authManager.userRole
                 });
-                
-                const headers = { ...(options.headers || {}), ...authHeaders };
-                console.log('DEBUG: Final headers for request:', headers);
-                
-                return fetch(url, { ...options, headers });
+
+                try {
+                    // Get fresh auth headers
+                    const authHeaders = window.authManager.getAuthHeaders();
+                    console.log('DEBUG: Auth headers:', authHeaders);
+                    
+                    const headers = { ...(options.headers || {}), ...authHeaders };
+                    console.log('DEBUG: Final headers for request:', headers);
+                    
+                    // Make the request
+                    const response = await fetch(url, { ...options, headers });
+                    
+                    // Check for authentication errors
+                    if (response.status === 401 || response.status === 403) {
+                        console.log('DEBUG: Authentication error detected, attempting token refresh');
+                        
+                        // Attempt to refresh the token
+                        const refreshed = await window.authManager.attemptBackgroundRefresh();
+                        
+                        if (refreshed) {
+                            console.log('DEBUG: Token refreshed successfully, retrying request');
+                            const newAuthHeaders = window.authManager.getAuthHeaders();
+                            const newHeaders = { ...(options.headers || {}), ...newAuthHeaders };
+                            
+                            // Retry the request with the new token
+                            return await fetch(url, { ...options, headers: newHeaders });
+                        } else {
+                            console.log('DEBUG: Token refresh failed');
+                            throw new Error('Authentication failed and token refresh unsuccessful');
+                        }
+                    }
+                    
+                    return response;
+                } catch (error) {
+                    console.error('DEBUG: authenticatedFetch error:', error);
+                    throw error;
+                }
             }
         </script>
         <script src="../JS/sidebarManager.js"></script>
         <script src="../JS/breadcrumbManager.js"></script>
+        <script src="../JS/workflowSessionManager.js"></script>
         <script src="../JS/javascript.js"></script>
         <script src="../JS/dataManager.js"></script>
         
@@ -540,6 +571,12 @@
                 
                 // Initialize authentication manager
                 window.authManager.init();
+                
+                // Initialize session management for this page
+                if (typeof WorkflowSessionManager !== 'undefined' && window.workflowSessionManager) {
+                    window.workflowSessionManager.init('general-navigation');
+                    console.log('DEBUG: Session management initialized for mySpecifications page');
+                }
                 
                 // Initialize dynamic sidebar
                 window.sidebarManager.initializeSidebar(window.authManager);

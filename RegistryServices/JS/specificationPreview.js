@@ -32,6 +32,9 @@ class SpecificationPreview {
             this.updateTitle();
             await this.populatePreviewTables();
             
+            // Update button appearance
+            this.updateSubmitButtonAppearance();
+            
         } catch (error) {
             console.error('SpecificationPreview: Error during initialization:', error);
             alert('Error loading specification preview: ' + error.message);
@@ -225,6 +228,64 @@ class SpecificationPreview {
             return;
         }
 
+        // Show submission confirmation modal
+        return new Promise((resolve) => {
+            this.showSubmissionConfirmationModal(() => {
+                this.performSubmission().then(resolve).catch(resolve);
+            });
+        });
+    }
+
+    showSubmissionConfirmationModal(onConfirm) {
+        const modalHtml = `
+            <div id="submitConfirmModal" style="
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.5); z-index: 1002; display: flex;
+                align-items: center; justify-content: center;">
+                <div style="
+                    background: white; border-radius: 8px; padding: 24px; max-width: 500px;
+                    width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                    <h3 style="margin: 0 0 16px 0; color: #333;">
+                        <i class="fa-solid fa-paper-plane" style="color: #28a745; margin-right: 8px;"></i>
+                        Confirm Specification Submission
+                    </h3>
+                    <p style="margin: 0 0 12px 0; color: #666;">
+                        You are about to submit the specification "<strong>${this.currentSpecification.specName}</strong>" to the registry.
+                    </p>
+                    <p style="margin: 0 0 20px 0; color: #666;">
+                        Once submitted, this specification will be processed by the registry administrators. Are you sure you want to proceed?
+                    </p>
+                    <div style="text-align: center; gap: 12px; display: flex; justify-content: center;">
+                        <button id="confirmSubmitBtn" style="
+                            padding: 8px 16px; background: #28a745; color: white; border: none;
+                            border-radius: 4px; cursor: pointer; font-size: 14px; margin-right: 8px;">
+                            Submit Specification
+                        </button>
+                        <button id="cancelSubmitBtn" style="
+                            padding: 8px 16px; background: #6c757d; color: white; border: none;
+                            border-radius: 4px; cursor: pointer; font-size: 14px;">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        // Add event listeners
+        document.getElementById('confirmSubmitBtn').addEventListener('click', () => {
+            document.getElementById('submitConfirmModal').remove();
+            onConfirm();
+        });
+        
+        document.getElementById('cancelSubmitBtn').addEventListener('click', () => {
+            document.getElementById('submitConfirmModal').remove();
+        });
+    }
+
+    async performSubmission() {
+
         try {
             // Update the specification status using the data manager
             if (this.dataManager) {
@@ -313,6 +374,19 @@ class SpecificationPreview {
             console.error('SpecificationPreview: Error during cleanup:', error);
             // Still redirect even if cleanup fails
             window.location.href = "mySpecifications.html";
+        }
+    }
+
+    updateSubmitButtonAppearance() {
+        const submitButton = document.querySelector('button[onclick="submitSpecificationPreview()"]');
+        if (submitButton) {
+            // Make submit button more prominent
+            submitButton.style.background = '#28a745';
+            submitButton.style.color = 'white';
+            submitButton.style.fontWeight = 'bold';
+            submitButton.style.boxShadow = '0 2px 4px rgba(40, 167, 69, 0.3)';
+            submitButton.style.border = 'none';
+            submitButton.style.borderRadius = '4px';
         }
     }
 }
