@@ -87,7 +87,6 @@ class GoverningEntityList {
     async loadData() {
         console.log('GoverningEntityList: Loading governing entity data...');
         
-        // Load data from JSON file
         // Check if user is an Admin
         if (typeof isAdmin === 'function' && !isAdmin(window.authManager)) {
             console.warn('GoverningEntityList: User is not an Admin. Cannot fetch user group data.');
@@ -160,14 +159,7 @@ class GoverningEntityList {
 
             // Create URLSearchParams for view page
             const params = new URLSearchParams({
-                Created: entry.createdDate ? new Date(entry.createdDate).toLocaleDateString('en-GB') : 'N/A',
-                GoverningEntity: entry.groupName || 'N/A',
-                NoOfUsers: entry.numberUsers || '0',
-                TotalSpecifications: totalSpecifications.toString(),
-                InProgress: entry.numberInProgress || '0',
-                Submitted: entry.numberSubmitted || '0',
-                UnderReview: entry.numberUnderReview || '0',
-                Verified: entry.numberVerified || '0'
+                id: entry.userGroupID
             }).toString();
 
             row.innerHTML = `
@@ -252,7 +244,8 @@ class GoverningEntityList {
                 "numberInProgress": 0,
                 "numberSubmitted": 0,
                 "numberUnderReview": 0,
-                "numberVerified": 0
+                "numberVerified": 0,
+                "userGroupID": Date.now()
             };
 
             // Remove from waiting approval table
@@ -304,12 +297,34 @@ class GoverningEntityView {
         }
     }
 
-    initializeView() {
+    async initializeView() {
         console.log('GoverningEntityView: Setting up view...');
         
         // Parse URL parameters
         this.parseUrlParameters();
         
+        if (!this.userGroupId) {
+            console.error('GoverningEntityView: No userGroupID found in URL parameters.');
+            // Display an error or redirect
+            document.querySelector('.page-Content').innerHTML = `
+                <h1>Error</h1>
+                <p>No Governing Entity ID provided. Please navigate from the Governing Entities list.</p>
+                <button onclick="window.location.href='governingEntityList.html'">Return to List</button>
+            `;
+            return;
+        }
+
+        try {
+            await this.loadEntityDetails();
+        } catch (error) {
+            console.error('GoverningEntityView: Failed to load entity details:', error);
+            document.querySelector('.page-Content').innerHTML = `
+                <h1>Error</h1>
+                <p>Failed to load details for this Governing Entity: ${error.message}</p>
+                <button onclick="window.location.href='governingEntityList.html'">Return to List</button>
+            `;
+            return;
+        }
         // Set up the view
         this.setupEntityTitle();
         this.setupEntityDetails();
@@ -320,18 +335,9 @@ class GoverningEntityView {
 
     parseUrlParameters() {
         const params = new URLSearchParams(window.location.search);
-        this.entity = {
-            Created: params.get("Created") || "",
-            GoverningEntity: params.get("GoverningEntity") || "",
-            NoOfUsers: params.get("NoOfUsers") || "",
-            TotalSpecifications: params.get("TotalSpecifications") || "", // New param
-            InProgress: params.get("InProgress") || "",
-            Submitted: params.get("Submitted") || "", // New param
-            UnderReview: params.get("UnderReview") || "", // New param
-            Verified: params.get("Verified") || "" // New param
-        };
+        this.userGroupId = parseInt(params.get("id"), 10);
         
-        console.log('GoverningEntityView: Parsed entity data:', this.entity);
+        console.log('GoverningEntityView: Parsed entity data:', this.userGroupId);
     }
 
     setupEntityTitle() {
