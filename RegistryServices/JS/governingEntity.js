@@ -402,8 +402,7 @@ class GoverningEntityView {
         if (!specificationsSectionElement) return;
 
         const specificationsTable = `
-            <h2 style="margin:24px 0 8px 0;font-size:20px;">Specifications</h2>
-            <table class="styled-table" id="specificationsTable" style="font-size:13px;">
+            <table class="styled-table" id="specificationsTable" style="font-size:13px; margin-top: 0;">
                 <thead>
                     <tr>
                         <th>Created/Modified</th>
