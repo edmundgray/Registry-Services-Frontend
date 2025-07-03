@@ -298,7 +298,7 @@
                     showLoadingIndicator();
                     
                     // Try to get the specification from API (no authentication required for public viewing)
-                    const response = await authenticatedFetch(`${AUTH_CONFIG.baseUrl}/specifications/${specificationId}?PageSize=1000`, {
+                    const response = await authenticatedFetch(`${AUTH_CONFIG.baseUrl}/specifications/${specificationId}`, {
                         method: 'GET'
                         // Removed forceAuth: true to allow unauthenticated access
                     });
@@ -427,14 +427,15 @@
                 try {
                     console.log('DEBUG: Populating specification model with data:', {
                         specificationCores: spec.specificationCores,
-                        specificationExtensionComponents: spec.specificationExtensionComponents
+                        specificationExtensionComponents: spec.specificationExtensionComponents,
+                        additionalRequirements: spec.additionalRequirements
                     });
                     
                     // Populate Core Invoice Model table
                     const coreTableBody = document.querySelector("#coreInvoiceModelTable tbody");
                     coreTableBody.innerHTML = ''; // Clear existing rows
                     
-                    const coreItems = spec.specificationCores?.items || [];
+                    const coreItems = spec.specificationCores || [];
                     console.log('DEBUG: Core items found:', coreItems.length);
                     
                     if (coreItems.length > 0) {
@@ -458,7 +459,7 @@
                     const extensionTableBody = document.querySelector("#extensionComponentTable tbody");
                     extensionTableBody.innerHTML = ''; // Clear existing rows
                     
-                    const extensionItems = spec.specificationExtensionComponents?.items || [];
+                    const extensionItems = spec.specificationExtensionComponents || [];
                     console.log('DEBUG: Extension items found:', extensionItems.length);
                     
                     if (extensionItems.length > 0) {
@@ -478,17 +479,29 @@
                         cell.style.color = '#666';
                     }
                     
-                    // Populate Additional Requirements table (not yet implemented in API)
+                    // Populate Additional Requirements table
                     const additionalTableBody = document.querySelector("#additionalRequirementsTable tbody");
                     additionalTableBody.innerHTML = ''; // Clear existing rows
                     
-                    const row = additionalTableBody.insertRow();
-                    const cell = row.insertCell();
-                    cell.colSpan = 3;
-                    cell.textContent = 'Additional Requirements not yet implemented';
-                    cell.style.textAlign = 'center';
-                    cell.style.fontStyle = 'italic';
-                    cell.style.color = '#666';
+                    const additionalItems = spec.additionalRequirements || [];
+                    console.log('DEBUG: Additional requirements found:', additionalItems.length);
+                    
+                    if (additionalItems.length > 0) {
+                        additionalItems.forEach(item => {
+                            const row = additionalTableBody.insertRow();
+                            row.insertCell().textContent = item.businessTermID || 'N/A';
+                            row.insertCell().textContent = item.businessTermName || 'N/A';
+                            row.insertCell().textContent = item.typeOfChange || 'Additional Requirement';
+                        });
+                    } else {
+                        const row = additionalTableBody.insertRow();
+                        const cell = row.insertCell();
+                        cell.colSpan = 3;
+                        cell.textContent = 'No Additional Requirements specified';
+                        cell.style.textAlign = 'center';
+                        cell.style.fontStyle = 'italic';
+                        cell.style.color = '#666';
+                    }
                     
                 } catch (error) {
                     console.error('Error populating specification model:', error);

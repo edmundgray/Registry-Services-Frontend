@@ -26,7 +26,7 @@ class SpecificationDataManager {
     // API call to fetch specification data
     async loadSpecificationFromAPI(identityID) {
         try {
-            const apiUrl = `${AUTH_CONFIG.baseUrl}/specifications/${identityID}?PageSize=1000`;
+            const apiUrl = `${AUTH_CONFIG.baseUrl}/specifications/${identityID}`;
 
             const response = await authenticatedFetch(apiUrl, {
                 method: 'GET',
@@ -83,8 +83,9 @@ class SpecificationDataManager {
             isCountrySpecification: apiResponse.isCountrySpecification || true,
             
             // Nested data for other pages
-            coreInvoiceModelData: apiResponse.specificationCores?.items || [],
-            extensionComponentData: apiResponse.specificationExtensionComponents?.items || [],
+            coreInvoiceModelData: apiResponse.specificationCores || [],
+            extensionComponentData: apiResponse.specificationExtensionComponents || [],
+            additionalRequirementsData: apiResponse.additionalRequirements || [],
             
             // Metadata
             identityID: apiResponse.identityID,
@@ -199,11 +200,15 @@ class SpecificationDataManager {
             // Nested data - preserve from working data if available
             specificationCores: this.workingData?.coreInvoiceModelData ? 
                 this.formatCoreInvoiceModelForAPI(this.workingData.coreInvoiceModelData) :
-                this.originalData?.specificationCores || { items: [] },
+                this.originalData?.specificationCores || [],
             
-            specificationExtensionComponents: this.workingData?.extensionComponentData ? {
-                items: this.workingData.extensionComponentData
-            } : this.originalData?.specificationExtensionComponents || { items: [] }
+            specificationExtensionComponents: this.workingData?.extensionComponentData ? 
+                this.workingData.extensionComponentData :
+                this.originalData?.specificationExtensionComponents || [],
+                
+            additionalRequirements: this.workingData?.additionalRequirementsData ?
+                this.workingData.additionalRequirementsData :
+                this.originalData?.additionalRequirements || []
         };
     }
 
@@ -331,30 +336,26 @@ class SpecificationDataManager {
     // Helper method to format core invoice model data for API
     formatCoreInvoiceModelForAPI(coreInvoiceModelData) {
         if (!coreInvoiceModelData) {
-            return { items: [] };
+            return [];
         }
 
         // Handle different data formats
         if (Array.isArray(coreInvoiceModelData)) {
             // If it's just an array of IDs
-            return {
-                items: coreInvoiceModelData.map(id => ({ id: id }))
-            };
+            return coreInvoiceModelData.map(id => ({ id: id }));
         } else if (coreInvoiceModelData.selectedIds && Array.isArray(coreInvoiceModelData.selectedIds)) {
             // If it's an object with selectedIds and typeOfChangeValues
-            return {
-                items: coreInvoiceModelData.selectedIds.map(id => ({
-                    id: id,
-                    typeOfChange: coreInvoiceModelData.typeOfChangeValues?.[id] || 'No change'
-                }))
-            };
+            return coreInvoiceModelData.selectedIds.map(id => ({
+                id: id,
+                typeOfChange: coreInvoiceModelData.typeOfChangeValues?.[id] || 'No change'
+            }));
         } else if (coreInvoiceModelData.items) {
-            // If it's already in the API format
-            return coreInvoiceModelData;
+            // If it's already in the old API format with items wrapper
+            return coreInvoiceModelData.items;
         }
 
         // Fallback
-        return { items: [] };
+        return [];
     }
 
     // Utility functions
