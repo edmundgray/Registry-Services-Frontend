@@ -59,6 +59,48 @@ class SpecificationPreview {
                 
                 // Get the working data
                 this.currentSpecification = this.dataManager.workingData || this.dataManager.loadWorkingDataFromLocalStorage();
+                // After loading the main specification, explicitly load core elements
+                // since they are not embedded in the main /specifications/{id} API response.
+                try {
+                    console.log('SpecificationPreview: Explicitly loading core elements from API for preview.');
+                    const coreElementsLoaded = await this.dataManager.loadCoreElementsFromAPI(this.dataManager.currentSpecId);
+
+                    // Attach the loaded core elements data to the current specification object
+                    // The structure from loadCoreElementsFromAPI (selectedIds, typeOfChangeValues etc.) is what populateCoreInvoiceTable expects.
+                    if (this.currentSpecification) {
+                        this.currentSpecification.coreInvoiceModelData = coreElementsLoaded;
+                        console.log('SpecificationPreview: Attached loaded core elements to currentSpecification:', coreElementsLoaded.selectedIds.length, 'elements.');
+                    } else {
+                        console.warn('SpecificationPreview: currentSpecification is null, cannot attach core elements.');
+                    }
+                } catch (coreLoadError) {
+                    console.error('SpecificationPreview: Error explicitly loading core elements for preview:', coreLoadError);
+                    // Set to empty to prevent errors down the line if load fails
+                    if (this.currentSpecification) {
+                        this.currentSpecification.coreInvoiceModelData = { selectedIds: [], typeOfChangeValues: {} };
+                    }
+                }
+
+                // Explicitly load additional requirements from API for preview
+                try {
+                    console.log('SpecificationPreview: Explicitly loading additional requirements from API for preview.');
+                    const additionalRequirementsLoaded = await this.dataManager.loadAdditionalRequirementsFromAPI(this.dataManager.currentSpecId);
+
+                    // Attach the loaded additional requirements data to the current specification object
+                    if (this.currentSpecification) {
+                        this.currentSpecification.additionalRequirements = additionalRequirementsLoaded;
+                        console.log('SpecificationPreview: Attached loaded additional requirements to currentSpecification:', additionalRequirementsLoaded.length, 'elements.');
+                        console.log('SpecificationPreview: Sample loaded additional requirements:', additionalRequirementsLoaded.slice(0, 3)); // Log first 3 for inspection
+                    } else {
+                        console.warn('SpecificationPreview: currentSpecification is null, cannot attach additional requirements.');
+                    }
+                } catch (additionalReqsError) {
+                    console.error('SpecificationPreview: Error explicitly loading additional requirements for preview:', additionalReqsError);
+                    // Set to empty to prevent errors down the line if load fails
+                    if (this.currentSpecification) {
+                        this.currentSpecification.additionalRequirements = [];
+                    }
+                }
                 console.log('SpecificationPreview: Working data loaded:', this.currentSpecification);
                 
             } else {
@@ -128,20 +170,39 @@ class SpecificationPreview {
         coreInvoiceTableBody.innerHTML = ''; // Clear placeholders
 
         // Get core invoice model data from the specification
-        const coreInvoiceModelIds = this.currentSpecification.coreInvoiceModelIds || [];
         
-        if (coreInvoiceModelIds.length > 0) {
+        
+        const selectedCoreIds = this.currentSpecification.coreInvoiceModelData?.selectedIds || [];
+        const typeOfChangeValues = this.currentSpecification.coreInvoiceModelData?.typeOfChangeValues || {};
+        console.log('SpecificationPreview: DEBUG - Content of coreInvoiceModelData (forcing expansion):'); console.log('  Selected Core IDs (array):', selectedCoreIds); console.log('  Selected Core IDs count:', selectedCoreIds.length); console.log('  Type of Change Values (object):', typeOfChangeValues);
+
+        if (selectedCoreIds.length > 0) {
+            console.log('SpecificationPreview: Core invoice model elements found:', selectedCoreIds.length);
             // Try to fetch the core invoice model elements to get full details
             try {
-                // This would typically be loaded from the data manager or API
-                console.log('SpecificationPreview: Core invoice model IDs:', coreInvoiceModelIds);
                 
+                
+                const coreApiUrl = `${AUTH_CONFIG.baseUrl}/coreinvoicemodels`;
+                console.log('SpecificationPreview: Fetching all core invoice models from API for detailed info:', coreApiUrl);
+
+                const response = await authenticatedFetch(coreApiUrl, { method: 'GET' });
+                if (!response.ok) throw new Error('Failed to fetch core invoice models for preview');
+                const apiData = await response.json();
+                const allCoreElements = Array.isArray(apiData) ? apiData : (apiData.items || []);
+
+                console.log('SpecificationPreview: All core elements fetched from API:', allCoreElements.length, 'elements.');
+
                 // For now, display the IDs - in a full implementation, you'd fetch the full element details
-                coreInvoiceModelIds.forEach(id => {
+                selectedCoreIds.forEach(id => {
                     const row = coreInvoiceTableBody.insertRow();
+                    const elementDetails = allCoreElements.find(el => el.id === id || el.ID === id || el.businessTermID === id);
+
+                    const businessTerm = elementDetails?.businessTerm || elementDetails?.BusinessTerm || `Unknown Term for ${id}`;
+                    const typeOfChange = typeOfChangeValues[id] || 'No change'; 
+
                     row.insertCell().textContent = id;
-                    row.insertCell().textContent = 'Core Element'; // Placeholder
-                    row.insertCell().textContent = 'Required'; // Placeholder
+                    row.insertCell().textContent = businessTerm; // Placeholder
+                    row.insertCell().textContent = typeOfChange; // Placeholder
                 });
                 
             } catch (error) {
@@ -151,6 +212,14 @@ class SpecificationPreview {
                 row.cells[0].textContent = "Error loading core invoice elements.";
                 row.cells[0].style.textAlign = "center";
                 row.cells[0].style.color = "red";
+
+                selectedCoreIds.forEach(id => {
+                const row = coreInvoiceTableBody.insertRow();
+                const typeOfChange = typeOfChangeValues[id] || 'No change';
+                row.insertCell().textContent = id;
+                row.insertCell().textContent = 'Unknown Term'; 
+                row.insertCell().textContent = typeOfChange;
+                });
             }
         } else {
             const row = coreInvoiceTableBody.insertRow();
@@ -163,7 +232,7 @@ class SpecificationPreview {
     async populateExtensionComponentTable() {
         console.log('SpecificationPreview: Populating Extension Component table...');
         
-        const extensionTableBody = document.getElementById("previewExtensionTableBody");
+        const extensionTableBody = document.getElementById("previewExtensionComponentTableBody");
         if (!extensionTableBody) return;
         
         extensionTableBody.innerHTML = ''; // Clear placeholders
@@ -172,17 +241,20 @@ class SpecificationPreview {
         const extensionComponentData = this.currentSpecification.extensionComponentData || [];
         
         if (extensionComponentData.length > 0) {
-            console.log('SpecificationPreview: Extension component data:', extensionComponentData);
-            
-            extensionComponentData.forEach(component => {
-                if (component.selectedElements && component.selectedElements.length > 0) {
-                    component.selectedElements.forEach(elementId => {
-                        const row = extensionTableBody.insertRow();
-                        row.insertCell().textContent = elementId;
-                        row.insertCell().textContent = component.componentName;
-                        row.insertCell().textContent = 'Extension'; // Placeholder
-                    });
-                }
+            console.log('SpecificationPreview: Extension component data found:', extensionComponentData.length, 'elements.');
+            console.log('SpecificationPreview: Sample extension element data (first item):', extensionComponentData[0]);
+
+            extensionComponentData.forEach(element => { // CORRECT: Iterate directly over 'element'
+                const row = extensionTableBody.insertRow();
+
+                // Extract data from the element object
+                const id = element.businessTermID || element.ID || 'N/A'; // Use businessTermID or ID
+                const businessTerm = element.extBusinessTerm || element.BusinessTerm || 'N/A'; // Use extBusinessTerm for display
+                const extensionComponent = element.extensionComponentID || element.Component || 'N/A'; // Use extensionComponentID for component name
+
+                row.insertCell().textContent = id;
+                row.insertCell().textContent = businessTerm;
+                row.insertCell().textContent = extensionComponent; // Use the actual component identifier
             });
         } else {
             const row = extensionTableBody.insertRow();
@@ -202,15 +274,16 @@ class SpecificationPreview {
 
         // Get additional requirements data from the specification
         const additionalRequirements = this.currentSpecification.additionalRequirements || [];
+        console.log('SpecificationPreview: DEBUG - Data received by populateAdditionalRequirementsTable:', additionalRequirements); if (additionalRequirements.length > 0) { console.log('SpecificationPreview: DEBUG - First additional requirement item:', additionalRequirements[0]); } 
         
         if (additionalRequirements.length > 0) {
             console.log('SpecificationPreview: Additional requirements:', additionalRequirements);
             
             additionalRequirements.forEach(req => {
                 const row = additionalRequirementsTableBody.insertRow();
-                row.insertCell().textContent = req.ID || '';
-                row.insertCell().textContent = req.BusinessTerm || '';
-                row.insertCell().textContent = req.TypeOfChange || 'N/A';
+                row.insertCell().textContent = req.businessTermID || '';
+                row.insertCell().textContent = req.businessTermName || '';
+                row.insertCell().textContent = req.typeOfChange || 'N/A';
             });
         } else {
             const row = additionalRequirementsTableBody.insertRow();
