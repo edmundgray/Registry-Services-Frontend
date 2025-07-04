@@ -554,7 +554,7 @@ body {
 
 .styled-table tbody tr.level-2-bg.child-row td,
 .styled-table tbody tr.level-2-bg.child-row.has-children-parent-row td {
-    background-color: #b6eac7 !important; /* Medium green for level 2 BG */
+    background-color: #04b940 !important; /* Medium green for level 2 BG */
     color: #000 !important;
     padding-left: 13.5px !important;
 }
@@ -568,6 +568,18 @@ body {
     color: #000 !important;
     padding-left: 13.5px !important;
 }
+
+.styled-table tbody tr:nth-of-type(odd):not([class*="level-"]) {
+    background-color: #fff;
+    color: #000;
+}
+
+.styled-table tbody tr:nth-of-type(even):not([class*="level-"]) {
+    background-color: #f3f3f3;
+    color: #000;
+}
+
+
 
 /******************************************************************************
     Styling for the Tooltip in coreInvoiceModel.html
@@ -868,6 +880,27 @@ button[onclick*="deleteRow"]:active {
 {
     background-color: #218838;
 }
+
+/* Light Blue for XT elements */
+.level-xt td{
+    background-color: #b3e0ff !important;
+    color: #000 !important;
+}
+
+/* Dark Blue for XG Level 1 parents */
+.level-1-xg td {
+    background-color: #000080 !important;
+    color: #fff !important;
+}
+
+/* Medium Blue for XG Level 2 or Level 3 parents */
+.level-2-xg td,
+.level-3-xg td {
+    background-color: #6699ff !important;
+    color: #000 !important;
+}
+
+
 
 /******************************************************************************
     Login Modal Styling

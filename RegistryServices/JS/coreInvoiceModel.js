@@ -184,6 +184,16 @@ document.addEventListener("DOMContentLoaded", function () {
                 // Hide all child rows (level > 1) by default, regardless of BT/BG
                 if (item.NumericLevel > 1) tr.style.display = 'none';
 
+                if (item.ID && item.ID.startsWith('BG')) {
+                    if (item.NumericLevel === 1) {
+                        tr.classList.add('level-1-bg');
+                    } else if (item.NumericLevel === 2) {
+                        tr.classList.add('level-2-bg');
+                    } else if (item.NumericLevel === 3) {
+                        tr.classList.add('level-3-bg');
+                    }
+                }
+                
                 // Only include columns that match the table header
                 tr.innerHTML = `
                     <td>${item.ID || 'N/A'}</td>
@@ -247,18 +257,18 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
                 // Add color classes based on level and ID prefix, but never for BT rows
-                if (!isBT) {
-                    if (item.NumericLevel === 3 && item.ID && item.ID.startsWith('BG')) {
-                        tr.classList.add('level-3-bg');
-                    } else if (item.NumericLevel === 2) {
-                        if (item.ID && item.ID.startsWith('BG')) {
-                            tr.classList.add('level-2-bg');
-                        }
-                    }
-                    if (item.NumericLevel === 1 && item.ID && item.ID.startsWith('BG')) {
-                        tr.classList.add('level-1-bg');
-                    }
-                }
+                // if (!isBT) {
+                //     if (item.NumericLevel === 3 && item.ID && item.ID.startsWith('BG')) {
+                //         tr.classList.add('level-3-bg');
+                //     } else if (item.NumericLevel === 2) {
+                //         if (item.ID && item.ID.startsWith('BG')) {
+                //             tr.classList.add('level-2-bg');
+                //         }
+                //     }
+                //     if (item.NumericLevel === 1 && item.ID && item.ID.startsWith('BG')) {
+                //         tr.classList.add('level-1-bg');
+                //     }
+                // }
 
                 // Append the parent row first
                 container.appendChild(tr);

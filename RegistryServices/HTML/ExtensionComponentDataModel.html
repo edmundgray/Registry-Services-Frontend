@@ -94,6 +94,18 @@
             let componentsContainer;
 
             // Initialize data manager
+            function getNumericLevelFromDotNotation(levelStr) {
+                if (!levelStr) return 0;
+                if (levelStr.includes('+')) {
+                return levelStr.split('+').length - 1;
+                }
+                const parts = levelStr.split('.');
+                if (parts.length === 1 && !isNaN(parseInt(parts[0]))) {
+                return 1; 
+                }
+                return parts.length > 0 ? parts.length : 0;
+            }
+
             async function initializeDataManager() {
                 try {
                     console.log('DEBUG: ExtensionComponentDataModel - Initializing data manager');
@@ -419,6 +431,44 @@
                         selectedIds,
                         element: el 
                     });
+
+                    const isXG = businessTermID.startsWith('XG');
+                    const isXT = businessTermID.startsWith('XT');
+                    const isBG = businessTermID.startsWith('BG'); // Check for BG
+                    const numericLevel = getNumericLevelFromDotNotation(el.level || '');
+                    
+                    if (isXG) {
+                if (numericLevel === 1) { // Interpretation of 'LEVEL 1 parent' for XG
+                    row.classList.add('level-1-xg');
+                } else if (numericLevel === 2 || numericLevel === 3) { // Interpretation of 'LEVEL 2 or 3 parent' for XG
+                    row.classList.add('level-2-xg'); // Assuming level-3-xg is same as level-2-xg for now
+                }
+                // XG elements are typically parents or nested within an XG hierarchy,
+                // apply parent/child classes if they have children or are part of a structure
+                // (You may need to enhance this based on actual XG data structure if it has nesting)
+                if (numericLevel === 1) { // Assuming level 1 XG is a main parent
+                    row.classList.add('parent-row');
+                } else if (numericLevel > 1) { // Assuming other levels are children
+                    row.classList.add('child-row');
+                }
+
+            } else if (isXT) {
+                row.classList.add('level-xt');
+                // XT elements are typically not parents themselves, but are children.
+                // Apply child-row if their level implies nesting.
+                if (numericLevel > 0) { // If it has any level, it's a child of something
+                    row.classList.add('child-row');
+                }
+            } else if (isBG) { // Apply green coloring for BG elements
+                if (numericLevel === 1) { // Dark green for LEVEL 1 BG parents
+                    row.classList.add('level-1-bg');
+                    row.classList.add('parent-row'); // Add parent-row for level 1 BG
+                } else if (numericLevel === 2 || numericLevel === 3) { // Medium green for LEVEL 2 or 3 BG parents
+                    row.classList.add('level-2-bg'); // Use level-2-bg for both 2 and 3
+                    row.classList.add('child-row'); // Add child-row for nested BG elements
+                }
+                // If it's a BG element but not a recognized parent level, it will fall through to default table styling
+            }
 
                     const mappedEl = {
                         ID: businessTermID,
