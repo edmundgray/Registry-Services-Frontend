@@ -5,6 +5,67 @@
 let loggedInStatus = false; // Will be updated by updateVisibility()
 console.log("Page load: User authentication will be checked by AuthManager");
 
+/******************************************************************************
+    Debug Functions
+ ******************************************************************************/
+// Debug function to check token time remaining - call from console: checkTokenTime()
+function checkTokenTime() {
+    try {
+        if (!window.authManager) {
+            console.log('❌ AuthManager not available');
+            return;
+        }
+
+        const token = window.authManager.accessToken;
+        if (!token) {
+            console.log('❌ No access token found');
+            return;
+        }
+
+        // Decode the JWT token to get expiry time
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const expiry = payload.exp;
+        const now = Math.floor(Date.now() / 1000);
+        const timeRemaining = expiry - now;
+
+        console.log('🔐 Token Debug Information:');
+        console.log('  Current time:', new Date().toLocaleString());
+        console.log('  Token expires:', new Date(expiry * 1000).toLocaleString());
+        console.log('  Time remaining:', timeRemaining, 'seconds');
+        console.log('  Time remaining:', Math.floor(timeRemaining / 60), 'minutes and', timeRemaining % 60, 'seconds');
+        
+        if (timeRemaining <= 0) {
+            console.log('  Status: ❌ TOKEN EXPIRED');
+        } else if (timeRemaining <= 300) { // 5 minutes
+            console.log('  Status: ⚠️ TOKEN EXPIRING SOON');
+        } else {
+            console.log('  Status: ✅ TOKEN VALID');
+        }
+
+        // Show auth manager state
+        console.log('  Auth Manager State:');
+        console.log('    - isAuthenticated:', window.authManager.isAuthenticated);
+        console.log('    - warningShown:', window.authManager.warningShown);
+        
+        return {
+            timeRemaining,
+            expired: timeRemaining <= 0,
+            expiringSoon: timeRemaining <= 300,
+            expiryDate: new Date(expiry * 1000),
+            authManagerState: {
+                isAuthenticated: window.authManager.isAuthenticated,
+                warningShown: window.authManager.warningShown
+            }
+        };
+    } catch (error) {
+        console.error('❌ Error checking token time:', error);
+        return null;
+    }
+}
+
+// Make the debug function globally accessible
+window.checkTokenTime = checkTokenTime;
+
 function toggleLogin() 
 {
     // Check if user is currently logged in
