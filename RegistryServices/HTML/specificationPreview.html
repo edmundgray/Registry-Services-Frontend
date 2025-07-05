@@ -17,17 +17,22 @@
                     const headers = { ...(options.headers || {}), ...window.authManager.getAuthHeaders() };
                     let response = await fetch(url, { ...options, headers });
                     
-                    if (response.status === 401) {
-                        // Try to refresh the token
+                    if (response.status === 401 || response.status === 403) {
+                        // Try to refresh the token first
                         const refreshed = await window.authManager.refreshToken();
                         if (refreshed) {
                             // Retry with new token
                             const newHeaders = { ...(options.headers || {}), ...window.authManager.getAuthHeaders() };
                             response = await fetch(url, { ...options, headers: newHeaders });
+                            
+                            // Check if the retry also failed
+                            if (response.status === 401 || response.status === 403) {
+                                handleSessionExpiry();
+                                throw new Error('Session expired');
+                            }
                         } else {
-                            // Show re-authentication modal
-                            window.authManager.showReAuthModal();
-                            throw new Error('Authentication failed');
+                            handleSessionExpiry();
+                            throw new Error('Session expired');
                         }
                     }
                     
@@ -36,6 +41,42 @@
                     console.error('Authenticated fetch error:', error);
                     throw error;
                 }
+            }
+            
+            function handleSessionExpiry() {
+                // Preserve workflow data before clearing authentication
+                preserveWorkflowData();
+                
+                // Clear only authentication data
+                window.authManager.clearAuthData();
+                
+                // Show notification
+                showNotification('Your session has expired. You will be redirected to the login page in 3 seconds.', 'warning');
+                
+                // Redirect after 3 seconds
+                setTimeout(() => {
+                    window.location.href = '../index.html';
+                }, 3000);
+            }
+            
+            function preserveWorkflowData() {
+                // Preserve selected specification and workflow data
+                const selectedSpec = sessionStorage.getItem('selectedSpecification');
+                const workingData = sessionStorage.getItem('workingData_preview');
+                const breadcrumbContext = sessionStorage.getItem('breadcrumbContext');
+                
+                if (selectedSpec) {
+                    localStorage.setItem('preserved_selectedSpecification', selectedSpec);
+                }
+                if (workingData) {
+                    localStorage.setItem('preserved_workingData_preview', workingData);
+                }
+                if (breadcrumbContext) {
+                    localStorage.setItem('preserved_breadcrumbContext', breadcrumbContext);
+                }
+                
+                localStorage.setItem('workflowDataPreserved', 'true');
+                localStorage.setItem('preservedFromPage', 'specificationPreview');
             }
         </script>
         <script src="../JS/sidebarManager.js"></script>

@@ -33,22 +33,13 @@
                     
                     // Check for authentication errors
                     if (response.status === 401 || response.status === 403) {
-                        console.log('DEBUG: Authentication error detected, attempting token refresh');
+                        console.log('DEBUG: Authentication error detected - session expired');
                         
-                        // Attempt to refresh the token
-                        const refreshed = await window.authManager.attemptBackgroundRefresh();
+                        // Handle session expiry without popups
+                        handleSessionExpiry();
                         
-                        if (refreshed) {
-                            console.log('DEBUG: Token refreshed successfully, retrying request');
-                            const newAuthHeaders = window.authManager.getAuthHeaders();
-                            const newHeaders = { ...(options.headers || {}), ...newAuthHeaders };
-                            
-                            // Retry the request with the new token
-                            return await fetch(url, { ...options, headers: newHeaders });
-                        } else {
-                            console.log('DEBUG: Token refresh failed');
-                            throw new Error('Authentication failed and token refresh unsuccessful');
-                        }
+                        // Throw error to stop further processing
+                        throw new Error('Session expired - redirecting to login');
                     }
                     
                     return response;
@@ -56,6 +47,121 @@
                     console.error('DEBUG: authenticatedFetch error:', error);
                     throw error;
                 }
+            }
+
+            // Handle session expiry with notification and redirect
+            function handleSessionExpiry() {
+                console.log('Session expired - handling cleanup and redirect');
+                
+                // Show session expired notification
+                showSessionExpiredNotification();
+                
+                // Preserve workflow data for recovery after re-login
+                preserveWorkflowData();
+                
+                // Clear authentication data but keep workflow data
+                clearAuthenticationData();
+                
+                // Redirect to index.html after showing notification
+                setTimeout(() => {
+                    window.location.href = '../index.html';
+                }, 3000);
+            }
+
+            // Show session expired notification
+            function showSessionExpiredNotification() {
+                // Remove any existing notifications
+                const existingNotification = document.getElementById('sessionExpiredNotification');
+                if (existingNotification) {
+                    existingNotification.remove();
+                }
+
+                const notification = document.createElement('div');
+                notification.id = 'sessionExpiredNotification';
+                notification.style.cssText = `
+                    position: fixed; top: 20px; right: 20px; z-index: 10000;
+                    background: #f8d7da; color: #721c24; padding: 20px;
+                    border-radius: 8px; border: 2px solid #f5c6cb;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    max-width: 350px; font-family: Arial, sans-serif;
+                `;
+                notification.innerHTML = `
+                    <div style="display: flex; align-items: flex-start;">
+                        <i class="fa-solid fa-exclamation-triangle" style="margin-right: 15px; font-size: 20px; margin-top: 2px;"></i>
+                        <div style="flex: 1;">
+                            <strong style="display: block; margin-bottom: 5px;">Session Expired</strong>
+                            <p style="margin: 0; font-size: 14px; line-height: 1.4;">
+                                Your session has expired. Your work has been saved and you will be redirected to the login page.
+                            </p>
+                            <small style="display: block; margin-top: 8px; opacity: 0.8;">
+                                Redirecting in 3 seconds...
+                            </small>
+                        </div>
+                        <button onclick="this.parentNode.parentNode.remove(); window.location.href='../index.html';" 
+                                style="margin-left: 10px; background: none; border: none; font-size: 18px; cursor: pointer; color: #721c24;">
+                            ×
+                        </button>
+                    </div>
+                `;
+                document.body.appendChild(notification);
+
+                // Auto-remove notification after redirect
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 4000);
+            }
+
+            // Preserve workflow data for recovery after re-login
+            function preserveWorkflowData() {
+                try {
+                    // Create a recovery object with current workflow state
+                    const recoveryData = {
+                        timestamp: new Date().toISOString(),
+                        currentPage: window.location.pathname,
+                        workflowData: {},
+                        breadcrumbContext: null
+                    };
+
+                    // Preserve specification workflow data
+                    if (localStorage.getItem('selectedSpecification')) {
+                        recoveryData.workflowData.selectedSpecification = localStorage.getItem('selectedSpecification');
+                    }
+
+                    // Preserve any working data (numbered keys like workingData_32)
+                    Object.keys(localStorage).forEach(key => {
+                        if (key.startsWith('workingData_')) {
+                            recoveryData.workflowData[key] = localStorage.getItem(key);
+                        }
+                    });
+
+                    // Preserve breadcrumb context if available
+                    if (window.breadcrumbManager && typeof window.breadcrumbManager.getContext === 'function') {
+                        recoveryData.breadcrumbContext = window.breadcrumbManager.getContext();
+                    }
+
+                    // Save recovery data with a special key
+                    localStorage.setItem('sessionRecoveryData', JSON.stringify(recoveryData));
+                    
+                    console.log('DEBUG: Workflow data preserved for recovery:', recoveryData);
+                } catch (error) {
+                    console.error('Error preserving workflow data:', error);
+                }
+            }
+
+            // Clear authentication data but preserve workflow data
+            function clearAuthenticationData() {
+                // Clear authentication-related items
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('token_expiry');
+                localStorage.removeItem('userId');
+                localStorage.removeItem('username');
+                localStorage.removeItem('userRole');
+                localStorage.removeItem('userGroupID');
+                localStorage.removeItem('groupName');
+
+                console.log('DEBUG: Authentication data cleared, workflow data preserved');
             }
         </script>
         <script src="../JS/sidebarManager.js"></script>
@@ -668,6 +774,9 @@
                 // Initialize authentication manager
                 window.authManager.init();
                 
+                // Check for and recover workflow data from previous session
+                checkForWorkflowRecovery();
+                
                 // Initialize session management for this page
                 if (typeof WorkflowSessionManager !== 'undefined' && window.workflowSessionManager) {
                     window.workflowSessionManager.init('general-navigation');
@@ -709,6 +818,168 @@
                     showErrorMessage('Please log in to view your specifications.');
                 }
             });
+
+            // Check for workflow recovery data from previous session
+            function checkForWorkflowRecovery() {
+                try {
+                    const recoveryDataStr = localStorage.getItem('sessionRecoveryData');
+                    if (!recoveryDataStr) {
+                        return; // No recovery data available
+                    }
+
+                    const recoveryData = JSON.parse(recoveryDataStr);
+                    const recoveryAge = new Date() - new Date(recoveryData.timestamp);
+                    const maxRecoveryAge = 24 * 60 * 60 * 1000; // 24 hours
+
+                    // Only recover if data is less than 24 hours old
+                    if (recoveryAge > maxRecoveryAge) {
+                        console.log('DEBUG: Recovery data too old, clearing');
+                        localStorage.removeItem('sessionRecoveryData');
+                        return;
+                    }
+
+                    // Check if user is authenticated to show recovery options
+                    if (window.authManager && window.authManager.isAuthenticated) {
+                        showWorkflowRecoveryNotification(recoveryData);
+                    } else {
+                        console.log('DEBUG: User not authenticated, keeping recovery data for later');
+                    }
+
+                } catch (error) {
+                    console.error('Error checking workflow recovery:', error);
+                    localStorage.removeItem('sessionRecoveryData'); // Clear corrupted data
+                }
+            }
+
+            // Show workflow recovery notification
+            function showWorkflowRecoveryNotification(recoveryData) {
+                // Don't show if no meaningful workflow data
+                if (!recoveryData.workflowData || Object.keys(recoveryData.workflowData).length === 0) {
+                    localStorage.removeItem('sessionRecoveryData');
+                    return;
+                }
+
+                const notification = document.createElement('div');
+                notification.id = 'workflowRecoveryNotification';
+                notification.style.cssText = `
+                    position: fixed; top: 20px; right: 20px; z-index: 10000;
+                    background: #d1ecf1; color: #0c5460; padding: 20px;
+                    border-radius: 8px; border: 2px solid #bee5eb;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    max-width: 400px; font-family: Arial, sans-serif;
+                `;
+                
+                const workflowKeys = Object.keys(recoveryData.workflowData);
+                const hasSpecification = recoveryData.workflowData.selectedSpecification;
+                const workingDataCount = workflowKeys.filter(k => k.startsWith('workingData_')).length;
+
+                notification.innerHTML = `
+                    <div style="display: flex; align-items: flex-start;">
+                        <i class="fa-solid fa-info-circle" style="margin-right: 15px; font-size: 20px; margin-top: 2px;"></i>
+                        <div style="flex: 1;">
+                            <strong style="display: block; margin-bottom: 8px;">Workflow Recovery Available</strong>
+                            <p style="margin: 0 0 10px 0; font-size: 14px; line-height: 1.4;">
+                                Your previous work session was preserved:
+                            </p>
+                            <ul style="margin: 0 0 15px 0; padding-left: 20px; font-size: 13px;">
+                                ${hasSpecification ? `<li>Selected specification: ${recoveryData.workflowData.selectedSpecification}</li>` : ''}
+                                ${workingDataCount > 0 ? `<li>Working data from ${workingDataCount} form(s)</li>` : ''}
+                                <li>Session from: ${new Date(recoveryData.timestamp).toLocaleString()}</li>
+                            </ul>
+                            <div style="display: flex; gap: 10px;">
+                                <button onclick="restoreWorkflowData()" 
+                                        style="padding: 8px 12px; background: #0c5460; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                    Restore Work
+                                </button>
+                                <button onclick="discardRecoveryData()" 
+                                        style="padding: 8px 12px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                    Start Fresh
+                                </button>
+                            </div>
+                        </div>
+                        <button onclick="this.parentNode.parentNode.remove();" 
+                                style="margin-left: 10px; background: none; border: none; font-size: 18px; cursor: pointer; color: #0c5460;">
+                            ×
+                        </button>
+                    </div>
+                `;
+                document.body.appendChild(notification);
+
+                // Auto-remove after 30 seconds if no action taken
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 30000);
+            }
+
+            // Restore workflow data from recovery
+            function restoreWorkflowData() {
+                try {
+                    const recoveryDataStr = localStorage.getItem('sessionRecoveryData');
+                    if (!recoveryDataStr) return;
+
+                    const recoveryData = JSON.parse(recoveryDataStr);
+                    
+                    // Restore workflow data
+                    Object.keys(recoveryData.workflowData).forEach(key => {
+                        localStorage.setItem(key, recoveryData.workflowData[key]);
+                    });
+
+                    // Restore breadcrumb context if available
+                    if (recoveryData.breadcrumbContext && window.breadcrumbManager && typeof window.breadcrumbManager.setContext === 'function') {
+                        window.breadcrumbManager.setContext(recoveryData.breadcrumbContext);
+                    }
+
+                    // Remove recovery notification
+                    const notification = document.getElementById('workflowRecoveryNotification');
+                    if (notification) notification.remove();
+
+                    // Clear recovery data
+                    localStorage.removeItem('sessionRecoveryData');
+
+                    // Show success message
+                    showRecoverySuccessMessage();
+
+                    console.log('DEBUG: Workflow data restored successfully');
+                } catch (error) {
+                    console.error('Error restoring workflow data:', error);
+                }
+            }
+
+            // Discard recovery data and start fresh
+            function discardRecoveryData() {
+                localStorage.removeItem('sessionRecoveryData');
+                const notification = document.getElementById('workflowRecoveryNotification');
+                if (notification) notification.remove();
+                console.log('DEBUG: Recovery data discarded');
+            }
+
+            // Show recovery success message
+            function showRecoverySuccessMessage() {
+                const successMsg = document.createElement('div');
+                successMsg.style.cssText = `
+                    position: fixed; top: 20px; right: 20px; z-index: 10000;
+                    background: #d4edda; color: #155724; padding: 15px;
+                    border-radius: 5px; border: 2px solid #c3e6cb;
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                `;
+                successMsg.innerHTML = `
+                    <i class="fa-solid fa-check-circle" style="margin-right: 10px;"></i>
+                    <strong>Work Restored Successfully</strong>
+                `;
+                document.body.appendChild(successMsg);
+
+                setTimeout(() => {
+                    if (successMsg.parentNode) {
+                        successMsg.parentNode.removeChild(successMsg);
+                    }
+                }, 3000);
+            }
+
+            // Make recovery functions globally accessible
+            window.restoreWorkflowData = restoreWorkflowData;
+            window.discardRecoveryData = discardRecoveryData;
 
             // Refresh specifications when user logs in
             if (typeof updateVisibility === 'function') {

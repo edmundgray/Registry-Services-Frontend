@@ -5,20 +5,9 @@
         
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
         <link rel="stylesheet" href="../CSS/style.css">
-        <!-- Remove inline AUTH_CONFIG, use the one from authManager.js -->
-        <script src="../JS/auth/authManager.js"></script>
-        <script>
-            // Create a global authManager instance
-            window.authManager = new AuthManager();
-            // Define authenticatedFetch globally
-            function authenticatedFetch(url, options = {}) {
-                const headers = { ...(options.headers || {}), ...window.authManager.getAuthHeaders() };
-                return fetch(url, { ...options, headers });
-            }
-        </script>
         <script src="../JS/sidebarManager.js"></script>
         <script src="../JS/javascript.js"></script>
-        <script src="../JS/dataManager.js"></script>
+        <script src="../JS/ExtensionComponentDataModelRead.js"></script>
         
         <title>Registry Services</title>
     </head>
@@ -124,9 +113,8 @@
                     const headersApiUrl = `${AUTH_CONFIG.baseUrl}/extensionmodels/headers?page=1&pageSize=50`;
 
                     console.log(`Attempting to fetch Extension Component Headers from API: ${headersApiUrl}`);
-                    const headersResponse = await authenticatedFetch(headersApiUrl, {
-                        method: 'GET',
-                        forceAuth: true
+                    const headersResponse = await fetch(headersApiUrl, {
+                        method: 'GET'
                     });
 
                     if (!headersResponse.ok) {
@@ -182,7 +170,7 @@
                 const headersApiUrl = `${AUTH_CONFIG.baseUrl}/extensionmodels/headers?page=1&pageSize=50`;
                 let availableComponents = [];
                 try {
-                    const headersResponse = await authenticatedFetch(headersApiUrl, { method: 'GET', forceAuth: true });
+                    const headersResponse = await fetch(headersApiUrl, { method: 'GET' });
                     const headersData = await headersResponse.json();
                     availableComponents = headersData.items || headersData;
                 } catch (error) {
@@ -253,9 +241,8 @@
                     const elementsApiUrl = `${AUTH_CONFIG.baseUrl}/extensionmodels/elements/${selectedComponentId}`;
                     console.log(`Fetching elements for component: ${elementsApiUrl}`);
                     try {
-                        const elementsResponse = await authenticatedFetch(elementsApiUrl, {
-                            method: 'GET',
-                            forceAuth: true
+                        const elementsResponse = await fetch(elementsApiUrl, {
+                            method: 'GET'
                         });
                         if (!elementsResponse.ok) {
                             throw new Error(`HTTP error! status: ${elementsResponse.status}`);
@@ -438,13 +425,10 @@
         </style>
         
         <script>
-            // Initialize the sidebar and authentication when the page loads
+            // Initialize the sidebar when the page loads
             document.addEventListener('DOMContentLoaded', function() {
-                // Initialize auth manager
-                window.authManager.init();
-                
-                // Initialize sidebar
-                window.sidebarManager.initializeSidebar(window.authManager);
+                // Initialize sidebar without authentication
+                window.sidebarManager.initializeSidebar(null);
             });
         </script>
     </body>

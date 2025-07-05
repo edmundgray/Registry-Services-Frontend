@@ -8,17 +8,7 @@
         
         <!-- Add authManager.js for global AuthManager and AUTH_CONFIG -->
         <script src="../JS/auth/authManager.js"></script>
-        <script>
-            // Create a global authManager instance
-            window.authManager = new AuthManager();
-            // Define authenticatedFetch globally
-            function authenticatedFetch(url, options = {}) {
-                const headers = { ...(options.headers || {}), ...window.authManager.getAuthHeaders() };
-                return fetch(url, { ...options, headers });
-            }
-        </script>
         <script src="../JS/sidebarManager.js"></script>
-        <script src="../JS/breadcrumbManager.js"></script>
         <script src="../JS/javascript.js"></script>
         <script src="../JS/registryTable.js"></script>
         
@@ -126,21 +116,24 @@
         </div>
 
         <script>
+            // Create a global authManager instance for login functionality
+            window.authManager = new AuthManager();
+            
             // Function to update user display
             function updateUserDisplay() {
                 const userInfoElement = document.getElementById('currentUserDisplay');
                 if (!userInfoElement) return;
                 
-                const currentUser = getCurrentUser(window.authManager);
-                
-                if (currentUser.isAuthenticated) {
-                    const displayName = currentUser.username || 'Unknown User';
-                    const role = currentUser.role || 'User';
-                    userInfoElement.innerHTML = `${displayName} (${role})`;
-                    console.log('DEBUG: User display updated:', { displayName, role });
+                // Check if user is authenticated (isAuthenticated is a property, not a method)
+                if (window.authManager && window.authManager.isAuthenticated) {
+                    // Get username directly from authManager properties
+                    const username = window.authManager.username || 'Authenticated User';
+                    userInfoElement.innerHTML = `${username} (Authenticated)`;
+                    console.log('DEBUG: Registry page - authenticated user:', username);
                 } else {
-                    userInfoElement.innerHTML = 'Not logged in';
-                    console.log('DEBUG: User not authenticated');
+                    // For public registry page, show as "Public User"
+                    userInfoElement.innerHTML = 'Public User (Browse Mode)';
+                    console.log('DEBUG: Public registry mode - no authentication required');
                 }
             }
 
@@ -148,49 +141,28 @@
             document.addEventListener('DOMContentLoaded', function() {
                 console.log('eInvoicingSpecificationRegistry page loaded');
                 
-                // Initialize authentication manager
+                // Initialize auth manager
                 window.authManager.init();
                 
-                // Debug: Check initial auth state
-                console.log('DEBUG: Initial auth state after init:', {
-                    isAuthenticated: window.authManager.isAuthenticated,
-                    userRole: window.authManager.userRole,
-                    username: window.authManager.username
-                });
-                
-                // Initialize dynamic sidebar
+                // Initialize dynamic sidebar with auth manager (allows login/logout functionality)
                 window.sidebarManager.initializeSidebar(window.authManager);
-                
-                // Initialize breadcrumb system (clear any existing context for registry page)
-                if (window.breadcrumbManager) {
-                    window.breadcrumbManager.clearContext();
-                }
                 
                 // Update user display
                 updateUserDisplay();
                 
-                // Debug: Show current user information
-                const currentUser = getCurrentUser(window.authManager);
-                console.log('DEBUG: Current user info:', currentUser);
-                console.log('DEBUG: Auth manager state:', {
-                    isAuthenticated: window.authManager.isAuthenticated,
-                    userRole: window.authManager.userRole,
-                    username: window.authManager.username,
-                    userID: window.authManager.userID,
-                    accessToken: window.authManager.accessToken ? 'Present' : 'Not present'
-                });
+                console.log('DEBUG: Registry page initialized with auth support');
             });
 
-            // Update user display when authentication state changes
+            // Update user display when needed
             if (typeof updateVisibility === 'function') {
                 const originalUpdateVisibility = updateVisibility;
                 updateVisibility = function() {
                     originalUpdateVisibility();
                     
-                    // Update sidebar whenever visibility changes
+                    // Update sidebar with current auth state
                     window.sidebarManager.updateSidebar(window.authManager);
                     
-                    // Update user display whenever visibility changes
+                    // Update user display
                     updateUserDisplay();
                 };
             }

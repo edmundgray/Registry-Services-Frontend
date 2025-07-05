@@ -7,20 +7,9 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
         <link rel="stylesheet" href="../CSS/style.css">
         
-        <!-- Add authManager.js for global AuthManager and AUTH_CONFIG -->
-        <script src="../JS/auth/authManager.js"></script>
-        <script>
-            // Create a global authManager instance
-            window.authManager = new AuthManager();
-            // Define authenticatedFetch globally
-            function authenticatedFetch(url, options = {}) {
-                const headers = { ...(options.headers || {}), ...window.authManager.getAuthHeaders() };
-                return fetch(url, { ...options, headers });
-            }
-        </script>
         <script src="../JS/sidebarManager.js"></script>
         <script src="../JS/javascript.js"></script>
-        <script src="../JS/coreInvoiceModel.js"></script>
+        <script src="../JS/coreInvoiceModelRead.js"></script>
         
         <title>Registry Services</title>
         
@@ -143,13 +132,10 @@ document.addEventListener("DOMContentLoaded", function() {
         </script>
         
         <script>
-            // Initialize the sidebar and authentication when the page loads
+            // Initialize the sidebar when the page loads
             document.addEventListener('DOMContentLoaded', function() {
-                // Initialize auth manager
-                window.authManager.init();
-                
-                // Initialize sidebar
-                window.sidebarManager.initializeSidebar(window.authManager);
+                // Initialize sidebar without authentication
+                window.sidebarManager.initializeSidebar(null);
             });
         </script>
     </body>

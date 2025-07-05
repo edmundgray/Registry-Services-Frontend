@@ -17,17 +17,22 @@
                     const headers = { ...(options.headers || {}), ...window.authManager.getAuthHeaders() };
                     let response = await fetch(url, { ...options, headers });
                     
-                    if (response.status === 401) {
-                        // Try to refresh the token
+                    if (response.status === 401 || response.status === 403) {
+                        // Try to refresh the token first
                         const refreshed = await window.authManager.refreshToken();
                         if (refreshed) {
                             // Retry with new token
                             const newHeaders = { ...(options.headers || {}), ...window.authManager.getAuthHeaders() };
                             response = await fetch(url, { ...options, headers: newHeaders });
+                            
+                            // Check if the retry also failed
+                            if (response.status === 401 || response.status === 403) {
+                                handleSessionExpiry();
+                                throw new Error('Session expired');
+                            }
                         } else {
-                            // Show re-authentication modal
-                            window.authManager.showReAuthModal();
-                            throw new Error('Authentication failed');
+                            handleSessionExpiry();
+                            throw new Error('Session expired');
                         }
                     }
                     
@@ -36,6 +41,42 @@
                     console.error('Authenticated fetch error:', error);
                     throw error;
                 }
+            }
+            
+            function handleSessionExpiry() {
+                // Preserve workflow data before clearing authentication
+                preserveWorkflowData();
+                
+                // Clear only authentication data
+                window.authManager.clearAuthData();
+                
+                // Show notification
+                showNotification('Your session has expired. You will be redirected to the login page in 3 seconds.', 'warning');
+                
+                // Redirect after 3 seconds
+                setTimeout(() => {
+                    window.location.href = '../index.html';
+                }, 3000);
+            }
+            
+            function preserveWorkflowData() {
+                // Preserve selected specification and workflow data
+                const selectedSpec = sessionStorage.getItem('selectedSpecification');
+                const workingData = sessionStorage.getItem('workingData_additionalRequirements');
+                const breadcrumbContext = sessionStorage.getItem('breadcrumbContext');
+                
+                if (selectedSpec) {
+                    localStorage.setItem('preserved_selectedSpecification', selectedSpec);
+                }
+                if (workingData) {
+                    localStorage.setItem('preserved_workingData_additionalRequirements', workingData);
+                }
+                if (breadcrumbContext) {
+                    localStorage.setItem('preserved_breadcrumbContext', breadcrumbContext);
+                }
+                
+                localStorage.setItem('workflowDataPreserved', 'true');
+                localStorage.setItem('preservedFromPage', 'additionalRequirements');
             }
         </script>
         <script src="../JS/sidebarManager.js"></script>
@@ -126,6 +167,12 @@
                     window.sessionManager.init();
                 }
                 
+                // Check for preserved workflow data and offer recovery
+                checkForWorkflowRecovery();
+                
+                // Set up session warning
+                setupSessionWarning();
+                
                 // Initialize sidebar
                 window.sidebarManager.initializeSidebar(window.authManager);
                 
@@ -152,6 +199,79 @@
                     window.breadcrumbManager.setContext(context);
                 }
             });
+
+            function checkForWorkflowRecovery() {
+                const workflowDataPreserved = localStorage.getItem('workflowDataPreserved');
+                const preservedFromPage = localStorage.getItem('preservedFromPage');
+                
+                if (workflowDataPreserved === 'true' && preservedFromPage === 'additionalRequirements') {
+                    const preservedSpec = localStorage.getItem('preserved_selectedSpecification');
+                    const preservedWorkingData = localStorage.getItem('preserved_workingData_additionalRequirements');
+                    const preservedBreadcrumb = localStorage.getItem('preserved_breadcrumbContext');
+                    
+                    showNotification(
+                        'Your previous session expired, but your workflow data has been preserved. Would you like to restore it?',
+                        'info',
+                        [
+                            {
+                                text: 'Restore',
+                                action: () => {
+                                    if (preservedSpec) {
+                                        sessionStorage.setItem('selectedSpecification', preservedSpec);
+                                    }
+                                    if (preservedWorkingData) {
+                                        sessionStorage.setItem('workingData_additionalRequirements', preservedWorkingData);
+                                    }
+                                    if (preservedBreadcrumb) {
+                                        sessionStorage.setItem('breadcrumbContext', preservedBreadcrumb);
+                                    }
+                                    
+                                    // Clear preserved data
+                                    localStorage.removeItem('workflowDataPreserved');
+                                    localStorage.removeItem('preservedFromPage');
+                                    localStorage.removeItem('preserved_selectedSpecification');
+                                    localStorage.removeItem('preserved_workingData_additionalRequirements');
+                                    localStorage.removeItem('preserved_breadcrumbContext');
+                                    
+                                    showNotification('Workflow data restored successfully!', 'success');
+                                    
+                                    // Reload the page to apply restored data
+                                    setTimeout(() => {
+                                        window.location.reload();
+                                    }, 1500);
+                                }
+                            },
+                            {
+                                text: 'Start Fresh',
+                                action: () => {
+                                    // Clear preserved data
+                                    localStorage.removeItem('workflowDataPreserved');
+                                    localStorage.removeItem('preservedFromPage');
+                                    localStorage.removeItem('preserved_selectedSpecification');
+                                    localStorage.removeItem('preserved_workingData_additionalRequirements');
+                                    localStorage.removeItem('preserved_breadcrumbContext');
+                                    
+                                    showNotification('Starting with a fresh session.', 'info');
+                                }
+                            }
+                        ]
+                    );
+                }
+            }
+            
+            function setupSessionWarning() {
+                // Set up 5-minute session warning
+                const sessionWarningTime = 5 * 60 * 1000; // 5 minutes
+                
+                setTimeout(() => {
+                    if (window.authManager && window.authManager.isAuthenticated()) {
+                        showNotification(
+                            'Your session will expire soon. Save your work to avoid losing changes.',
+                            'warning'
+                        );
+                    }
+                }, sessionWarningTime);
+            }
         </script>
     </body>
 </html>
