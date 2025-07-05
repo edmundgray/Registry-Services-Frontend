@@ -35,6 +35,7 @@ async function initializeDataManager() {
                     Cardinality: req.cardinality || '',
                     BusinessTerm: req.businessTermName || '',
                     Description: req.semanticDescription || '',
+                    UsageNote: req.usageNote || '',
                     TypeOfChange: req.typeOfChange || ''
                 }));
                 
@@ -106,13 +107,15 @@ function loadSavedRequirements(savedRequirements) {
         savedRequirements.forEach(req => {
             const newRow = tableBody.insertRow();
             newRow.innerHTML = `
-                <td><input type="text" style="width: 100%;" placeholder="ID-X" value="${req.ID || ''}" /></td>
-                <td><input type="text" style="width: 100%;" placeholder="+" value="${req.Level || ''}" /></td>
-                <td><input type="text" style="width: 100%;" placeholder="1..1" value="${req.Cardinality || ''}" /></td>
-                <td><input type="text" style="width: 100%;" placeholder="Name of Additional Requirement" value="${req.BusinessTerm || ''}" /></td>
+                <td><input type="text" style="width: 100%;" placeholder="ID-X*" value="${req.ID || ''}" /></td>
+                <td><input type="text" style="width: 100%;" placeholder="+*" value="${req.Level || ''}" /></td>
+                <td><input type="text" style="width: 100%;" placeholder="1..1*" value="${req.Cardinality || ''}" /></td>
+                <td><input type="text" style="width: 100%;" placeholder="Name of Additional Requirement*" value="${req.BusinessTerm || ''}" /></td>
                 <td><textarea style="width: 100%; resize: vertical; min-height: 32px;" placeholder="Description of Additional Requirement">${req.Description || ''}</textarea></td>
+                <td><textarea style="width: 100%; resize: vertical; min-height: 32px;" placeholder="Usage Note">${req.UsageNote || ''}</textarea></td>
                 <td>
-                    <select style="width: 100%; min-width: 220px;">
+                    <select style="width: 100%; min-width: 200px;">
+                        <option value="">-- Select Type of Change* --</option>
                         <option value="Add new information element" ${req.TypeOfChange === "Add new information element" ? "selected" : ""}>Add new information element</option>
                         <option value="Remove an optional element" ${req.TypeOfChange === "Remove an optional element" ? "selected" : ""}>Remove an optional element</option>
                         <option value="Make Semantic definition narrower" ${req.TypeOfChange === "Make Semantic definition narrower" ? "selected" : ""}>Make Semantic definition narrower</option>
@@ -145,9 +148,13 @@ function setUnsavedListeners(row)
 {
     row.querySelectorAll('input, select, textarea').forEach(el => {
         el.addEventListener('input', () => { 
+            // Clear validation highlight when user starts typing
+            el.classList.remove('required-field-empty');
             updateSaveButtonAppearance();
         });
         el.addEventListener('change', () => { 
+            // Clear validation highlight when user changes value
+            el.classList.remove('required-field-empty');
             updateSaveButtonAppearance();
         });
     });
@@ -161,13 +168,15 @@ function addRow()
     const table = document.getElementById("additionalRequirementsTable").getElementsByTagName("tbody")[0];
     const newRow = table.insertRow();
     newRow.innerHTML = `
-        <td><input type="text" style="width: 100%;" placeholder="ID-X" /></td>
-        <td><input type="text" style="width: 100%;" placeholder="+" /></td>
-        <td><input type="text" style="width: 100%;" placeholder="1..1" /></td>
-        <td><input type="text" style="width: 100%;" placeholder="Name of Additional Requirement" /></td>
+        <td><input type="text" style="width: 100%;" placeholder="ID-X*" /></td>
+        <td><input type="text" style="width: 100%;" placeholder="+*" /></td>
+        <td><input type="text" style="width: 100%;" placeholder="1..1*" /></td>
+        <td><input type="text" style="width: 100%;" placeholder="Name of Additional Requirement*" /></td>
         <td><textarea style="width: 100%; resize: vertical; min-height: 32px;" placeholder="Description of Additional Requirement"></textarea></td>
+        <td><textarea style="width: 100%; resize: vertical; min-height: 32px;" placeholder="Usage Note"></textarea></td>
         <td>
-            <select style="width: 100%; min-width: 220px;">
+            <select style="width: 100%; min-width: 200px;">
+                <option value="">-- Select Type of Change* --</option>
                 <option value="Add new information element">Add new information element</option>
                 <option value="Remove an optional element">Remove an optional element</option>
                 <option value="Make Semantic definition narrower">Make Semantic definition narrower</option>
@@ -247,25 +256,57 @@ async function saveTable()
 
             // If there are no rows, save empty array
             const data = [];
+            const validationErrors = [];
 
-            for (let row of rows) 
-            {
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
                 const cells = row.getElementsByTagName("td");
 
                 const rowData = 
                 {
-                    ID: cells[0].querySelector("input") ? cells[0].querySelector("input").value : "",
-                    Level: cells[1].querySelector("input") ? cells[1].querySelector("input").value : "",
-                    Cardinality: cells[2].querySelector("input") ? cells[2].querySelector("input").value : "",
-                    BusinessTerm: cells[3].querySelector("input") ? cells[3].querySelector("input").value : "",
-                    Description: cells[4].querySelector("textarea") ? cells[4].querySelector("textarea").value : "",
-                    TypeOfChange: cells[5].querySelector("select") ? cells[5].querySelector("select").value : ""
+                    ID: cells[0].querySelector("input") ? cells[0].querySelector("input").value.trim() : "",
+                    Level: cells[1].querySelector("input") ? cells[1].querySelector("input").value.trim() : "",
+                    Cardinality: cells[2].querySelector("input") ? cells[2].querySelector("input").value.trim() : "",
+                    BusinessTerm: cells[3].querySelector("input") ? cells[3].querySelector("input").value.trim() : "",
+                    Description: cells[4].querySelector("textarea") ? cells[4].querySelector("textarea").value.trim() : "",
+                    UsageNote: cells[5].querySelector("textarea") ? cells[5].querySelector("textarea").value.trim() : "",
+                    TypeOfChange: cells[6].querySelector("select") ? cells[6].querySelector("select").value : ""
                 };
 
-                // Only add rows that have at least some data
-                if (rowData.ID || rowData.BusinessTerm || rowData.Description) {
+                // Only validate and add rows that have at least some data
+                if (rowData.ID || rowData.BusinessTerm || rowData.Description || rowData.Level || rowData.Cardinality) {
+                    // Validate mandatory fields for non-empty rows
+                    const rowNumber = i + 1;
+                    
+                    if (!rowData.ID) {
+                        validationErrors.push(`Row ${rowNumber}: Business Term ID is required`);
+                    }
+                    if (!rowData.Level) {
+                        validationErrors.push(`Row ${rowNumber}: Level is required`);
+                    }
+                    if (!rowData.Cardinality) {
+                        validationErrors.push(`Row ${rowNumber}: Cardinality is required`);
+                    }
+                    if (!rowData.BusinessTerm) {
+                        validationErrors.push(`Row ${rowNumber}: Business Term is required`);
+                    }
+                    if (!rowData.TypeOfChange) {
+                        validationErrors.push(`Row ${rowNumber}: Type of Change is required`);
+                    }
+                    
                     data.push(rowData);
                 }
+            }
+
+            // Check for validation errors
+            if (validationErrors.length > 0) {
+                const errorMessage = "Please fix the following validation errors:\n\n" + 
+                    validationErrors.join('\n');
+                alert(errorMessage);
+                // Highlight validation errors in the UI
+                highlightValidationErrors(validationErrors);
+                resolve(false);
+                return;
             }
 
             console.log('AdditionalRequirements: Collected data:', data);
@@ -277,10 +318,12 @@ async function saveTable()
                 return;
             }
 
+            // Store button reference and original text for proper restoration
+            const saveButton = document.querySelector('button[onclick*="saveTable"]');
+            const originalText = saveButton ? saveButton.textContent : 'Save';
+
             try {
                 // Show loading indicator
-                const saveButton = document.querySelector('button[onclick*="saveTable"]');
-                const originalText = saveButton ? saveButton.textContent : '';
                 if (saveButton) {
                     saveButton.disabled = true;
                     saveButton.textContent = 'Saving...';
@@ -305,6 +348,9 @@ async function saveTable()
                 
                 console.log('AdditionalRequirements: Additional requirements saved successfully');
                 
+                // Clear any validation highlights since save was successful
+                clearValidationHighlights();
+                
                 alert("Additional requirements saved successfully!");
                 
                 // Update baseline for change detection
@@ -322,15 +368,34 @@ async function saveTable()
                 console.error('AdditionalRequirements: Error saving:', error);
                 
                 // Restore button state
-                const saveButton = document.querySelector('button[onclick*="saveTable"]');
                 if (saveButton) {
                     saveButton.disabled = false;
-                    saveButton.textContent = originalText || 'Save';
+                    saveButton.textContent = originalText;
                 }
                 
                 // Show user-friendly error message
                 let errorMessage = "Error saving additional requirements: ";
-                if (error.message.includes('Permission denied')) {
+                
+                // Parse server validation errors
+                if (error.message.includes('validation errors occurred')) {
+                    try {
+                        const match = error.message.match(/\{.*\}/);
+                        if (match) {
+                            const errorData = JSON.parse(match[0]);
+                            if (errorData.errors) {
+                                const validationErrors = [];
+                                for (const field in errorData.errors) {
+                                    errorData.errors[field].forEach(err => {
+                                        validationErrors.push(`${field}: ${err}`);
+                                    });
+                                }
+                                errorMessage += "\n\nValidation errors:\n" + validationErrors.join('\n');
+                            }
+                        }
+                    } catch (parseError) {
+                        errorMessage += error.message;
+                    }
+                } else if (error.message.includes('Permission denied')) {
                     errorMessage += "You don't have permission to modify this specification.";
                 } else if (error.message.includes('HTTP 404')) {
                     errorMessage += "The specification was not found. It may have been deleted.";
@@ -434,6 +499,7 @@ async function refreshFromAPI()
             Cardinality: req.cardinality || '',
             BusinessTerm: req.businessTermName || '',
             Description: req.semanticDescription || '',
+            UsageNote: req.usageNote || '',
             TypeOfChange: req.typeOfChange || ''
         }));
         
@@ -505,7 +571,8 @@ function collectAdditionalRequirements() {
             Cardinality: cells[2].querySelector("input") ? cells[2].querySelector("input").value.trim() : "",
             BusinessTerm: cells[3].querySelector("input") ? cells[3].querySelector("input").value.trim() : "",
             Description: cells[4].querySelector("textarea") ? cells[4].querySelector("textarea").value.trim() : "",
-            TypeOfChange: cells[5].querySelector("select") ? cells[5].querySelector("select").value : ""
+            UsageNote: cells[5].querySelector("textarea") ? cells[5].querySelector("textarea").value.trim() : "",
+            TypeOfChange: cells[6].querySelector("select") ? cells[6].querySelector("select").value : ""
         };
         
         // Include all rows (even empty ones) to maintain position consistency
@@ -553,6 +620,7 @@ function hasActualChanges() {
                 current.Cardinality !== baseline.Cardinality ||
                 current.BusinessTerm !== baseline.BusinessTerm ||
                 current.Description !== baseline.Description ||
+                current.UsageNote !== baseline.UsageNote ||
                 current.TypeOfChange !== baseline.TypeOfChange) {
                 console.log('DEBUG: AdditionalRequirements - Row difference detected at index:', i, {
                     current: current,
@@ -617,6 +685,7 @@ function getChangedFields() {
                 current.Cardinality !== baseline.Cardinality ||
                 current.BusinessTerm !== baseline.BusinessTerm ||
                 current.Description !== baseline.Description ||
+                current.UsageNote !== baseline.UsageNote ||
                 current.TypeOfChange !== baseline.TypeOfChange)) {
                 modifiedCount++;
             }
@@ -734,6 +803,102 @@ function updateBaselineData() {
     } catch (error) {
         console.error('DEBUG: AdditionalRequirements - Error updating baseline data:', error);
     }
+}
+
+/**************************************************************
+    Validation helper functions
+ **************************************************************/
+
+function highlightValidationErrors(validationErrors) {
+    // Clear previous highlights
+    clearValidationHighlights();
+    
+    // Parse error messages and highlight corresponding fields
+    validationErrors.forEach(error => {
+        const rowMatch = error.match(/Row (\d+):/);
+        if (rowMatch) {
+            const rowNumber = parseInt(rowMatch[1]);
+            const table = document.getElementById("additionalRequirementsTable");
+            const rows = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
+            
+            if (rows[rowNumber - 1]) {
+                const row = rows[rowNumber - 1];
+                const cells = row.getElementsByTagName("td");
+                
+                // Highlight specific fields based on error message
+                if (error.includes('Business Term ID')) {
+                    const input = cells[0].querySelector("input");
+                    if (input) input.classList.add('required-field-empty');
+                }
+                if (error.includes('Level')) {
+                    const input = cells[1].querySelector("input");
+                    if (input) input.classList.add('required-field-empty');
+                }
+                if (error.includes('Cardinality')) {
+                    const input = cells[2].querySelector("input");
+                    if (input) input.classList.add('required-field-empty');
+                }
+                if (error.includes('Business Term')) {
+                    const input = cells[3].querySelector("input");
+                    if (input) input.classList.add('required-field-empty');
+                }
+                if (error.includes('Type of Change')) {
+                    const select = cells[6].querySelector("select");
+                    if (select) select.classList.add('required-field-empty');
+                }
+            }
+        }
+    });
+}
+
+function clearValidationHighlights() {
+    const table = document.getElementById("additionalRequirementsTable");
+    const elements = table.querySelectorAll('.required-field-empty');
+    elements.forEach(el => el.classList.remove('required-field-empty'));
+}
+
+function validateRequiredFields() {
+    const table = document.getElementById("additionalRequirementsTable");
+    const rows = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
+    const validationErrors = [];
+
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const cells = row.getElementsByTagName("td");
+
+        const rowData = {
+            ID: cells[0].querySelector("input") ? cells[0].querySelector("input").value.trim() : "",
+            Level: cells[1].querySelector("input") ? cells[1].querySelector("input").value.trim() : "",
+            Cardinality: cells[2].querySelector("input") ? cells[2].querySelector("input").value.trim() : "",
+            BusinessTerm: cells[3].querySelector("input") ? cells[3].querySelector("input").value.trim() : "",
+            Description: cells[4].querySelector("textarea") ? cells[4].querySelector("textarea").value.trim() : "",
+            UsageNote: cells[5].querySelector("textarea") ? cells[5].querySelector("textarea").value.trim() : "",
+            TypeOfChange: cells[6].querySelector("select") ? cells[6].querySelector("select").value : ""
+        };
+
+        // Only validate rows that have at least some data
+        if (rowData.ID || rowData.BusinessTerm || rowData.Description || rowData.Level || rowData.Cardinality) {
+            const rowNumber = i + 1;
+            
+            if (!rowData.ID) {
+                validationErrors.push(`Row ${rowNumber}: Business Term ID is required`);
+            }
+            if (!rowData.Level) {
+                validationErrors.push(`Row ${rowNumber}: Level is required`);
+            }
+            if (!rowData.Cardinality) {
+                validationErrors.push(`Row ${rowNumber}: Cardinality is required`);
+            }
+            if (!rowData.BusinessTerm) {
+                validationErrors.push(`Row ${rowNumber}: Business Term is required`);
+            }
+            if (!rowData.TypeOfChange) {
+                validationErrors.push(`Row ${rowNumber}: Type of Change is required`);
+            }
+        }
+    }
+
+    return validationErrors;
 }
 
 /**************************************************************

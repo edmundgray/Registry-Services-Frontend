@@ -6,6 +6,32 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
         <link rel="stylesheet" href="../CSS/style.css">
         
+        <style>
+            /* Style for required field indicators */
+            th:contains('*'), td input[placeholder*='*'], td select option:first-child {
+                position: relative;
+            }
+            
+            /* Highlight required fields that are empty */
+            .required-field-empty {
+                border: 2px solid #ff6b6b !important;
+                background-color: #fff5f5 !important;
+            }
+            
+            /* Required field legend */
+            .required-legend {
+                color: #666;
+                font-size: 0.9em;
+                margin-bottom: 10px;
+                font-style: italic;
+            }
+            
+            .required-legend .required-asterisk {
+                color: #ff6b6b;
+                font-weight: bold;
+            }
+        </style>
+        
         <!-- Add authManager.js for global AuthManager and AUTH_CONFIG -->
         <script src="../JS/auth/authManager.js"></script>
         <script>
@@ -50,13 +76,106 @@
                 // Clear only authentication data
                 window.authManager.clearAuthData();
                 
-                // Show notification
-                showNotification('Your session has expired. You will be redirected to the login page in 3 seconds.', 'warning');
+                // Remove any existing session expiry notifications
+                const existingNotifications = document.querySelectorAll('.session-expiry-notification');
+                existingNotifications.forEach(notification => notification.remove());
                 
-                // Redirect after 3 seconds
-                setTimeout(() => {
-                    window.location.href = '../index.html';
-                }, 3000);
+                // Show custom session expiry modal
+                showSessionExpiryModal();
+            }
+            
+            function showSessionExpiryModal() {
+                // Remove any existing modal first
+                const existingModal = document.getElementById('sessionExpiryModal');
+                if (existingModal) {
+                    existingModal.remove();
+                }
+                
+                const modalHtml = `
+                    <div id="sessionExpiryModal" class="session-expiry-notification" style="
+                        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                        background: rgba(0,0,0,0.7); z-index: 10001; display: flex;
+                        align-items: center; justify-content: center;">
+                        <div style="
+                            background: white; border-radius: 8px; padding: 30px; max-width: 450px;
+                            width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3); text-align: center;">
+                            <div style="
+                                width: 60px; height: 60px; background: #ffc107; border-radius: 50%;
+                                margin: 0 auto 20px auto; display: flex; align-items: center; justify-content: center;">
+                                <i class="fa-solid fa-exclamation-triangle" style="color: white; font-size: 24px;"></i>
+                            </div>
+                            <h3 style="margin: 0 0 16px 0; color: #333;">Session Expired</h3>
+                            <p style="margin: 0 0 20px 0; color: #666; line-height: 1.5;">
+                                Your session has expired for security reasons. Your work has been saved locally 
+                                and will be restored when you log back in.
+                            </p>
+                            <p style="margin: 0 0 25px 0; color: #999; font-size: 14px;">
+                                Redirecting to login page in <span id="countdown">3</span> seconds...
+                            </p>
+                            <div style="display: flex; gap: 10px; justify-content: center;">
+                                <button onclick="redirectToLogin()" style="
+                                    padding: 10px 20px; background: #007bff; color: white; border: none;
+                                    border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold;">
+                                    Login Now
+                                </button>
+                                <button onclick="closeSessionModal()" style="
+                                    padding: 10px 20px; background: #6c757d; color: white; border: none;
+                                    border-radius: 4px; cursor: pointer; font-size: 14px;">
+                                    Stay Here
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                
+                // Start countdown
+                let countdown = 3;
+                const countdownElement = document.getElementById('countdown');
+                
+                const countdownInterval = setInterval(() => {
+                    countdown--;
+                    if (countdownElement) {
+                        countdownElement.textContent = countdown;
+                    }
+                    
+                    if (countdown <= 0) {
+                        clearInterval(countdownInterval);
+                        redirectToLogin();
+                    }
+                }, 1000);
+                
+                // Store interval ID so it can be cleared if user chooses to stay
+                window.sessionCountdownInterval = countdownInterval;
+            }
+            
+            function redirectToLogin() {
+                // Clear any countdown interval
+                if (window.sessionCountdownInterval) {
+                    clearInterval(window.sessionCountdownInterval);
+                    window.sessionCountdownInterval = null;
+                }
+                
+                // Comprehensive cleanup before redirect
+                cleanupSessionNotifications();
+                
+                // Redirect to login
+                window.location.href = '../index.html';
+            }
+            
+            function closeSessionModal() {
+                // Clear any countdown interval
+                if (window.sessionCountdownInterval) {
+                    clearInterval(window.sessionCountdownInterval);
+                    window.sessionCountdownInterval = null;
+                }
+                
+                // Remove the modal
+                const modal = document.getElementById('sessionExpiryModal');
+                if (modal) {
+                    modal.remove();
+                }
             }
             
             function preserveWorkflowData() {
@@ -106,28 +225,32 @@
             <h1><i class="fa-solid fa-circle-plus"></i> Additional Requirements</h1>
             <br/>
             <p>Please enter any additional elements you require in your Specification that fall outside the Core Invoice Model and the Extension Component Data Model</p>
+            <p class="required-legend"><span class="required-asterisk">*</span> indicates required fields</p>
             <table id="additionalRequirementsTable" class="styled-table" style="table-layout: fixed;">
                 <thead>
                     <tr>
-                        <th style="width: 40px;">ID</th>
-                        <th style="width: 60px;">Level</th>
-                        <th style="width: 80px;">Cardinality</th>
-                        <th style="width: 220px;">Business Term</th>
-                        <th style="width: 320px;">Description</th>
-                        <th style="width: 220px;">Type of Change</th>
+                        <th style="width: 80px;">ID*</th>
+                        <th style="width: 60px;">Level*</th>
+                        <th style="width: 80px;">Cardinality*</th>
+                        <th style="width: 200px;">Business Term*</th>
+                        <th style="width: 280px;">Description</th>
+                        <th style="width: 280px;">Usage Note</th>
+                        <th style="width: 200px;">Type of Change*</th>
                         <th style="width: 70px;">Action</th>
                     </tr>
                 </thead>
 
                 <tbody>
                     <tr>
-                        <td><input type="text" style="width: 100%;" placeholder="ID-X" /></td>
-                        <td><input type="text" style="width: 100%;" placeholder="+" /></td>
-                        <td><input type="text" style="width: 100%;" placeholder="1..1" /></td>
-                        <td><input type="text" style="width: 100%;" placeholder="Name of Additional Requirement" /></td>
+                        <td><input type="text" style="width: 100%;" placeholder="ID-X*" /></td>
+                        <td><input type="text" style="width: 100%;" placeholder="+*" /></td>
+                        <td><input type="text" style="width: 100%;" placeholder="1..1*" /></td>
+                        <td><input type="text" style="width: 100%;" placeholder="Name of Additional Requirement*" /></td>
                         <td><textarea style="width: 100%; resize: vertical; min-height: 32px;" placeholder="Description of Additional Requirement"></textarea></td>
+                        <td><textarea style="width: 100%; resize: vertical; min-height: 32px;" placeholder="Usage Note"></textarea></td>
                         <td>
-                            <select style="width: 100%; min-width: 220px;">
+                            <select style="width: 100%; min-width: 200px;">
+                                <option value="">-- Select Type of Change* --</option>
                                 <option value="Add new information element">Add new information element</option>
                                 <option value="Remove an optional element">Remove an optional element</option>
                                 <option value="Make Semantic definition narrower">Make Semantic definition narrower</option>
@@ -158,6 +281,14 @@
         <script>
             // Initialize the sidebar and authentication when the page loads
             document.addEventListener('DOMContentLoaded', function() {
+                // Clean up any existing session notifications on page load
+                cleanupSessionNotifications();
+                
+                // Set up periodic cleanup to catch any session elements that appear
+                setInterval(() => {
+                    cleanupSessionNotifications();
+                }, 2000); // Check every 2 seconds
+                
                 // Initialize auth manager
                 window.authManager.init();
                 
@@ -199,6 +330,82 @@
                     window.breadcrumbManager.setContext(context);
                 }
             });
+            
+            // Clean up when page is being unloaded
+            window.addEventListener('beforeunload', function() {
+                cleanupSessionNotifications();
+            });
+            
+            // Clean up when page visibility changes (e.g., tab switch)
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden) {
+                    cleanupSessionNotifications();
+                }
+            });
+            
+            function cleanupSessionNotifications() {
+                console.log('Starting comprehensive session cleanup...');
+                
+                // Remove any existing session-related notifications/modals by various selectors
+                const sessionSelectors = [
+                    '.session-expiry-notification', 
+                    '#sessionExpiryModal', 
+                    '#sessionWarningModal', 
+                    '#workflowRecoveryModal',
+                    '.notification',
+                    '.notification.info',
+                    '.notification.warning',
+                    '.notification.error',
+                    '.notification.success',
+                    '[class*="notification"]',
+                    '[id*="session"]',
+                    '[id*="Session"]',
+                    '[class*="session"]',
+                    '[class*="expiry"]',
+                    '[class*="warning"]'
+                ];
+                
+                sessionSelectors.forEach(selector => {
+                    try {
+                        const elements = document.querySelectorAll(selector);
+                        console.log(`Found ${elements.length} elements for selector: ${selector}`);
+                        elements.forEach(element => {
+                            console.log('Removing element:', element);
+                            element.remove();
+                        });
+                    } catch (e) {
+                        console.log(`Error with selector ${selector}:`, e);
+                    }
+                });
+                
+                // Also check for any fixed positioned elements that might be notifications
+                const fixedElements = document.querySelectorAll('[style*="position: fixed"]');
+                fixedElements.forEach(element => {
+                    const style = element.style.cssText.toLowerCase();
+                    if (style.includes('z-index: 10000') || style.includes('z-index: 10001') || 
+                        element.textContent.toLowerCase().includes('session') ||
+                        element.textContent.toLowerCase().includes('expired')) {
+                        console.log('Removing fixed positioned session element:', element);
+                        element.remove();
+                    }
+                });
+                
+                // Clear any session countdown intervals
+                if (window.sessionCountdownInterval) {
+                    clearInterval(window.sessionCountdownInterval);
+                    window.sessionCountdownInterval = null;
+                    console.log('Cleared session countdown interval');
+                }
+                
+                // Clear any session warning timeouts
+                if (window.sessionWarningTimeout) {
+                    clearTimeout(window.sessionWarningTimeout);
+                    window.sessionWarningTimeout = null;
+                    console.log('Cleared session warning timeout');
+                }
+                
+                console.log('Session cleanup completed');
+            }
 
             function checkForWorkflowRecovery() {
                 const workflowDataPreserved = localStorage.getItem('workflowDataPreserved');
@@ -209,69 +416,240 @@
                     const preservedWorkingData = localStorage.getItem('preserved_workingData_additionalRequirements');
                     const preservedBreadcrumb = localStorage.getItem('preserved_breadcrumbContext');
                     
-                    showNotification(
-                        'Your previous session expired, but your workflow data has been preserved. Would you like to restore it?',
-                        'info',
-                        [
-                            {
-                                text: 'Restore',
-                                action: () => {
-                                    if (preservedSpec) {
-                                        sessionStorage.setItem('selectedSpecification', preservedSpec);
-                                    }
-                                    if (preservedWorkingData) {
-                                        sessionStorage.setItem('workingData_additionalRequirements', preservedWorkingData);
-                                    }
-                                    if (preservedBreadcrumb) {
-                                        sessionStorage.setItem('breadcrumbContext', preservedBreadcrumb);
-                                    }
-                                    
-                                    // Clear preserved data
-                                    localStorage.removeItem('workflowDataPreserved');
-                                    localStorage.removeItem('preservedFromPage');
-                                    localStorage.removeItem('preserved_selectedSpecification');
-                                    localStorage.removeItem('preserved_workingData_additionalRequirements');
-                                    localStorage.removeItem('preserved_breadcrumbContext');
-                                    
-                                    showNotification('Workflow data restored successfully!', 'success');
-                                    
-                                    // Reload the page to apply restored data
-                                    setTimeout(() => {
-                                        window.location.reload();
-                                    }, 1500);
-                                }
-                            },
-                            {
-                                text: 'Start Fresh',
-                                action: () => {
-                                    // Clear preserved data
-                                    localStorage.removeItem('workflowDataPreserved');
-                                    localStorage.removeItem('preservedFromPage');
-                                    localStorage.removeItem('preserved_selectedSpecification');
-                                    localStorage.removeItem('preserved_workingData_additionalRequirements');
-                                    localStorage.removeItem('preserved_breadcrumbContext');
-                                    
-                                    showNotification('Starting with a fresh session.', 'info');
-                                }
-                            }
-                        ]
-                    );
+                    showWorkflowRecoveryModal();
                 }
+            }
+            
+            function showWorkflowRecoveryModal() {
+                // Remove any existing modal first
+                const existingModal = document.getElementById('workflowRecoveryModal');
+                if (existingModal) {
+                    existingModal.remove();
+                }
+                
+                const modalHtml = `
+                    <div id="workflowRecoveryModal" style="
+                        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                        background: rgba(0,0,0,0.7); z-index: 10001; display: flex;
+                        align-items: center; justify-content: center;">
+                        <div style="
+                            background: white; border-radius: 8px; padding: 30px; max-width: 500px;
+                            width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3); text-align: center;">
+                            <div style="
+                                width: 60px; height: 60px; background: #17a2b8; border-radius: 50%;
+                                margin: 0 auto 20px auto; display: flex; align-items: center; justify-content: center;">
+                                <i class="fa-solid fa-database" style="color: white; font-size: 24px;"></i>
+                            </div>
+                            <h3 style="margin: 0 0 16px 0; color: #333;">Workflow Data Found</h3>
+                            <p style="margin: 0 0 25px 0; color: #666; line-height: 1.5;">
+                                Your previous session expired, but your workflow data has been preserved. 
+                                Would you like to restore it?
+                            </p>
+                            <div style="display: flex; gap: 10px; justify-content: center;">
+                                <button onclick="restoreWorkflowData()" style="
+                                    padding: 12px 20px; background: #28a745; color: white; border: none;
+                                    border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold;">
+                                    Restore Data
+                                </button>
+                                <button onclick="startFreshWorkflow()" style="
+                                    padding: 12px 20px; background: #6c757d; color: white; border: none;
+                                    border-radius: 4px; cursor: pointer; font-size: 14px;">
+                                    Start Fresh
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+            }
+            
+            function restoreWorkflowData() {
+                const preservedSpec = localStorage.getItem('preserved_selectedSpecification');
+                const preservedWorkingData = localStorage.getItem('preserved_workingData_additionalRequirements');
+                const preservedBreadcrumb = localStorage.getItem('preserved_breadcrumbContext');
+                
+                if (preservedSpec) {
+                    sessionStorage.setItem('selectedSpecification', preservedSpec);
+                }
+                if (preservedWorkingData) {
+                    sessionStorage.setItem('workingData_additionalRequirements', preservedWorkingData);
+                }
+                if (preservedBreadcrumb) {
+                    sessionStorage.setItem('breadcrumbContext', preservedBreadcrumb);
+                }
+                
+                // Clear preserved data
+                clearPreservedData();
+                
+                // Remove modal
+                const modal = document.getElementById('workflowRecoveryModal');
+                if (modal) {
+                    modal.remove();
+                }
+                
+                // Show success notification
+                showSimpleNotification('Workflow data restored successfully!', 'success');
+                
+                // Reload the page to apply restored data
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            }
+            
+            function startFreshWorkflow() {
+                // Clear preserved data
+                clearPreservedData();
+                
+                // Remove modal
+                const modal = document.getElementById('workflowRecoveryModal');
+                if (modal) {
+                    modal.remove();
+                }
+                
+                // Show info notification
+                showSimpleNotification('Starting with a fresh session.', 'info');
+            }
+            
+            function clearPreservedData() {
+                localStorage.removeItem('workflowDataPreserved');
+                localStorage.removeItem('preservedFromPage');
+                localStorage.removeItem('preserved_selectedSpecification');
+                localStorage.removeItem('preserved_workingData_additionalRequirements');
+                localStorage.removeItem('preserved_breadcrumbContext');
+            }
+            
+            function showSimpleNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                notification.className = `notification ${type}`;
+                notification.textContent = message;
+                notification.style.cssText = `
+                    position: fixed; top: 20px; right: 20px; z-index: 10000; 
+                    padding: 15px; border-radius: 5px; color: white; font-weight: bold;
+                    background-color: ${type === 'success' ? '#28a745' : type === 'warning' ? '#ffc107' : type === 'error' ? '#dc3545' : '#17a2b8'};
+                `;
+                document.body.appendChild(notification);
+                setTimeout(() => {
+                    notification.remove();
+                }, 4000);
             }
             
             function setupSessionWarning() {
                 // Set up 5-minute session warning
                 const sessionWarningTime = 5 * 60 * 1000; // 5 minutes
                 
-                setTimeout(() => {
+                window.sessionWarningTimeout = setTimeout(() => {
                     if (window.authManager && window.authManager.isAuthenticated()) {
-                        showNotification(
-                            'Your session will expire soon. Save your work to avoid losing changes.',
-                            'warning'
-                        );
+                        showSessionWarningModal();
                     }
                 }, sessionWarningTime);
             }
+            
+            function showSessionWarningModal() {
+                // Remove any existing warning modal first
+                const existingModal = document.getElementById('sessionWarningModal');
+                if (existingModal) {
+                    existingModal.remove();
+                }
+                
+                const modalHtml = `
+                    <div id="sessionWarningModal" style="
+                        position: fixed; top: 20px; right: 20px; z-index: 10000;
+                        background: #ffc107; color: #212529; border-radius: 8px; padding: 15px; max-width: 350px;
+                        box-shadow: 0 4px 20px rgba(0,0,0,0.3); border: 2px solid #ffca2c;">
+                        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                            <i class="fa-solid fa-clock" style="margin-right: 10px; font-size: 18px;"></i>
+                            <strong>Session Warning</strong>
+                            <button onclick="closeWarningModal()" style="
+                                margin-left: auto; background: none; border: none; font-size: 18px; 
+                                cursor: pointer; color: #212529; padding: 0; width: 20px; height: 20px;">
+                                ×
+                            </button>
+                        </div>
+                        <p style="margin: 0 0 10px 0; font-size: 14px; line-height: 1.4;">
+                            Your session will expire soon. Save your work to avoid losing changes.
+                        </p>
+                        <button onclick="closeWarningModal()" style="
+                            padding: 5px 12px; background: #212529; color: white; border: none;
+                            border-radius: 4px; cursor: pointer; font-size: 12px;">
+                            Got it
+                        </button>
+                    </div>
+                `;
+                
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                
+                // Auto-remove after 10 seconds
+                setTimeout(() => {
+                    const modal = document.getElementById('sessionWarningModal');
+                    if (modal) {
+                        modal.remove();
+                    }
+                }, 10000);
+            }
+            
+            function closeWarningModal() {
+                const modal = document.getElementById('sessionWarningModal');
+                if (modal) {
+                    modal.remove();
+                }
+            }
+            
+            // Manual cleanup function for testing - can be called from browser console
+            function forceCleanupAllSessionElements() {
+                console.log('FORCE CLEANUP: Starting aggressive session element removal...');
+                
+                // Get all elements in the document
+                const allElements = document.querySelectorAll('*');
+                const removedElements = [];
+                
+                allElements.forEach(element => {
+                    const text = element.textContent.toLowerCase();
+                    const classList = element.className.toLowerCase();
+                    const id = element.id.toLowerCase();
+                    const style = element.style.cssText.toLowerCase();
+                    
+                    // Check if element contains session-related content
+                    if (text.includes('session') || text.includes('expired') || text.includes('expiry') ||
+                        text.includes('login') || text.includes('redirecting') ||
+                        classList.includes('notification') || classList.includes('session') ||
+                        id.includes('session') || id.includes('notification') || id.includes('modal') ||
+                        (style.includes('position: fixed') && style.includes('z-index: 1000'))) {
+                        
+                        // Don't remove the page content or essential elements
+                        if (!element.closest('.page-Content') && 
+                            !element.closest('#sidebarContainer') && 
+                            !element.closest('#breadcrumbContainer') &&
+                            element.tagName !== 'SCRIPT' &&
+                            element.tagName !== 'STYLE' &&
+                            element.tagName !== 'LINK') {
+                            console.log('FORCE REMOVING:', element);
+                            removedElements.push({
+                                tag: element.tagName,
+                                class: element.className,
+                                id: element.id,
+                                text: element.textContent.substring(0, 100)
+                            });
+                            element.remove();
+                        }
+                    }
+                });
+                
+                console.log('FORCE CLEANUP: Removed elements:', removedElements);
+                
+                // Clear all possible intervals and timeouts
+                for (let i = 1; i < 10000; i++) {
+                    clearInterval(i);
+                    clearTimeout(i);
+                }
+                
+                console.log('FORCE CLEANUP: Cleared all intervals and timeouts');
+                
+                return removedElements;
+            }
+            
+            // Make it globally accessible for console testing
+            window.forceCleanupAllSessionElements = forceCleanupAllSessionElements;
         </script>
     </body>
 </html>

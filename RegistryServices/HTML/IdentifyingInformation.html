@@ -13,157 +13,177 @@
             window.authManager = new AuthManager();
             
             async function authenticatedFetch(url, options = {}) {
-                console.log('DEBUG: authenticatedFetch called with URL:', url);
-                console.log('DEBUG: AuthManager state:', {
-                    isAuthenticated: window.authManager.isAuthenticated,
-                    accessToken: window.authManager.accessToken ? 'Present' : 'Not present',
-                    username: window.authManager.username,
-                    userRole: window.authManager.userRole
-                });
-
                 try {
-                    // Get fresh auth headers
-                    const authHeaders = window.authManager.getAuthHeaders();
-                    console.log('DEBUG: Auth headers:', authHeaders);
+                    const headers = { ...(options.headers || {}), ...window.authManager.getAuthHeaders() };
+                    let response = await fetch(url, { ...options, headers });
                     
-                    const headers = { ...(options.headers || {}), ...authHeaders };
-                    console.log('DEBUG: Final headers for request:', headers);
-                    
-                    // Make the request
-                    const response = await fetch(url, { ...options, headers });
-                    
-                    // Check for authentication errors
                     if (response.status === 401 || response.status === 403) {
-                        console.log('DEBUG: Authentication error detected - session expired');
-                        
-                        // Handle session expiry without popups
+                        // Don't attempt token refresh since the endpoint doesn't exist
+                        // Just handle session expiry immediately
                         handleSessionExpiry();
-                        
-                        // Throw error to stop further processing
-                        throw new Error('Session expired - redirecting to login');
+                        throw new Error('Session expired');
                     }
                     
                     return response;
                 } catch (error) {
-                    console.error('DEBUG: authenticatedFetch error:', error);
+                    console.error('Authenticated fetch error:', error);
                     throw error;
                 }
             }
 
-            // Handle session expiry with notification and redirect
             function handleSessionExpiry() {
-                console.log('Session expired - handling cleanup and redirect');
+                console.log('DEBUG: handleSessionExpiry called - starting comprehensive cleanup');
                 
-                // Show session expired notification
-                showSessionExpiredNotification();
+                // First run comprehensive cleanup to remove all session elements
+                cleanupSessionNotifications();
                 
-                // Preserve workflow data for recovery after re-login
+                // Clear all auth-related timers in AuthManager
+                if (window.authManager) {
+                    window.authManager.clearTokenTimers();
+                }
+                
+                // Clear any workflow session manager timers/elements
+                if (window.workflowSessionManager && window.workflowSessionManager.cleanup) {
+                    window.workflowSessionManager.cleanup();
+                }
+                
+                // Preserve workflow data before clearing authentication
                 preserveWorkflowData();
                 
-                // Clear authentication data but keep workflow data
-                clearAuthenticationData();
-                
-                // Redirect to index.html after showing notification
-                setTimeout(() => {
-                    window.location.href = '../index.html';
-                }, 3000);
-            }
-
-            // Show session expired notification
-            function showSessionExpiredNotification() {
-                // Remove any existing notifications
-                const existingNotification = document.getElementById('sessionExpiredNotification');
-                if (existingNotification) {
-                    existingNotification.remove();
+                // Clear only authentication data (but don't call logout which might trigger more events)
+                if (window.authManager) {
+                    window.authManager.isAuthenticated = false;
+                    window.authManager.accessToken = null;
+                    window.authManager.warningShown = false;
                 }
-
-                const notification = document.createElement('div');
-                notification.id = 'sessionExpiredNotification';
-                notification.style.cssText = `
-                    position: fixed; top: 20px; right: 20px; z-index: 10000;
-                    background: #f8d7da; color: #721c24; padding: 20px;
-                    border-radius: 8px; border: 2px solid #f5c6cb;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                    max-width: 350px; font-family: Arial, sans-serif;
-                `;
-                notification.innerHTML = `
-                    <div style="display: flex; align-items: flex-start;">
-                        <i class="fa-solid fa-exclamation-triangle" style="margin-right: 15px; font-size: 20px; margin-top: 2px;"></i>
-                        <div style="flex: 1;">
-                            <strong style="display: block; margin-bottom: 5px;">Session Expired</strong>
-                            <p style="margin: 0; font-size: 14px; line-height: 1.4;">
-                                Your session has expired. Your work has been saved and you will be redirected to the login page.
+                
+                // Remove any existing session expiry notifications
+                const existingNotifications = document.querySelectorAll('.session-expiry-notification, .modal, #sessionStatus, #sessionWarningModal, #reauthModal');
+                existingNotifications.forEach(notification => notification.remove());
+                
+                // Show custom session expiry modal
+                showSessionExpiryModal();
+                
+                console.log('DEBUG: handleSessionExpiry completed');
+            }
+            
+            function showSessionExpiryModal() {
+                // Remove any existing modal first
+                const existingModal = document.getElementById('sessionExpiryModal');
+                if (existingModal) {
+                    existingModal.remove();
+                }
+                
+                const modalHtml = `
+                    <div id="sessionExpiryModal" class="session-expiry-notification" style="
+                        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                        background: rgba(0,0,0,0.7); z-index: 10001; display: flex;
+                        align-items: center; justify-content: center;">
+                        <div style="
+                            background: white; border-radius: 8px; padding: 30px; max-width: 450px;
+                            width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3); text-align: center;">
+                            <div style="
+                                width: 60px; height: 60px; background: #ffc107; border-radius: 50%;
+                                margin: 0 auto 20px auto; display: flex; align-items: center; justify-content: center;">
+                                <i class="fa-solid fa-exclamation-triangle" style="color: white; font-size: 24px;"></i>
+                            </div>
+                            <h3 style="margin: 0 0 16px 0; color: #333;">Session Expired</h3>
+                            <p style="margin: 0 0 20px 0; color: #666; line-height: 1.5;">
+                                Your session has expired for security reasons. Your work has been saved locally 
+                                and will be restored when you log back in.
                             </p>
-                            <small style="display: block; margin-top: 8px; opacity: 0.8;">
-                                Redirecting in 3 seconds...
-                            </small>
+                            <p style="margin: 0 0 25px 0; color: #999; font-size: 14px;">
+                                Redirecting to login page in <span id="countdown">3</span> seconds...
+                            </p>
+                            <div style="display: flex; gap: 10px; justify-content: center;">
+                                <button onclick="redirectToLogin()" style="
+                                    padding: 10px 20px; background: #007bff; color: white; border: none;
+                                    border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold;">
+                                    Login Now
+                                </button>
+                                <button onclick="closeSessionModal()" style="
+                                    padding: 10px 20px; background: #6c757d; color: white; border: none;
+                                    border-radius: 4px; cursor: pointer; font-size: 14px;">
+                                    Stay Here
+                                </button>
+                            </div>
                         </div>
-                        <button onclick="this.parentNode.parentNode.remove(); window.location.href='../index.html';" 
-                                style="margin-left: 10px; background: none; border: none; font-size: 18px; cursor: pointer; color: #721c24;">
-                            ×
-                        </button>
                     </div>
                 `;
-                document.body.appendChild(notification);
-
-                // Auto-remove notification after redirect
-                setTimeout(() => {
-                    if (notification.parentNode) {
-                        notification.parentNode.removeChild(notification);
+                
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                
+                // Start countdown
+                let countdown = 3;
+                const countdownElement = document.getElementById('countdown');
+                
+                const countdownInterval = setInterval(() => {
+                    countdown--;
+                    if (countdownElement) {
+                        countdownElement.textContent = countdown;
                     }
-                }, 4000);
-            }
-
-            // Preserve workflow data for recovery after re-login
-            function preserveWorkflowData() {
-                try {
-                    // Create a recovery object with current workflow state
-                    const recoveryData = {
-                        timestamp: new Date().toISOString(),
-                        currentPage: window.location.pathname,
-                        workflowData: {},
-                        breadcrumbContext: null
-                    };
-
-                    // Preserve specification workflow data
-                    if (localStorage.getItem('selectedSpecification')) {
-                        recoveryData.workflowData.selectedSpecification = localStorage.getItem('selectedSpecification');
-                    }
-
-                    // Preserve any working data (numbered keys like workingData_32)
-                    Object.keys(localStorage).forEach(key => {
-                        if (key.startsWith('workingData_')) {
-                            recoveryData.workflowData[key] = localStorage.getItem(key);
-                        }
-                    });
-
-                    // Preserve breadcrumb context if available
-                    if (window.breadcrumbManager && typeof window.breadcrumbManager.getContext === 'function') {
-                        recoveryData.breadcrumbContext = window.breadcrumbManager.getContext();
-                    }
-
-                    // Save recovery data with a special key
-                    localStorage.setItem('sessionRecoveryData', JSON.stringify(recoveryData));
                     
-                    console.log('DEBUG: Workflow data preserved for recovery:', recoveryData);
-                } catch (error) {
-                    console.error('Error preserving workflow data:', error);
+                    if (countdown <= 0) {
+                        clearInterval(countdownInterval);
+                        redirectToLogin();
+                    }
+                }, 1000);
+                
+                // Store interval ID so it can be cleared if user chooses to stay
+                window.sessionCountdownInterval = countdownInterval;
+            }
+            
+            function redirectToLogin() {
+                // Clear any countdown interval
+                if (window.sessionCountdownInterval) {
+                    clearInterval(window.sessionCountdownInterval);
+                    window.sessionCountdownInterval = null;
+                }
+                
+                // Remove the modal
+                const modal = document.getElementById('sessionExpiryModal');
+                if (modal) {
+                    modal.remove();
+                }
+                
+                // Redirect to login
+                window.location.href = '../index.html';
+            }
+            
+            function closeSessionModal() {
+                // Clear any countdown interval
+                if (window.sessionCountdownInterval) {
+                    clearInterval(window.sessionCountdownInterval);
+                    window.sessionCountdownInterval = null;
+                }
+                
+                // Remove the modal
+                const modal = document.getElementById('sessionExpiryModal');
+                if (modal) {
+                    modal.remove();
                 }
             }
 
-            // Clear authentication data but preserve workflow data
-            function clearAuthenticationData() {
-                // Clear authentication-related items
-                localStorage.removeItem('access_token');
-                localStorage.removeItem('token_expiry');
-                localStorage.removeItem('userId');
-                localStorage.removeItem('username');
-                localStorage.removeItem('userRole');
-                localStorage.removeItem('userGroupID');
-                localStorage.removeItem('groupName');
-
-                console.log('DEBUG: Authentication data cleared, workflow data preserved');
+            function preserveWorkflowData() {
+                // Preserve selected specification and workflow data
+                const selectedSpec = sessionStorage.getItem('selectedSpecification');
+                const workingData = sessionStorage.getItem('workingData_identifyingInformation');
+                const breadcrumbContext = sessionStorage.getItem('breadcrumbContext');
+                
+                if (selectedSpec) {
+                    localStorage.setItem('preserved_selectedSpecification', selectedSpec);
+                }
+                if (workingData) {
+                    localStorage.setItem('preserved_workingData_identifyingInformation', workingData);
+                }
+                if (breadcrumbContext) {
+                    localStorage.setItem('preserved_breadcrumbContext', breadcrumbContext);
+                }
+                
+                localStorage.setItem('workflowDataPreserved', 'true');
+                localStorage.setItem('preservedFromPage', 'identifyingInformation');
             }
+
         </script>
         <script src="../JS/sidebarManager.js"></script>
         <script src="../JS/breadcrumbManager.js"></script>
@@ -479,6 +499,12 @@
                     console.log('  - editMode:', localStorage.getItem('editMode'));
                     console.log('  - specificationIdentityId:', localStorage.getItem('specificationIdentityId'));
                     
+                    // Check if auth manager has a valid token before proceeding
+                    if (!window.authManager || !window.authManager.isAuthenticated) {
+                        console.log('DEBUG: IdentifyingInformation - Not authenticated, skipping data loading');
+                        return;
+                    }
+                    
                     // Ensure AuthManager is properly initialized with userGroupID
                     window.authManager.init();
                     const currentUser = getCurrentUser();
@@ -496,17 +522,45 @@
                         // Show loading indicator
                         showLoadingIndicator();
                         
-                        // Load data from API
-                        const formData = await dataManager.loadSpecificationFromAPI(dataManager.currentSpecId);
-                        console.log('DEBUG: IdentifyingInformation - Form data loaded:', formData);
-                        
-                        // Populate form with loaded data
-                        populateForm(formData);
+                        try {
+                            // Load data from API
+                            const formData = await dataManager.loadSpecificationFromAPI(dataManager.currentSpecId);
+                            console.log('DEBUG: IdentifyingInformation - Form data loaded:', formData);
+                            
+                            // Set the working data in the dataManager so hasActualChanges() works correctly
+                            dataManager.workingData = formData;
+                            console.log('DEBUG: IdentifyingInformation - Working data set in dataManager:', dataManager.workingData);
+                            
+                            // Populate form with loaded data
+                            populateForm(formData);
+                            
+                            // Update save button appearance (should be grey since no changes made yet)
+                            setTimeout(() => {
+                                updateSaveButtonAppearance();
+                            }, 100); // Small delay to ensure form is fully populated
+                            
+                            console.log('DEBUG: IdentifyingInformation - Form populated with existing data');
+                        } catch (apiError) {
+                            console.error('DEBUG: IdentifyingInformation - API error:', apiError);
+                            
+                            // If API call fails due to authentication, handle session expiry
+                            if (apiError.message.includes('Session expired')) {
+                                console.log('DEBUG: IdentifyingInformation - API call failed due to session expiry');
+                                hideLoadingIndicator();
+                                return; // Don't continue, let session expiry handler take over
+                            }
+                            
+                            // For other errors, continue with working data
+                            console.log('DEBUG: IdentifyingInformation - API failed, trying working data');
+                            const workingData = dataManager.loadWorkingDataFromLocalStorage();
+                            if (workingData) {
+                                populateForm(workingData);
+                            }
+                        }
                         
                         // Hide loading indicator
                         hideLoadingIndicator();
                         
-                        console.log('DEBUG: IdentifyingInformation - Form populated with existing data');
                         // Note: No need to set isFormDirty anymore since we use hasActualChanges()
                     } else {
                         console.log('DEBUG: IdentifyingInformation - Creating new specification or missing spec ID');
@@ -518,6 +572,10 @@
                         if (workingData) {
                             console.log('DEBUG: IdentifyingInformation - Found working data, populating form');
                             populateForm(workingData);
+                            // Update save button appearance
+                            setTimeout(() => {
+                                updateSaveButtonAppearance();
+                            }, 100);
                             // Note: No need to set isFormDirty anymore since we use hasActualChanges()
                         } else {
                             console.log('DEBUG: IdentifyingInformation - No working data found, initializing with defaults');
@@ -538,14 +596,51 @@
                                 preferredSyntax: ''
                             };
                             populateForm(emptyData); // This will auto-populate governing entity
+                            // Update save button appearance
+                            setTimeout(() => {
+                                updateSaveButtonAppearance();
+                            }, 100);
                             // Note: No need to set isFormDirty anymore since we use hasActualChanges()
                         }
                     }
                 } catch (error) {
                     console.error('DEBUG: IdentifyingInformation - Error initializing data manager:', error);
                     hideLoadingIndicator();
-                    alert(`Error loading specification: ${error.message}`);
+                    
+                    // Don't show alert for session-related errors
+                    if (!error.message.includes('Session expired')) {
+                        alert(`Error loading specification: ${error.message}`);
+                    }
                 }
+            }
+
+            // Add event listeners to form fields for real-time save button updates
+            function attachFormEventListeners() {
+                console.log('DEBUG: IdentifyingInformation - Attaching form event listeners');
+                
+                const form = document.getElementById('identifyingForm');
+                if (!form) {
+                    console.error('DEBUG: IdentifyingInformation - Form not found for event listeners');
+                    return;
+                }
+                
+                // Get all input, select, and textarea elements in the form
+                const formFields = form.querySelectorAll('input, select, textarea');
+                
+                formFields.forEach(field => {
+                    // Add both 'input' and 'change' event listeners for comprehensive coverage
+                    field.addEventListener('input', () => {
+                        console.log(`DEBUG: IdentifyingInformation - Input event on ${field.name || field.id}`);
+                        updateSaveButtonAppearance();
+                    });
+                    
+                    field.addEventListener('change', () => {
+                        console.log(`DEBUG: IdentifyingInformation - Change event on ${field.name || field.id}`);
+                        updateSaveButtonAppearance();
+                    });
+                });
+                
+                console.log(`DEBUG: IdentifyingInformation - Event listeners attached to ${formFields.length} form fields`);
             }
 
             function showLoadingIndicator() {
@@ -896,8 +991,8 @@
                         // Save to API
                         const result = await dataManager.saveSpecificationToAPI(formData);
                         
-                        // Update working data baseline
-                        dataManager.workingData = dataManager.transformApiToFormData(result);
+                        // Update working data baseline to the current form data (what was just saved)
+                        dataManager.workingData = { ...formData };
                         dataManager.saveWorkingDataToLocalStorage();
                         console.log('DEBUG: IdentifyingInformation - Baseline updated after save:', dataManager.workingData);
                         
@@ -1066,157 +1161,160 @@
                 }
             }
 
-            // Form change tracking
-            document.addEventListener('DOMContentLoaded', () => {
-                const form = document.getElementById('identifyingForm');
-                const elements = form.querySelectorAll('input, textarea, select');
-
-                elements.forEach(element => {
-                    element.addEventListener('change', () => {
-                        // Note: Don't set isFormDirty anymore - rely on hasActualChanges()
-                        updateSaveButtonAppearance(); // Update save button appearance when form changes
+            // Cleanup function to remove any session-related elements
+            function cleanupSessionNotifications() {
+                let removedCount = 0;
+                
+                // Remove any existing session expiry notifications
+                const existingNotifications = document.querySelectorAll('.session-expiry-notification');
+                existingNotifications.forEach(notification => {
+                    notification.remove();
+                    removedCount++;
+                });
+                
+                // Remove any existing modals by ID
+                const modalIds = ['sessionExpiryModal', 'sessionWarningModal', 'workflowRecoveryModal'];
+                modalIds.forEach(modalId => {
+                    const modal = document.getElementById(modalId);
+                    if (modal) {
+                        modal.remove();
+                        removedCount++;
+                        console.log(`Removed modal with ID: ${modalId}`);
+                    }
+                });
+                
+                // Remove any notifications by class
+                const notificationClasses = ['notification', 'notification.info', 'notification.warning', 'notification.error', 'notification.success'];
+                notificationClasses.forEach(className => {
+                    const elements = document.querySelectorAll(`.${className}`);
+                    elements.forEach(element => {
+                        element.remove();
+                        removedCount++;
+                        console.log(`Removed element with class: ${className}`);
                     });
                 });
-
-                // Initialize data manager after DOM is ready
-                initializeDataManager().then(() => {
-                    // Update button appearance after data is loaded with small delay for DOM stability
-                    setTimeout(() => {
-                        updateSaveButtonAppearance();
-                        console.log('DEBUG: IdentifyingInformation - Initial save button appearance updated after data load');
-                    }, 100);
-                });
-            });
-
-            // Prevent accidental navigation
-            window.addEventListener('beforeunload', function (e) {
-                if (hasActualChanges()) {
-                    e.preventDefault();
-                    e.returnValue = '';
-                }
-            });
-
-            // Add navigation protection for sidebar links
-            document.addEventListener('DOMContentLoaded', function() {
-                document.querySelectorAll('.sidebar a').forEach(link => {
-                    link.addEventListener('click', (e) => {
-                        if (hasActualChanges() && !link.href.includes('IdentifyingInformation.html')) {
-                            if (!confirm('You have unsaved changes. Are you sure you want to leave this page?')) {
-                                e.preventDefault();
-                            }
-                        }
+                
+                // Remove any elements with session or expiry in ID or class
+                const sessionSelectors = [
+                    '[id*="session"]',
+                    '[id*="Session"]',
+                    '[class*="session"]',
+                    '[class*="expiry"]',
+                    '[class*="warning"]'
+                ];
+                
+                sessionSelectors.forEach(selector => {
+                    const elements = document.querySelectorAll(selector);
+                    elements.forEach(element => {
+                        element.remove();
+                        removedCount++;
+                        console.log(`Removed element with selector: ${selector}`);
                     });
                 });
-            });
-        </script>
-        
-        <script>
-            // Proactive token refresh for long workflow process
-            async function checkAndRefreshForWorkflow() {
-                console.log('DEBUG: checkAndRefreshForWorkflow - Starting workflow token check');
                 
-                if (!window.authManager || !window.authManager.tokenExpiryTime) {
-                    console.log('DEBUG: checkAndRefreshForWorkflow - No token or auth manager available for workflow refresh check');
-                    return;
+                // Clear any session countdown intervals
+                if (window.sessionCountdownInterval) {
+                    clearInterval(window.sessionCountdownInterval);
+                    window.sessionCountdownInterval = null;
+                    removedCount++;
+                    console.log('Cleared session countdown interval');
                 }
                 
-                const timeToExpiry = window.authManager.tokenExpiryTime - Date.now();
-                const thirtyMinutesMs = 30 * 60 * 1000; // 30 minutes in milliseconds
-                const minutesRemaining = Math.ceil(timeToExpiry / (60 * 1000));
+                // Clear any session warning timeouts
+                if (window.sessionWarningTimeout) {
+                    clearTimeout(window.sessionWarningTimeout);
+                    window.sessionWarningTimeout = null;
+                    removedCount++;
+                    console.log('Cleared session warning timeout');
+                }
                 
-                console.log('DEBUG: checkAndRefreshForWorkflow - Token expires in', minutesRemaining, 'minutes');
-                console.log('DEBUG: checkAndRefreshForWorkflow - 30-minute threshold check:', timeToExpiry < thirtyMinutesMs);
+                // Only log if we actually removed something
+                if (removedCount > 0) {
+                    console.log(`Session cleanup completed - removed ${removedCount} elements/timers`);
+                }
+            }
+
+            // Manual cleanup function for testing - can be called from browser console
+            function forceCleanupAllSessionElements() {
+                console.log('FORCE CLEANUP: Starting aggressive session element removal...');
                 
-                if (timeToExpiry < thirtyMinutesMs) {
-                    console.log('DEBUG: checkAndRefreshForWorkflow - Token expires in less than 30 minutes, refreshing for workflow...');
+                // Get all elements in the document
+                const allElements = document.querySelectorAll('*');
+                const removedElements = [];
+                
+                allElements.forEach(element => {
+                    const text = element.textContent.toLowerCase();
+                    const classList = element.className.toLowerCase();
+                    const id = element.id.toLowerCase();
+                    const style = element.style.cssText.toLowerCase();
                     
-                    try {
-                        const success = await window.authManager.attemptBackgroundRefresh();
-                        if (success) {
-                            console.log('DEBUG: checkAndRefreshForWorkflow - Token successfully refreshed for extended workflow');
-                            
-                            // Show brief success notification
-                            showWorkflowRefreshNotification('Session refreshed for extended workflow', 'success');
-                            
-                        } else {
-                            console.warn('DEBUG: checkAndRefreshForWorkflow - Token refresh failed - workflow may be interrupted');
-                            
-                            // Show warning notification
-                            showWorkflowRefreshNotification('Session refresh failed - workflow may be interrupted', 'warning');
-                        }
-                    } catch (error) {
-                        console.error('DEBUG: checkAndRefreshForWorkflow - Error refreshing token for workflow:', error);
+                    // Check if element contains session-related content
+                    if (text.includes('session') || text.includes('expired') || text.includes('expiry') ||
+                        text.includes('login') || text.includes('redirecting') ||
+                        classList.includes('notification') || classList.includes('session') ||
+                        id.includes('session') || id.includes('notification') || id.includes('modal') ||
+                        (style.includes('position: fixed') && style.includes('z-index: 1000'))) {
                         
-                        // Show error notification
-                        showWorkflowRefreshNotification('Session refresh error - please save your work frequently', 'error');
+                        // Don't remove the page content or essential elements
+                        if (!element.closest('.page-Content') && 
+                            !element.closest('#sidebarContainer') && 
+                            !element.closest('#breadcrumbContainer') &&
+                            element.tagName !== 'SCRIPT' &&
+                            element.tagName !== 'STYLE' &&
+                            element.tagName !== 'LINK') {
+                            console.log('FORCE REMOVING:', element);
+                            removedElements.push({
+                                tag: element.tagName,
+                                class: element.className,
+                                id: element.id,
+                                text: element.textContent.substring(0, 100)
+                            });
+                            element.remove();
+                        }
                     }
-                } else {
-                    console.log('DEBUG: checkAndRefreshForWorkflow - Token has sufficient time remaining for workflow (', minutesRemaining, 'minutes)');
-                }
-            }
-
-            // Show brief notification for workflow token refresh
-            function showWorkflowRefreshNotification(message, type = 'success') {
-                console.log('DEBUG: showWorkflowRefreshNotification -', type + ':', message);
+                });
                 
-                const notification = document.createElement('div');
-                notification.style.cssText = `
-                    position: fixed; top: 60px; right: 20px; z-index: 1001;
-                    padding: 12px 16px; border-radius: 5px; font-size: 14px;
-                    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-                    max-width: 350px; word-wrap: break-word;
-                `;
+                console.log('FORCE CLEANUP: Removed elements:', removedElements);
                 
-                // Set colors based on type
-                switch (type) {
-                    case 'success':
-                        notification.style.background = '#d4edda';
-                        notification.style.color = '#155724';
-                        notification.style.border = '1px solid #c3e6cb';
-                        notification.innerHTML = `<i class="fa-solid fa-check-circle"></i> ${message}`;
-                        break;
-                    case 'warning':
-                        notification.style.background = '#fff3cd';
-                        notification.style.color = '#856404';
-                        notification.style.border = '1px solid #ffeaa7';
-                        notification.innerHTML = `<i class="fa-solid fa-exclamation-triangle"></i> ${message}`;
-                        break;
-                    case 'error':
-                        notification.style.background = '#f8d7da';
-                        notification.style.color = '#721c24';
-                        notification.style.border = '1px solid #f5c6cb';
-                        notification.innerHTML = `<i class="fa-solid fa-exclamation-circle"></i> ${message}`;
-                        break;
+                // Clear all possible intervals and timeouts
+                for (let i = 1; i < 10000; i++) {
+                    clearInterval(i);
+                    clearTimeout(i);
                 }
                 
-                document.body.appendChild(notification);
+                console.log('FORCE CLEANUP: Cleared all intervals and timeouts');
                 
-                // Auto-remove after 4 seconds
-                setTimeout(() => {
-                    if (notification.parentNode) {
-                        notification.remove();
-                    }
-                }, 4000);
+                return removedElements;
             }
+            
+            // Make it globally accessible for console testing
+            window.forceCleanupAllSessionElements = forceCleanupAllSessionElements;
 
             // Initialize the sidebar and authentication when the page loads
             document.addEventListener('DOMContentLoaded', function() {
+                // Clean up any existing session notifications on page load
+                cleanupSessionNotifications();
+                
+                // Set up periodic cleanup to catch any session elements that appear
+                setInterval(() => {
+                    cleanupSessionNotifications();
+                }, 10000); // Check every 10 seconds (reduced from 2 seconds)
+                
                 // Wait a brief moment to ensure all DOM elements are ready
-                setTimeout(() => {
+                setTimeout(async () => {
                     try {
                         // Initialize auth manager
                         window.authManager.init();
                         
-                        // ⭐ NEW: Check and refresh token for long workflow (30-minute threshold)
-                        checkAndRefreshForWorkflow();
-                        
-                        // Initialize session manager for this workflow step
+                        // Initialize session manager for this workflow step (temporarily disabled to prevent token refresh issues)
+                        /*
                         if (window.workflowSessionManager) {
                             console.log('DEBUG: Initializing workflow session manager');
                             window.workflowSessionManager.init('specification-creation');
                         } else {
                             console.error('DEBUG: workflowSessionManager not available!');
                         }
+                        */
                         
                         // Initialize sidebar
                         window.sidebarManager.initializeSidebar(window.authManager);                        
@@ -1232,13 +1330,26 @@
                             existingContext.currentPage = 'IdentifyingInformation.html';
                             window.breadcrumbManager.updateContext(existingContext);
                         } else {
-                            // No recent context, set new context for this page (new specification workflow)
+                            // No recent context, set new context based on localStorage mode
                             console.log('DEBUG: Setting new breadcrumb context for identifying information');
+                            
+                            // Determine action based on localStorage editMode
+                            const editMode = localStorage.getItem('editMode');
+                            const specificationIdentityId = localStorage.getItem('specificationIdentityId');
+                            
                             const context = {
                                 currentPage: 'IdentifyingInformation.html',
-                                action: 'new', // Default to new when no existing context
+                                action: editMode === 'edit' ? 'edit' : 'new',
                                 source: 'mySpecs' // Default source
                             };
+                            
+                            // If we have a spec ID, include it in the context
+                            if (specificationIdentityId) {
+                                context.specId = specificationIdentityId;
+                                context.specIdentityId = specificationIdentityId;
+                            }
+                            
+                            console.log('DEBUG: Setting context based on localStorage:', context);
                             
                             // Determine source from referrer if no existing context
                             const referrer = document.referrer;
@@ -1251,11 +1362,34 @@
                             window.breadcrumbManager.setContext(context);
                         }
                         
+                        // Initialize data manager and load form data
+                        await initializeDataManager();
+                        attachFormEventListeners();
+                        
                     } catch (error) {
                         console.error('DEBUG: Error during page initialization:', error);
                         // Continue with basic functionality even if some components fail
                     }
                 }, 50); // Wait 50ms for DOM to be fully ready
+            });
+
+            // Add beforeunload warning for unsaved changes and cleanup
+            window.addEventListener('beforeunload', (e) => {
+                // Clean up any session elements before leaving
+                cleanupSessionNotifications();
+                
+                // Warn about unsaved changes
+                if (hasActualChanges()) {
+                    e.preventDefault();
+                    e.returnValue = '';
+                }
+            });
+
+            // Add visibility change handler for cleanup
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    cleanupSessionNotifications();
+                }
             });
         </script>
     </body>

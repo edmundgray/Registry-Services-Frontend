@@ -109,7 +109,7 @@ window.AuthManager = class {
         this.setupTokenRefreshTimers();
     }
 
-    // Set up timers for warning and auto-refresh
+    // Set up timers for warning and auto-refresh (auto-refresh disabled)
     setupTokenRefreshTimers() {
         this.clearTokenTimers();
         
@@ -117,27 +117,23 @@ window.AuthManager = class {
         
         const timeToExpiry = this.tokenExpiryTime - Date.now();
         const warningTime = timeToExpiry - (this.WARNING_MINUTES_BEFORE_EXPIRY * 60 * 1000);
-        const refreshTime = timeToExpiry - (this.AUTO_REFRESH_MINUTES_BEFORE_EXPIRY * 60 * 1000);
         
-        console.log('DEBUG: Setting up token timers:', {
+        console.log('DEBUG: Setting up token timers (auto-refresh disabled):', {
             timeToExpiry: Math.floor(timeToExpiry / 1000),
-            warningIn: Math.floor(warningTime / 1000),
-            refreshIn: Math.floor(refreshTime / 1000)
+            warningIn: Math.floor(warningTime / 1000)
         });
         
-        // Set warning timer
+        // Set warning timer only (auto-refresh disabled)
         if (warningTime > 0) {
             this.warningTimer = setTimeout(() => {
                 this.showSessionWarning();
             }, warningTime);
         }
         
-        // Set auto-refresh timer
-        if (refreshTime > 0) {
-            this.tokenRefreshTimer = setTimeout(() => {
-                this.attemptBackgroundRefresh();
-            }, refreshTime);
-        }
+        // Auto-refresh timer disabled - endpoints not available
+        // this.tokenRefreshTimer = setTimeout(() => {
+        //     this.attemptBackgroundRefresh();
+        // }, refreshTime);
     }
 
     // Clear existing timers
@@ -180,72 +176,31 @@ window.AuthManager = class {
         });
     }
 
-    // Background token refresh
+    // Background token refresh (DISABLED - endpoints not available)
     async attemptBackgroundRefresh() {
         if (this.isRefreshing) return;
         this.isRefreshing = true;
         
+        console.log('Token refresh disabled - endpoints not available. Showing session expiry modal instead.');
+        
         try {
-            console.log('Attempting background token refresh...');
-            
-            if (this.refreshToken) {
-                await this.refreshAccessToken();
-            } else {
-                await this.validateAndExtendSession();
-            }
-            
-            console.log('Background token refresh successful');
-            this.warningShown = false;
-            
-            // Dispatch event for other components
-            window.dispatchEvent(new CustomEvent('tokenRefreshed'));
-            
-        } catch (error) {
-            console.error('Background token refresh failed:', error);
+            // Instead of trying to refresh, show session expiry modal
             this.handleRefreshFailure();
         } finally {
             this.isRefreshing = false;
         }
     }
 
-    // Refresh using refresh token
+    // Refresh using refresh token (DISABLED - endpoint not available)
     async refreshAccessToken() {
-        const response = await fetch(`${AUTH_CONFIG.baseUrl}/auth/refresh`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                refreshToken: this.refreshToken
-            })
-        });
-        
-        if (!response.ok) {
-            throw new Error('Token refresh failed');
-        }
-        
-        const data = await response.json();
-        this.setTokens(data.accessToken, data.refreshToken, data.expiresIn);
+        console.log('Token refresh endpoint not available - cannot refresh token');
+        throw new Error('Token refresh functionality disabled - endpoint not available');
     }
 
-    // Validate current session and extend if possible
+    // Validate current session and extend if possible (DISABLED - endpoint not available)
     async validateAndExtendSession() {
-        const response = await fetch(`${AUTH_CONFIG.baseUrl}/auth/validate`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${this.accessToken}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error('Session validation failed');
-        }
-        
-        const data = await response.json();
-        if (data.accessToken) {
-            this.setTokens(data.accessToken, data.refreshToken, data.expiresIn);
-        }
+        console.log('Session validation endpoint not available - cannot extend session');
+        throw new Error('Session validation functionality disabled - endpoint not available');
     }
 
     // Handle refresh failure
@@ -423,10 +378,12 @@ window.AuthManager = class {
         this.setTokens(data.accessToken, data.refreshToken, data.expiresIn || 3600);
     }
 
-    // Enhanced authenticatedFetch with automatic retry on 401
+    // Enhanced authenticatedFetch (token refresh disabled)
     async authenticatedFetch(url, options = {}) {
         // Check if token is expired before making request
         if (this.isTokenExpired()) {
+            console.log('Token expired - showing session expiry modal');
+            this.handleRefreshFailure();
             throw new Error('Authentication token has expired');
         }
         
@@ -444,32 +401,11 @@ window.AuthManager = class {
         try {
             const response = await fetch(url, fetchOptions);
             
-            // If 401, try to refresh token and retry once
-            if (response.status === 401 && !options._retryAttempted) {
-                console.log('Received 401, attempting token refresh...');
-                
-                try {
-                    await this.attemptBackgroundRefresh();
-                    
-                    // Retry with new token
-                    const newHeaders = {
-                        ...options.headers,
-                        ...this.getAuthHeaders()
-                    };
-                    
-                    const retryOptions = {
-                        ...options,
-                        headers: newHeaders,
-                        _retryAttempted: true
-                    };
-                    
-                    return await fetch(url, retryOptions);
-                    
-                } catch (refreshError) {
-                    console.error('Token refresh failed:', refreshError);
-                    this.handleRefreshFailure();
-                    throw new Error('Authentication failed');
-                }
+            // If 401 or 403, immediately handle as session expiry (no retry)
+            if (response.status === 401 || response.status === 403) {
+                console.log('Received 401/403 - token refresh disabled, showing session expiry modal');
+                this.handleRefreshFailure();
+                throw new Error('Authentication failed - session expired');
             }
             
             return response;

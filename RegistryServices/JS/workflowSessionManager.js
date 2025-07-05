@@ -242,7 +242,15 @@ class WorkflowSessionManager {
     }
 }
 
-// Initialize workflow session manager globally
-console.log('DEBUG: Creating global workflowSessionManager instance');
-window.workflowSessionManager = new WorkflowSessionManager();
-console.log('DEBUG: Global workflowSessionManager created:', !!window.workflowSessionManager);
+// Initialize workflow session manager globally (DISABLED - token refresh endpoints not available)
+console.log('DEBUG: WorkflowSessionManager creation disabled - token refresh endpoints not available');
+// window.workflowSessionManager = new WorkflowSessionManager();
+window.workflowSessionManager = {
+    init: function() {
+        console.log('DEBUG: WorkflowSessionManager.init() disabled - token refresh endpoints not available');
+    },
+    cleanup: function() {
+        console.log('DEBUG: WorkflowSessionManager.cleanup() - no-op');
+    }
+};
+console.log('DEBUG: Global workflowSessionManager stub created (disabled):', !!window.workflowSessionManager);
