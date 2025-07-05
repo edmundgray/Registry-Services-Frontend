@@ -171,6 +171,34 @@
                 <!-- This will be populated dynamically with API data -->
                 </tbody>
             </table>
+
+            <br/><br/>
+<!----------------------------------------------------------------------------
+        3/3 Other Status Specifications
+  ------------------------------------------------------------------------------>
+            <h2>Other</h2>
+            <table id="otherTable">
+                <!-- 1st row is for the column names -->
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Purpose</th>
+                    <th>Type</th>
+                    <th>Sector</th>
+                    <th>Country</th>
+                    <th>Implementation Date</th>
+                    <th>Preferred Syntax</th>
+                    <th>Governing Entity</th>
+                    <th>Extension Component</th>
+                    <th>Conformance Level</th>
+                    <th>Registration Status</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="otherTableBody">
+                <!-- This will be populated dynamically with API data -->
+                </tbody>
+            </table>
         </div>
         </div>
         
@@ -281,22 +309,26 @@
 
             // Render specification tables with real data
             function renderSpecificationTables() {
-                const inProgressSpecs = mySpecifications.filter(spec => 
-                    spec.implementationStatus === 'In Progress' || 
-                    spec.registrationStatus === 'Draft' ||
-                    spec.registrationStatus === 'In Progress'
-                );
+                // Filter by registrationStatus only (case insensitive, exact match)
+                const inProgressSpecs = mySpecifications.filter(spec => {
+                    const regStatus = (spec.registrationStatus || '').toLowerCase();
+                    return regStatus === 'in progress';
+                });
                 
-                const submittedSpecs = mySpecifications.filter(spec => 
-                    spec.implementationStatus === 'Submitted' || 
-                    spec.registrationStatus === 'Submitted' ||
-                    spec.registrationStatus === 'Published'
-                );
+                const submittedSpecs = mySpecifications.filter(spec => {
+                    const regStatus = (spec.registrationStatus || '').toLowerCase();
+                    return regStatus === 'submitted';
+                });
+
+                // All other specifications (including null/undefined/empty registrationStatus)
+                const otherSpecs = mySpecifications.filter(spec => {
+                    const regStatus = (spec.registrationStatus || '').toLowerCase();
+                    return regStatus !== 'in progress' && regStatus !== 'submitted';
+                });
 
                 console.log('DEBUG: Filtered In Progress specifications:', inProgressSpecs.length);
                 console.log('DEBUG: In Progress specs:', inProgressSpecs.map(s => ({
                     name: s.specificationName,
-                    implStatus: s.implementationStatus,
                     regStatus: s.registrationStatus,
                     identityID: s.identityID
                 })));
@@ -304,13 +336,20 @@
                 console.log('DEBUG: Filtered Submitted specifications:', submittedSpecs.length);
                 console.log('DEBUG: Submitted specs:', submittedSpecs.map(s => ({
                     name: s.specificationName,
-                    implStatus: s.implementationStatus,
+                    regStatus: s.registrationStatus,
+                    identityID: s.identityID
+                })));
+
+                console.log('DEBUG: Filtered Other specifications:', otherSpecs.length);
+                console.log('DEBUG: Other specs:', otherSpecs.map(s => ({
+                    name: s.specificationName,
                     regStatus: s.registrationStatus,
                     identityID: s.identityID
                 })));
 
                 renderInProgressTable(inProgressSpecs);
                 renderSubmittedTable(submittedSpecs);
+                renderOtherTable(otherSpecs);
             }
 
             // Render In Progress specifications table
@@ -387,6 +426,58 @@
                 `).join('');
                 
                 console.log('DEBUG: Submitted table HTML updated');
+            }
+
+            // Render Other status specifications table
+            function renderOtherTable(specifications) {
+                console.log('DEBUG: Rendering Other table with', specifications.length, 'specifications');
+                
+                const tableBody = document.getElementById('otherTableBody');
+                if (!tableBody) {
+                    console.error('Other table body not found');
+                    return;
+                }
+
+                if (specifications.length === 0) {
+                    console.log('DEBUG: No Other specifications, showing empty message');
+                    tableBody.innerHTML = '<tr><td colspan="12" style="text-align: center; color: #666;">No other specifications</td></tr>';
+                    return;
+                }
+
+                console.log('DEBUG: Rendering', specifications.length, 'Other specifications to table');
+                tableBody.innerHTML = specifications.map(spec => {
+                    // Determine action button based on registration status
+                    let actionButton = '';
+                    const regStatus = (spec.registrationStatus || '').toLowerCase();
+                    
+                    if (regStatus === 'under review') {
+                        actionButton = `<button type="button" onclick="editSpecification(${spec.identityID})" class="view-button">Edit</button>`;
+                    } else if (regStatus === 'verified') {
+                        actionButton = `<button type="button" onclick="viewSpecification(${spec.identityID})" class="view-button">View</button>`;
+                    } else {
+                        // Fallback for all other statuses (including null/undefined/empty)
+                        actionButton = `<button type="button" onclick="viewSpecification(${spec.identityID})" class="view-button">View</button>`;
+                    }
+                    
+                    return `
+                        <tr>
+                            <td>${spec.specificationName || 'N/A'}</td>
+                            <td>${spec.purpose || 'N/A'}</td>
+                            <td>${spec.specificationType || 'N/A'}</td>
+                            <td>${spec.sector || 'N/A'}</td>
+                            <td>${spec.country || 'N/A'}</td>
+                            <td>${formatDate(spec.dateOfImplementation)}</td>
+                            <td>${spec.preferredSyntax || 'N/A'}</td>
+                            <td>${spec.governingEntity || 'N/A'}</td>
+                            <td>${hasExtensionComponents(spec) ? 'Yes' : 'No'}</td>
+                            <td>${spec.conformanceLevel || 'N/A'}</td>
+                            <td>${spec.registrationStatus || 'N/A'}</td>
+                            <td>${actionButton}</td>
+                        </tr>
+                    `;
+                }).join('');
+                
+                console.log('DEBUG: Other table HTML updated with conditional action buttons');
             }
 
             // Utility functions
@@ -535,6 +626,7 @@
             function clearTables() {
                 const draftTableBody = document.getElementById('draftTableBody');
                 const submittedTableBody = document.getElementById('submittedTableBody');
+                const otherTableBody = document.getElementById('otherTableBody');
                 
                 if (draftTableBody) {
                     draftTableBody.innerHTML = '';
@@ -542,6 +634,10 @@
                 
                 if (submittedTableBody) {
                     submittedTableBody.innerHTML = '';
+                }
+
+                if (otherTableBody) {
+                    otherTableBody.innerHTML = '';
                 }
             }
 
