@@ -6,13 +6,23 @@
 class BreadcrumbManager {
     constructor() {
         this.storageKey = 'breadcrumbContext';
+        this.visitedStepsKey = 'workflowVisitedSteps';
         this.workflowSteps = {
-            'IdentifyingInformation.html': { step: 1, name: 'Identifying Info', total: 5 },
-            'coreInvoiceModel.html': { step: 2, name: 'Core Invoice Model', total: 5 },
-            'ExtensionComponentDataModel.html': { step: 3, name: 'Extension Component Data Model', total: 5 },
-            'additionalRequirements.html': { step: 4, name: 'Additional Requirements', total: 5 },
-            'specificationPreview.html': { step: 5, name: 'Specification Preview', total: 5 }
+            'IdentifyingInformation.html': { step: 1, name: 'Identifying Info', nickname: 'identify', total: 5 },
+            'coreInvoiceModel.html': { step: 2, name: 'Core Invoice Model', nickname: 'core', total: 5 },
+            'ExtensionComponentDataModel.html': { step: 3, name: 'Extension Component Data Model', nickname: 'extension', total: 5 },
+            'additionalRequirements.html': { step: 4, name: 'Additional Requirements', nickname: 'additional', total: 5 },
+            'specificationPreview.html': { step: 5, name: 'Specification Preview', nickname: 'preview', total: 5 }
         };
+        
+        // All workflow steps in order for navigation
+        this.allWorkflowSteps = [
+            'IdentifyingInformation.html',
+            'coreInvoiceModel.html', 
+            'ExtensionComponentDataModel.html',
+            'additionalRequirements.html',
+            'specificationPreview.html'
+        ];
     }
 
     /**
@@ -91,10 +101,17 @@ class BreadcrumbManager {
     }
 
     /**
-     * Clear breadcrumb context
+     * Clear breadcrumb context and visited steps
      */
     clearContext() {
-        sessionStorage.removeItem(this.storageKey);
+        try {
+            sessionStorage.removeItem(this.storageKey);
+            this.clearVisitedSteps();
+            console.log('BreadcrumbManager: Context and visited steps cleared');
+            this.renderBreadcrumb();
+        } catch (error) {
+            console.error('BreadcrumbManager: Error clearing context:', error);
+        }
     }
 
     /**
@@ -114,30 +131,29 @@ class BreadcrumbManager {
             path.push({ label: 'My Specs', page: 'mySpecifications.html', clickable: true });
         }
 
-        // Add action-based context
-        if (context.action === 'new') {
-            if (workflowInfo) {
+        // Check if this is a workflow page
+        if (workflowInfo) {
+            // Add action-based context
+            if (context.action === 'new') {
+                path.push({ label: 'New', clickable: false });
+                // Add workflow steps
+                path.push(...this.buildWorkflowSteps(context));
+            } else if (context.action === 'edit' || context.action === 'view') {
+                const actionLabel = context.action === 'edit' ? 'Edit Spec' : 'View Spec';
                 path.push({ 
-                    label: `New > ${workflowInfo.name}`, 
-                    page: currentPage, 
+                    label: actionLabel, 
                     clickable: false,
-                    workflow: `Step ${workflowInfo.step} of ${workflowInfo.total}`
-                });
-            } else {
-                path.push({ label: 'New', page: currentPage, clickable: false });
-            }
-        } else if (context.action === 'edit' || context.action === 'view') {
-            const actionLabel = context.action === 'edit' ? 'Edit Spec' : 'View Spec';
-            
-            if (workflowInfo) {
-                path.push({ 
-                    label: `${actionLabel} (Step ${workflowInfo.step} of ${workflowInfo.total})`, 
-                    page: currentPage, 
-                    clickable: false,
-                    workflow: `Step ${workflowInfo.step} of ${workflowInfo.total}`,
                     specId: context.specIdentityId || context.specId
                 });
-            } else {
+                // Add workflow steps
+                path.push(...this.buildWorkflowSteps(context));
+            }
+        } else {
+            // Non-workflow page - use original logic
+            if (context.action === 'new') {
+                path.push({ label: 'New', page: currentPage, clickable: false });
+            } else if (context.action === 'edit' || context.action === 'view') {
+                const actionLabel = context.action === 'edit' ? 'Edit Spec' : 'View Spec';
                 path.push({ 
                     label: actionLabel, 
                     page: currentPage, 
@@ -148,6 +164,39 @@ class BreadcrumbManager {
         }
 
         return path;
+    }
+
+    /**
+     * Build workflow steps for breadcrumb
+     * @param {Object} context - Navigation context
+     * @returns {Array} Array of workflow step items
+     */
+    buildWorkflowSteps(context) {
+        const currentPage = context.currentPage || this.getCurrentPageName();
+        const visitedSteps = this.getVisitedSteps();
+        const action = context.action || 'view';
+        
+        // Mark current step as visited
+        this.markStepAsVisited(currentPage);
+        
+        const workflowSteps = [];
+        
+        for (const page of this.allWorkflowSteps) {
+            const stepInfo = this.workflowSteps[page];
+            const status = this.getStepStatus(page, currentPage, visitedSteps, action);
+            
+            workflowSteps.push({
+                label: stepInfo.nickname,
+                page: page,
+                clickable: status !== 'current' && status !== 'disabled',
+                workflowStep: true,
+                status: status,
+                stepNumber: stepInfo.step,
+                fullName: stepInfo.name
+            });
+        }
+        
+        return workflowSteps;
     }
 
     /**
@@ -226,19 +275,50 @@ class BreadcrumbManager {
     generateBreadcrumbHTML(path, context) {
         if (!path || path.length === 0) return '';
 
-        const breadcrumbItems = path.map((item, index) => {
-            const isLast = index === path.length - 1;
+        const breadcrumbItems = [];
+        let workflowStepsHTML = '';
+        
+        // Process regular breadcrumb items and separate workflow steps
+        const regularItems = path.filter(item => !item.workflowStep);
+        const workflowItems = path.filter(item => item.workflowStep);
+        
+        // Generate regular breadcrumb items
+        regularItems.forEach((item, index) => {
+            const isLast = index === regularItems.length - 1 && workflowItems.length === 0;
             const displayLabel = this.getDisplayLabel(item);
             const hoverTitle = this.getHoverTitle(item, context);
 
             if (isLast || !item.clickable) {
-                return `<span class="breadcrumb-current" title="${hoverTitle}">${displayLabel}</span>`;
+                breadcrumbItems.push(`<span class="breadcrumb-current" title="${hoverTitle}">${displayLabel}</span>`);
             } else {
-                return `<a href="#" class="breadcrumb-item" title="${hoverTitle}" data-page="${item.page}" data-spec-id="${item.specId || ''}">${displayLabel}</a>`;
+                breadcrumbItems.push(`<a href="#" class="breadcrumb-item" title="${hoverTitle}" data-page="${item.page}" data-spec-id="${item.specId || ''}">${displayLabel}</a>`);
             }
         });
-
-        return breadcrumbItems.join('<span class="breadcrumb-separator">></span>');
+        
+        // Generate workflow steps if present
+        if (workflowItems.length > 0) {
+            const workflowStepsArray = workflowItems.map((item, index) => {
+                const isLast = index === workflowItems.length - 1;
+                const statusClass = `breadcrumb-step-${item.status}`;
+                const hoverTitle = `${item.fullName} (Step ${item.stepNumber})`;
+                
+                if (item.clickable) {
+                    return `<a href="#" class="breadcrumb-step ${statusClass}" title="${hoverTitle}" data-page="${item.page}" data-spec-id="${context.specId || ''}">${item.label}</a>`;
+                } else {
+                    return `<span class="breadcrumb-step ${statusClass}" title="${hoverTitle}">${item.label}</span>`;
+                }
+            });
+            
+            workflowStepsHTML = `<div class="breadcrumb-workflow-steps">${workflowStepsArray.join('<span class="breadcrumb-workflow-separator">›</span>')}</div>`;
+        }
+        
+        // Combine regular breadcrumb with workflow steps
+        let result = breadcrumbItems.join('<span class="breadcrumb-separator">></span>');
+        if (workflowStepsHTML) {
+            result += '<span class="breadcrumb-separator">></span>' + workflowStepsHTML;
+        }
+        
+        return result;
     }
 
     /**
@@ -408,6 +488,8 @@ class BreadcrumbManager {
         document.addEventListener('click', (event) => {
             if (event.target.matches('.breadcrumb-item') || event.target.closest('.breadcrumb-item')) {
                 this.handleBreadcrumbClick(event);
+            } else if (event.target.matches('.breadcrumb-step') || event.target.closest('.breadcrumb-step')) {
+                this.handleWorkflowStepClick(event);
             }
         });
 
@@ -415,6 +497,127 @@ class BreadcrumbManager {
         window.addEventListener('resize', () => {
             this.renderBreadcrumb();
         });
+    }
+
+    /**
+     * Handle workflow step click navigation
+     * @param {Event} event - Click event
+     */
+    handleWorkflowStepClick(event) {
+        event.preventDefault();
+        
+        const target = event.target.matches('.breadcrumb-step') ? event.target : event.target.closest('.breadcrumb-step');
+        const targetPage = target.getAttribute('data-page');
+        const specId = target.getAttribute('data-spec-id');
+        
+        console.log('BreadcrumbManager: Workflow step clicked:', targetPage);
+        
+        // Check if step is clickable (not disabled or current)
+        if (target.classList.contains('breadcrumb-step-disabled') || 
+            target.classList.contains('breadcrumb-step-current')) {
+            console.log('BreadcrumbManager: Step is disabled or current, ignoring click');
+            return;
+        }
+        
+        if (!targetPage) {
+            console.error('BreadcrumbManager: No target page specified for workflow step');
+            return;
+        }
+        
+        // Check for unsaved changes before navigation
+        if (this.hasUnsavedChanges()) {
+            const confirmNavigation = confirm(
+                'You have unsaved changes. Do you want to leave this page? Your changes will be lost.'
+            );
+            if (!confirmNavigation) {
+                console.log('BreadcrumbManager: Navigation cancelled due to unsaved changes');
+                return;
+            }
+        }
+        
+        // Navigate to target page
+        console.log('BreadcrumbManager: Navigating to workflow step:', targetPage);
+        
+        // Preserve specification context for workflow navigation
+        if (specId) {
+            localStorage.setItem('selectedSpecification', specId);
+        }
+        
+        // Navigate to the target page
+        window.location.href = targetPage;
+    }
+
+    /**
+     * Mark a workflow step as visited/completed
+     * @param {string} page - Page filename (e.g., 'IdentifyingInformation.html')
+     */
+    markStepAsVisited(page) {
+        try {
+            const visitedSteps = this.getVisitedSteps();
+            if (!visitedSteps.includes(page)) {
+                visitedSteps.push(page);
+                sessionStorage.setItem(this.visitedStepsKey, JSON.stringify(visitedSteps));
+                console.log('BreadcrumbManager: Marked step as visited:', page);
+            }
+        } catch (error) {
+            console.error('BreadcrumbManager: Error marking step as visited:', error);
+        }
+    }
+
+    /**
+     * Get list of visited workflow steps
+     * @returns {Array} Array of visited page filenames
+     */
+    getVisitedSteps() {
+        try {
+            const stored = sessionStorage.getItem(this.visitedStepsKey);
+            return stored ? JSON.parse(stored) : [];
+        } catch (error) {
+            console.error('BreadcrumbManager: Error getting visited steps:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Clear visited steps (useful when starting new workflow)
+     */
+    clearVisitedSteps() {
+        try {
+            sessionStorage.removeItem(this.visitedStepsKey);
+            console.log('BreadcrumbManager: Cleared visited steps');
+        } catch (error) {
+            console.error('BreadcrumbManager: Error clearing visited steps:', error);
+        }
+    }
+
+    /**
+     * Determine step status for workflow breadcrumb
+     * @param {string} page - Page filename
+     * @param {string} currentPage - Current page filename
+     * @param {Array} visitedSteps - Array of visited steps
+     * @param {string} action - Current action (new/edit)
+     * @returns {string} Step status: 'completed', 'current', 'future', 'disabled'
+     */
+    getStepStatus(page, currentPage, visitedSteps, action) {
+        if (page === currentPage) {
+            return 'current';
+        }
+        
+        if (visitedSteps.includes(page)) {
+            return 'completed';
+        }
+        
+        const currentStepNum = this.workflowSteps[currentPage]?.step || 0;
+        const stepNum = this.workflowSteps[page]?.step || 0;
+        
+        // Future steps
+        if (stepNum > currentStepNum) {
+            // In edit mode, future steps are clickable; in new mode, they're disabled
+            return action === 'edit' ? 'future' : 'disabled';
+        }
+        
+        // Past steps (not yet visited) - treat as future
+        return action === 'edit' ? 'future' : 'disabled';
     }
 }
 
