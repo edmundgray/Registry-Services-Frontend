@@ -1,4 +1,20 @@
 /******************************************************************************
+    eInvoicing Specification Registry Stylesheet
+    
+    This stylesheet includes modern accessibility features:
+    - Forced Colors Mode support (replaces deprecated -ms-high-contrast)
+    - High contrast mode preferences
+    - Reduced motion preferences
+    - Enhanced keyboard navigation
+    - System color integration for accessibility
+    
+    Standards compliance:
+    - CSS Media Queries Level 5 (forced-colors)
+    - CSS Color Module Level 4 (system-color)
+    - WCAG 2.1 AA accessibility guidelines
+ ******************************************************************************/
+
+/******************************************************************************
     General Category
  ******************************************************************************/
 * {
@@ -261,7 +277,6 @@ body {
     box-sizing: border-box;
     margin: 0;
     vertical-align: middle;
-    line-height: 1.2;
 }
 
 #pagination-controls select:focus {
@@ -1136,5 +1151,213 @@ button[onclick*="deleteRow"]:active {
     .page-Content {
         margin-left: 0;
         padding: 10px;
+    }
+}
+
+/******************************************************************************
+    Modern Accessibility: Forced Colors Mode Support
+ ******************************************************************************/
+@media (forced-colors: active) {
+    /* Ensure proper contrast for interactive elements */
+    .sidebar ul li a {
+        forced-color-adjust: none;
+        background-color: ButtonFace;
+        color: ButtonText;
+        border: 1px solid ButtonBorder;
+    }
+    
+    .sidebar ul li:hover a {
+        background-color: Highlight;
+        color: HighlightText;
+        border-color: HighlightText;
+    }
+    
+    /* Table styling for forced colors */
+    #registry-table {
+        border: 1px solid CanvasText;
+        background-color: Canvas;
+        color: CanvasText;
+    }
+    
+    #registry-table th,
+    #registry-table td {
+        border: 1px solid CanvasText;
+        background-color: Canvas;
+        color: CanvasText;
+    }
+    
+    #registry-table tr:hover {
+        background-color: Highlight;
+        color: HighlightText;
+    }
+    
+    /* Button styling for forced colors */
+    button, 
+    input[type="button"],
+    input[type="submit"] {
+        background-color: ButtonFace;
+        color: ButtonText;
+        border: 2px solid ButtonBorder;
+    }
+    
+    button:hover,
+    input[type="button"]:hover,
+    input[type="submit"]:hover {
+        background-color: Highlight;
+        color: HighlightText;
+        border-color: HighlightText;
+    }
+    
+    /* Form inputs for forced colors */
+    input[type="text"],
+    input[type="search"],
+    select,
+    textarea {
+        background-color: Field;
+        color: FieldText;
+        border: 1px solid CanvasText;
+    }
+    
+    input[type="text"]:focus,
+    input[type="search"]:focus,
+    select:focus,
+    textarea:focus {
+        outline: 2px solid Highlight;
+        outline-offset: 2px;
+    }
+    
+    /* Links for forced colors */
+    a {
+        color: LinkText;
+    }
+    
+    a:visited {
+        color: VisitedText;
+    }
+    
+    a:hover,
+    a:focus {
+        color: ActiveText;
+        outline: 2px solid Highlight;
+        outline-offset: 2px;
+    }
+    
+    /* Modal styling for forced colors */
+    .modal-content {
+        background-color: Canvas;
+        color: CanvasText;
+        border: 2px solid CanvasText;
+    }
+    
+    /* Search icon wrapper for forced colors */
+    .search-input-wrapper::before {
+        color: GrayText;
+    }
+    
+    /* Pagination for forced colors */
+    #pagination-controls button {
+        background-color: ButtonFace;
+        color: ButtonText;
+        border: 1px solid ButtonBorder;
+    }
+    
+    #pagination-controls button:hover:not(:disabled) {
+        background-color: Highlight;
+        color: HighlightText;
+        border-color: HighlightText;
+    }
+    
+    #pagination-controls button:disabled {
+        background-color: Canvas;
+        color: GrayText;
+        border-color: GrayText;
+    }
+}
+
+/******************************************************************************
+    Enhanced Accessibility Features
+ ******************************************************************************/
+
+@media (prefers-reduced-motion: reduce) {
+    .sidebar,
+    .sidebar ul li,
+    button,
+    input,
+    select {
+        transition: none !important;
+        animation: none !important;
+    }
+}
+
+@media (prefers-contrast: high) {
+    body {
+        background: #000;
+        color: #fff;
+    }
+    
+    .sidebar {
+        background: #000;
+        border: 2px solid #fff;
+    }
+    
+    .sidebar ul li a {
+        color: #fff;
+        border: 1px solid transparent;
+    }
+    
+    .sidebar ul li:hover {
+        background: #fff;
+    }
+    
+    .sidebar ul li:hover a {
+        color: #000;
+        border-color: #000;
+    }
+    
+    #registry-table {
+        border: 2px solid #fff;
+        background: #000;
+    }
+    
+    #registry-table th,
+    #registry-table td {
+        border: 1px solid #fff;
+        background: #000;
+        color: #fff;
+    }
+    
+    button,
+    input[type="button"],
+    input[type="submit"] {
+        background: #000;
+        color: #fff;
+        border: 2px solid #fff;
+    }
+}
+
+/* Focus management for keyboard navigation */
+*:focus {
+    outline: 2px solid #0066cc;
+    outline-offset: 2px;
+}
+
+/* Ensure sufficient color contrast in forced colors mode */
+@media (forced-colors: active) {
+    /* Override any box-shadows that get forced to 'none' */
+    .button-with-shadow,
+    .card-shadow {
+        border: 2px solid ButtonBorder;
+        box-shadow: none; /* Explicitly set since it's forced anyway */
+    }
+    
+    /* Ensure custom icons maintain visibility */
+    .icon,
+    .fa {
+        forced-color-adjust: auto;
+    }
+    
+    /* Special handling for logo/branding elements */
+    .logo img {
+        forced-color-adjust: none;
     }
 }
