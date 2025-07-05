@@ -59,697 +59,25 @@ function updateVisibility()
 /******************************************************************************
     1/2 Country and Extension Component Dropdown Population
  ******************************************************************************/
-let currentPage = 1;
-let rowsPerPage = 10;
-let filteredData = [];
 
 document.addEventListener("DOMContentLoaded", function () 
 {
     updateVisibility();
 
-    // Populate the country dropdown
-    const countryFilter = document.getElementById("countryFilter");
-    
-    // Only populate country filter if the element exists on this page
-    if (!countryFilter) {
-        console.log('DEBUG: countryFilter element not found - skipping country filter population');
-    } else {
-        const countries = 
-        [
-            // European Union (EU)
-            { name: "Belgium", code: "BE" },
-            { name: "Bulgaria", code: "BG" },
-            { name: "Czechia", code: "CZ" },
-            { name: "Denmark", code: "DK" },
-            { name: "Germany", code: "DE" },
-            { name: "Estonia", code: "EE" },
-            { name: "Ireland", code: "IE" },
-            { name: "Greece", code: "EL" },
-            { name: "Spain", code: "ES" },
-            { name: "France", code: "FR" },
-            { name: "Croatia", code: "HR" },
-            { name: "Italy", code: "IT" },
-            { name: "Cyprus", code: "CY" },
-            { name: "Latvia", code: "LV" },
-            { name: "Lithuania", code: "LT" },
-            { name: "Luxembourg", code: "LU" },
-            { name: "Hungary", code: "HU" },
-            { name: "Malta", code: "MT" },
-            { name: "Netherlands", code: "NL" },
-            { name: "Austria", code: "AT" },
-            { name: "Poland", code: "PL" },
-            { name: "Portugal", code: "PT" },
-            { name: "Romania", code: "RO" },
-            { name: "Slovenia", code: "SI" },
-            { name: "Slovakia", code: "SK" },
-            { name: "Finland", code: "FI" },
-            { name: "Sweden", code: "SE" },
-
-            // European Free Trade Association (EFTA)
-            { name: "Iceland", code: "IS" },
-            { name: "Norway", code: "NO" },
-            { name: "Liechtenstein", code: "LI" },
-            { name: "Switzerland", code: "CH" }
-        ];
-
-        // Add the default "All Countries" option
-        const defaultOption = document.createElement("option");
-        defaultOption.value = "";
-        defaultOption.textContent = "All Countries";
-        countryFilter.appendChild(defaultOption);
-
-        // Add the countries as options
-        countries.forEach(country => 
-        {
-            const option = document.createElement("option");
-            option.value = country.code;
-            option.textContent = `${country.name} (${country.code})`;
-            countryFilter.appendChild(option);
-        });
-    }
+    // Country dropdown population moved to registryTable.js for registry-specific pages
+    // For other pages that need country dropdown, this code should be page-specific
 
 /******************************************************************************
     2/2 Country and Extension Component Dropdown Population
  ******************************************************************************/
 
-    // Comment out Extension Component filter - will be part of Advanced search instead
-    /*
-    // Populate the extensionComponentFilter dropdown
-    const extensionComponentFilter = document.getElementById("extensionComponentFilter");
-
-    // Adding the default "All Components" option
-    const defaultExtensionOption = document.createElement("option");
-    defaultExtensionOption.value = "";
-    defaultExtensionOption.textContent = "All Components";
-    extensionComponentFilter.appendChild(defaultExtensionOption);
-
-    // Fetch Extension Components with a single request for all entries
-    async function fetchExtensionComponents() {
-        const baseUrl = "https://registryservices-staging.azurewebsites.net/api/extensionmodels/headers";
-        const response = await fetch(`${baseUrl}?page=1&pageSize=12`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log("API Response:", data);
-
-        // Return the items directly
-        return data.items;
-    }
-
-    // Populate the dropdown with fetched data
-    fetchExtensionComponents()
-        .then(extensionComponents => {
-            extensionComponents.forEach(component => {
-                const option = document.createElement("option");
-                option.value = component.id;
-                option.textContent = `${component.id} ${component.name.trim()}`;
-                extensionComponentFilter.appendChild(option);
-            });
-        })
-        .catch(error => console.error("Error fetching Extension Components:", error));
-    */
-
 /******************************************************************************
-    API Functions for fetching data from backend
- ******************************************************************************/  
-    // API base URL
-    const API_BASE_URL = "https://registryservices-staging.azurewebsites.net/api";
-    
-    // Store total count for pagination
-    let totalSpecifications = 0;
-    
-    // Fetch specifications from the API
-    async function fetchSpecifications() 
-    {
-        try 
-        {
-            console.log("Fetching specifications from API...");
-            const response = await fetch(`${API_BASE_URL}/specifications?PageNumber=${currentPage}&PageSize=${rowsPerPage}`);
-            
-            if (!response.ok) 
-            {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            console.log("API Response:", data);
-            
-            // Handle the response structure
-            if (data.items && Array.isArray(data.items)) 
-            {
-                originalData = data.items;
-                filteredData = data.items;
-
-                // Check for total count in metadata first, then try other possible property names
-                totalSpecifications = (data.metadata && data.metadata.totalCount) || 
-                                      data.totalCount || data.TotalCount || data.total || data.Total || 
-                                      data.count || data.Count || 0;
-                console.log(`Loaded ${data.items.length} items, total: ${totalSpecifications}`);
-                
-                // If no total count in response, make a rough estimate based on current data
-                if (totalSpecifications === 0 && data.items.length > 0) 
-                {
-                    totalSpecifications = Math.max(data.items.length, currentPage * rowsPerPage);
-                    console.log(`No total count found, estimated: ${totalSpecifications}`);
-                }
-            } 
-            else if (Array.isArray(data)) 
-            {
-                // Handle case where response is directly an array
-                originalData = data;
-                filteredData = data;
-                totalSpecifications = data.length;
-                console.log(`Loaded ${data.length} items (direct array)`);
-            } 
-            else 
-            {
-                // Unexpected response format
-                console.warn("Unexpected API response format:", data);
-                originalData = [];
-                filteredData = [];
-                totalSpecifications = 0;
-            }
-            
-            populateTable(filteredData);
-        }
-        catch (error) 
-        {
-            console.error("Error fetching specifications:", error);
-            alert("Failed to load specifications from the server. Please check your connection and try again.");
-            // Fallback to empty data
-            originalData = [];
-            filteredData = [];
-            totalSpecifications = 0;
-            populateTable(filteredData);
-        }
-    }
-    
-    // Function to fetch specifications with filters
-    async function fetchSpecificationsWithFilters() 
-    {
-        try 
-        {
-            const searchText = document.getElementById("searchInput").value;
-            const typeFilter = document.getElementById("typeFilter").value;
-            const sectorFilter = document.getElementById("sectorFilter").value;
-            const countryFilter = document.getElementById("countryFilter").value;
-            
-            // Build query parameters
-            const params = new URLSearchParams
-            ({
-                PageNumber: currentPage.toString(),
-                PageSize: rowsPerPage.toString()
-            });
-            
-            if (searchText.trim()) params.append('SearchTerm', searchText.trim());
-            if (typeFilter) params.append('SpecificationType', typeFilter);
-            if (sectorFilter) params.append('Sector', sectorFilter);
-            if (countryFilter) params.append('Country', countryFilter);
-            
-            const url = `${API_BASE_URL}/specifications?${params.toString()}`;
-            console.log("Fetching with URL:", url);
-            
-            const response = await fetch(url);
-            
-            if (!response.ok) 
-            {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            console.log("Filtered API Response:", data);
-            
-            // Handle the response structure
-            if (data.items && Array.isArray(data.items)) 
-            {
-                filteredData = data.items;
-                // Check for total count in metadata first, then try other possible property names
-                totalSpecifications = (data.metadata && data.metadata.totalCount) || 
-                                      data.totalCount || data.TotalCount || data.total || data.Total || 
-                                      data.count || data.Count || 0;
-                console.log(`Filtered to ${data.items.length} items, total: ${totalSpecifications}`);
-                
-                // If no total count in response, make a rough estimate based on current data
-                if (totalSpecifications === 0 && data.items.length > 0) 
-                {
-                    totalSpecifications = Math.max(data.items.length, currentPage * rowsPerPage);
-                    console.log(`No total count found, estimated: ${totalSpecifications}`);
-                }
-            } 
-            else if (Array.isArray(data)) 
-            {
-                // Handle case where response is directly an array
-                filteredData = data;
-                totalSpecifications = data.length;
-                console.log(`Filtered to ${data.length} items (direct array)`);
-            } 
-            else 
-            {
-                // Unexpected response format
-                console.warn("Unexpected API response format:", data);
-                filteredData = [];
-                totalSpecifications = 0;
-            }
-            
-            populateTable(filteredData);
-        } 
-        catch (error) 
-        {
-            console.error("Error fetching filtered specifications:", error);
-            alert("Failed to filter specifications. Please try again.");
-        }
-    }
-
-/******************************************************************************
-    Original Data for the table
+    Authentication and General UI Management
+    - All table-related functionality moved to registryTable.js
+    - Country dropdown moved to registryTable.js for registry pages
  ******************************************************************************/
-    let originalData = [];
-    let filteredData = [];
+    // Note: All table management is now handled by registryTable.js
 
-    const rowsPerPageSelect = document.getElementById("rowsPerPage");
-    const prevPageButton = document.getElementById("prevPage");
-    const nextPageButton = document.getElementById("nextPage");
-    const firstPageButton = document.getElementById("firstPage");
-    const lastPageButton = document.getElementById("lastPage");
-    const pageNumbersDiv = document.getElementById("pageNumbers");
-
-    // Only set up pagination if all required elements exist
-    if (rowsPerPageSelect && prevPageButton && nextPageButton && firstPageButton && lastPageButton && pageNumbersDiv) {
-        // Rows per page select
-        rowsPerPageSelect.addEventListener("change", function () 
-        {
-            rowsPerPage = parseInt(this.value, 10);
-            currentPage = 1; // Reset to first page
-            console.log(`Rows per page changed to ${rowsPerPage}, resetting to page 1`);
-            applyFilters();
-        });
-
-        // First Page Button
-        firstPageButton.addEventListener("click", function (e) 
-        {
-            e.preventDefault();
-        if (currentPage !== 1) {
-            currentPage = 1;
-            console.log("First page clicked, moving to page 1");
-            applyFilters();
-        }
-    });
-
-    // Previous Button
-    prevPageButton.addEventListener("click", function (e) 
-    {
-        e.preventDefault();
-        if (currentPage > 1) 
-        {
-            currentPage--;
-            console.log(`Previous page clicked, moving to page ${currentPage}`);
-            applyFilters();
-        }
-    });
-
-    // Next Button
-    nextPageButton.addEventListener("click", function (e) 
-    {
-        e.preventDefault();
-        const totalPages = Math.ceil(totalSpecifications / rowsPerPage);
-        if (currentPage < totalPages) 
-        {
-            currentPage++;
-            console.log(`Next page clicked, moving to page ${currentPage}`);
-            applyFilters();
-        }
-    });
-
-    // Last Page Button
-    lastPageButton.addEventListener("click", function (e) 
-    {
-        e.preventDefault();
-        const totalPages = Math.ceil(totalSpecifications / rowsPerPage);
-        if (currentPage !== totalPages && totalPages > 0) {
-            currentPage = totalPages;
-            console.log(`Last page clicked, moving to page ${currentPage}`);
-            applyFilters();
-        }
-    });
-    } // End of pagination null check
-
-    // Fetch the data from API and populate the table
-    fetchSpecifications();
-
-    // Add event listeners for the filters (with null checks)
-    const searchInput = document.getElementById("searchInput");
-    const typeFilter = document.getElementById("typeFilter");
-    const sectorFilter = document.getElementById("sectorFilter");
-    const countryFilterElement = document.getElementById("countryFilter");
-    
-    if (searchInput) {
-        searchInput.addEventListener("input", debounce(applyFilters, 300));
-    }
-    if (typeFilter) {
-        typeFilter.addEventListener("change", applyFilters);
-    }
-    if (sectorFilter) {
-        sectorFilter.addEventListener("change", applyFilters);
-    }
-    if (countryFilterElement) {
-        countryFilterElement.addEventListener("change", applyFilters);
-    }
-    // Comment out Extension Component filter - will be part of Advanced search instead
-    // document.getElementById("extensionComponentFilter").addEventListener("change", applyFilters);    // Populating the table
-    function populateTable(data) 
-    {
-        const table = document.getElementById("myTable");
-        if (!table) {
-            console.log('DEBUG: myTable element not found - skipping table population');
-            return; // Exit early if this page doesn't have the table
-        }
-        
-        table.innerHTML = "";
-
-        if (data.length > 0) 
-        {
-            const headerRow = table.insertRow(0);
-            
-            // Define the desired column order with exact mappings to match the required layout
-            const columnOrder = [
-                "Created/Modified Date",
-                "Name", 
-                "Purpose", 
-                "Implementation Date",
-                "Type", 
-                "Sector", 
-                "Country", 
-                "Preferred Syntax", 
-                "Registry Status",
-                "Governing Entity", 
-                "Conformance Level", 
-                "View"
-            ];
-
-            // Always include all columns since we want to show them even if empty
-            const headers = columnOrder;
-
-            headers.forEach(header => 
-            {
-                const th = document.createElement("th");
-                th.textContent = header;
-                headerRow.appendChild(th);
-            });
-
-            // For API data, we display all items in the current page data
-            // since pagination is handled server-side
-            for (let i = 0; i < data.length; i++) 
-            {
-                const entry = data[i];
-                const row = table.insertRow(-1);
-                  // Add styling for Submitted rows if user is logged in admin
-                const userRole = localStorage.getItem('userRole');
-                const registryStatus = getPropertyValue(entry, "Registry Status");
-                if (loggedInStatus && userRole === 'admin' && registryStatus === "Submitted") {
-                    row.style.backgroundColor = "#ffeb3b"; // Yellow highlight for submitted rows
-                    row.style.fontWeight = "bold";
-                }
-
-                headers.forEach(header => 
-                {
-                    const cell = row.insertCell(-1);
-
-                    if (header === "Created/Modified Date") {
-                        // Format the created/modified date to show only the date part
-                        const createdDate = getPropertyValue(entry, header);
-                        if (createdDate) {
-                            // Extract just the date part (YYYY-MM-DD) if it's in ISO format
-                            const dateOnly = createdDate.includes('T') ? createdDate.split('T')[0] : createdDate;
-                            cell.textContent = dateOnly;
-                        } else {
-                            cell.textContent = "N/A";
-                        }
-                    } else if (header === "Implementation Date") {
-                        // Format the implementation date to show only the date part
-                        const implDate = getPropertyValue(entry, header);
-                        if (implDate) {
-                            // Extract just the date part (YYYY-MM-DD) if it's in ISO format
-                            const dateOnly = implDate.includes('T') ? implDate.split('T')[0] : implDate;
-                            cell.textContent = dateOnly;
-                        } else {
-                            cell.textContent = "N/A";
-                        }
-                    } else if (header === "Sector") {
-                        // Map sector codes to full names
-                        const sectorMapping = {
-                            "A": "Agriculture, Forestry and Fishing",
-                            "B": "Mining and Quarrying",
-                            "C": "Manufacturing",
-                            "D": "Electricity, Gas, Steam and Air Conditioning Supply",
-                            "E": "Water Supply; Sewerage, Waste Management and Remediation Activities",
-                            "F": "Construction",
-                            "G": "Wholesale and Retail Trade; Repair of Motor Vehicles and Motorcycles",
-                            "H": "Transportation and Storage",
-                            "I": "Accommodation and Food Service Activities",
-                            "J": "Information and Communication",
-                            "K": "Financial and Insurance Activities",
-                            "L": "Real Estate Activities",
-                            "M": "Professional, Scientific and Technical Activities",
-                            "N": "Administrative and Support Service Activities",
-                            "O": "Public Administration and Defence; Compulsory Social Security",
-                            "P": "Education",
-                            "Q": "Human Health and Social Work Activities",
-                            "R": "Arts, Entertainment and Recreation",
-                            "S": "Other Service Activities",
-                            "T": "Activities of Households as Employers; Undifferentiated Goods- and Services-Producing Activities of Households for Own Use",
-                            "U": "Activities of Extraterritorial Organisations and Bodies"
-                        };
-
-                        const sectorValue = getPropertyValue(entry, header);
-                        cell.textContent = sectorMapping[sectorValue] || sectorValue || "N/A";
-                    } else if (header === "View") {
-                        const button = document.createElement("button");
-
-                        button.textContent = "View";
-                        button.className = "view-button";
-                        button.addEventListener("click", () => {
-                            // Use identityID to navigate to viewSpecification.html
-                            const identityID = entry.identityID;
-                            
-                            if (!identityID) {
-                                console.error('No identityID found for specification:', entry);
-                                alert('Error: Cannot view specification - missing ID');
-                                return;
-                            }
-                            
-                            console.log('Viewing specification with ID:', identityID);
-                            
-                            // Store the specification ID for the view page
-                            localStorage.setItem('viewSpecificationId', identityID);
-                            
-                            // Navigate to the view specification page with the ID as a URL parameter
-                            const viewUrl = `viewSpecification.html?id=${identityID}`;
-                            console.log('DEBUG: Navigating to view page:', viewUrl);
-                            
-                            window.location.href = viewUrl;
-                        });
-
-                        cell.appendChild(button);
-                    } else {
-                        const value = getPropertyValue(entry, header);
-                        cell.textContent = value || "N/A";
-                    }
-                });
-            }
-        } 
-        else 
-        {
-            // Show "No data" message when there are no results
-            const noDataRow = table.insertRow(0);
-            const noDataCell = noDataRow.insertCell(0);
-            noDataCell.colSpan = 12; // Span all columns
-            noDataCell.style.textAlign = "center";
-            noDataCell.style.padding = "20px";
-            noDataCell.style.fontStyle = "italic";
-            noDataCell.style.color = "#666";
-            noDataCell.textContent = "No specifications found matching your criteria.";
-        }
-
-        // Calculate total pages based on API total count, not current data length
-        let totalPages = Math.ceil(totalSpecifications / rowsPerPage);
-        
-        // If totalSpecifications is 0 or unreliable, use estimation
-        if (totalSpecifications === 0 || totalPages === 0) {
-            totalPages = estimateTotalPages();
-            console.log(`Using estimated totalPages: ${totalPages}`);
-        }
-        
-        console.log(`Calculated totalPages: ${totalPages} (totalSpecifications: ${totalSpecifications}, rowsPerPage: ${rowsPerPage})`);
-        
-        updatePaginationControls(totalPages);
-    }
-    
-    // Update the pagination controls with numbered buttons
-    function updatePaginationControls(totalPages) 
-    {
-        console.log(`Updating pagination controls: currentPage=${currentPage}, totalPages=${totalPages}, totalSpecifications=${totalSpecifications}`);
-        
-        // Update navigation button states
-        firstPageButton.disabled = currentPage === 1;
-        prevPageButton.disabled = currentPage === 1;
-        nextPageButton.disabled = currentPage === totalPages || totalPages === 0;
-        lastPageButton.disabled = currentPage === totalPages || totalPages === 0;
-
-        // Update page info display
-        const pageInfo = document.getElementById('pageInfo');
-        if (pageInfo && totalSpecifications > 0) 
-        {
-            const start = (currentPage - 1) * rowsPerPage + 1;
-            const end = Math.min(currentPage * rowsPerPage, totalSpecifications);
-            pageInfo.textContent = `Page ${currentPage} of ${totalPages} (${start}-${end} of ${totalSpecifications} items)`;
-        } 
-        else if (pageInfo) 
-        {
-            pageInfo.textContent = "No items found";
-        }
-
-        // Clear existing page numbers
-        console.log('Clearing existing page numbers');
-        pageNumbersDiv.innerHTML = '';
-
-        // Always show page numbers, even if there's only 1 page
-        if (totalPages === 0) return;
-
-        // If only 1 page, just show "1"
-        if (totalPages === 1) 
-        {
-            addPageButton(1);
-            return;
-        }
-
-        // Calculate which page numbers to show for multiple pages
-        let startPage = Math.max(1, currentPage - 2);
-        let endPage = Math.min(totalPages, currentPage + 2);
-
-        // Adjust range if we're near the beginning or end
-        if (currentPage <= 3) 
-        {
-            endPage = Math.min(5, totalPages);
-        }
-        if (currentPage >= totalPages - 2) 
-        {
-            startPage = Math.max(1, totalPages - 4);
-        }
-
-        // Add first page if not already shown
-        if (startPage > 1) 
-        {
-            addPageButton(1);
-            if (startPage > 2) 
-            {
-                addEllipsis();
-            }
-        }
-
-        // Add page numbers in range
-        for (let i = startPage; i <= endPage; i++) 
-        {
-            addPageButton(i);
-        }
-
-        // Add last page if not already shown
-        if (endPage < totalPages) 
-        {
-            if (endPage < totalPages - 1) 
-            {
-                addEllipsis();
-            }
-            addPageButton(totalPages);
-        }
-    }
-    
-    // Function to add a page number button
-    function addPageButton(pageNum) 
-    {
-        const button = document.createElement('button');
-        button.className = 'page-number';
-        button.textContent = pageNum;
-        button.type = 'button';
-        
-        console.log(`Adding page button ${pageNum}, current page is ${currentPage}`);
-        
-        if (pageNum === currentPage) 
-        {
-            button.classList.add('active');
-            console.log(`Added active class to page ${pageNum}`);
-        }
-        
-        button.addEventListener('click', (e) => 
-        {
-            e.preventDefault();
-            console.log(`Page ${pageNum} clicked, changing from page ${currentPage}`);
-            
-            if (pageNum !== currentPage) 
-            {
-                currentPage = pageNum;
-                console.log(`Current page changed to ${currentPage}, calling applyFilters`);
-                applyFilters();
-            }
-        });
-        
-        pageNumbersDiv.appendChild(button);
-    }
-    
-    // Function to add ellipsis
-    function addEllipsis() 
-    {
-        const ellipsis = document.createElement('span');
-        ellipsis.className = 'page-number ellipsis';
-        ellipsis.textContent = '...';
-        pageNumbersDiv.appendChild(ellipsis);
-    }
-
-    // Apply the filters - now uses API instead of client-side filtering
-    function applyFilters() 
-    {
-        console.log(`Applying filters, fetching from API - Page: ${currentPage}, PageSize: ${rowsPerPage}`);
-        
-        // Show loading state (optional)
-        const table = document.getElementById("myTable");
-        if (table) {
-            table.innerHTML = "<tr><td colspan='12' style='text-align: center; padding: 20px;'>Loading...</td></tr>";
-        }
-        
-        fetchSpecificationsWithFilters();
-    }
-
-    function handleSaveAndRedirect()
-    {
-        // First confirmation alert
-        const confirmation = confirm("You are about to save your work and move to the core invoice model page, are you sure?");
-        if (!confirmation) 
-        {
-            return; // Exit if the user selects "No"
-        }
-
-        // Gather form data
-        const form = document.getElementById('identifyingForm');
-        const formData = new FormData(form);
-        const data = {};
-
-        formData.forEach((value, key) => 
-        {
-            data[key] = value;
-        });
-
-        // Second confirmation alert showing saved data
-        const approval = confirm("Data saved:\n\n" + Object.entries(data).map(([key, value]) => `${key}: ${value}`).join('\n') + "\n\nApprove?");
-        if (!approval) 
-        {
-            return; // Exit if the user selects "Deny"
-        }
-
-        // Redirect if both confirmations are approved
-        alert("Data successfully saved!");
-        window.location.href = 'coreInvoiceModel.html';
-    }
 });
 
 // ----------- CODE FROM MAIN BRANCH (role/access/session management, etc.) ------------
@@ -779,7 +107,7 @@ function createLoginModal() {
                 <form id="loginForm">
                     <div style="margin-bottom: 15px;">
                         <label for="username">Username:</label>
-                        <input type="text" id="username" name="username" value="Edmund" required style="
+                        <input type="text" id="username" name="username" value="Admin" required style="
                             width: 100%;
                             padding: 8px;
                             margin-top: 5px;
@@ -835,56 +163,18 @@ function createLoginModal() {
             updateVisibility();
             closeLoginModal();
             showMessage('Login successful!', 'success');
+            
+            // Redirect to eInvoicingSpecificationRegistry.html after successful login
+            setTimeout(() => {
+                window.location.href = 'eInvoicingSpecificationRegistry.html';
+            }, 1000);
         } catch (error) {
             showMessage(`Login failed: ${error.message}`, 'error');
         }
     });
-}    // Helper function to safely get property value with API field mappings
-    function getPropertyValue(obj, displayName) {
-        // Map display names to API field names
-        const fieldMappings = {
-            "Created/Modified Date": "modifiedDate", // Use modifiedDate from API response
-            "Name": "specificationName",
-            "Purpose": "purpose", 
-            "Type": "specificationType",
-            "Sector": "sector",
-            "Country": "country",
-            "Implementation Date": "dateOfImplementation",
-            "Preferred Syntax": "preferredSyntax",
-            "Registry Status": "registrationStatus",
-            "Governing Entity": "governingEntity",
-            "Conformance Level": "conformanceLevel"
-        };
-        
-        // Get the actual API field name
-        const apiFieldName = fieldMappings[displayName];
-        
-        // If it's Extension Component, return empty string for now
-        if (displayName === "Extension Component") {
-            return "";
-        }
-        
-        // Try the mapped field name first
-        if (apiFieldName && obj.hasOwnProperty(apiFieldName)) {
-            return obj[apiFieldName];
-        }
-        
-        // Fallback: try the display name directly
-        if (obj.hasOwnProperty(displayName)) {
-            return obj[displayName];
-        }
-        
-        // Try lowercase version
-        const lowerName = displayName.toLowerCase();
-        for (const key in obj) {
-            if (key.toLowerCase() === lowerName) {
-                return obj[key];
-            }
-        }
-        
-        // Return empty string if not found
-        return "";
-    }
+}
+
+// getPropertyValue function moved to registryTable.js where it's used
 
 // Authentication functions for testing
 async function loginUser(username, password) {
@@ -988,8 +278,8 @@ async function loginUser(username, password) {
             console.warn('DEBUG: API seems unavailable, falling back to test mode');
             
             // Only allow test credentials in fallback mode
-            if ((username === 'Edmund' && password === 'Password123') || 
-                (username === 'Admin' && password === 'Password123')) {
+            if ((username === 'Admin' && password === 'Password123') || 
+                (username === 'Admin' && password === 'Admin')) {
                 
                 console.log('DEBUG: Using test fallback login');
                 
@@ -1003,7 +293,7 @@ async function loginUser(username, password) {
                 window.authManager.isAuthenticated = true;
                 window.authManager.username = username;
                 window.authManager.userRole = 'Admin';
-                window.authManager.userID = username === 'Edmund' ? 1 : 2;
+                window.authManager.userID = username === 'Admin' ? 1 : 2;
                 window.authManager.accessToken = testToken;
                 
                 // Store in localStorage
@@ -1047,6 +337,11 @@ async function adminLogin() {
             setTimeout(() => window.reloadSpecificationsAfterLogin(), 200);
         }
         
+        // Redirect to eInvoicingSpecificationRegistry.html after successful login
+        setTimeout(() => {
+            window.location.href = 'eInvoicingSpecificationRegistry.html';
+        }, 1000);
+        
         return true;
     } catch (error) {
         console.error('DEBUG: Admin login failed:', error);
@@ -1057,9 +352,9 @@ async function adminLogin() {
 
 // Demo login function for easy testing
 async function demoLogin() {
-    console.log('DEBUG: Demo login as Edmund/Admin');
+    console.log('DEBUG: Demo login as Admin/Admin');
     try {
-        const result = await loginUser('Edmund', 'Password123');
+        const result = await loginUser('Admin', 'Password123');
         console.log('DEBUG: Login result:', result);
         
         // Force refresh the auth manager to ensure it has the latest token
@@ -1068,12 +363,17 @@ async function demoLogin() {
         loggedInStatus = true;
         updateVisibility();
         updateUserDisplay();
-        showMessage('Demo login successful! Logged in as Edmund (Admin)', 'success');
+        showMessage('Demo login successful! Logged in as Admin (Admin)', 'success');
         
         // Trigger specification reload if on mySpecifications page
         if (typeof window.reloadSpecificationsAfterLogin === 'function') {
             setTimeout(() => window.reloadSpecificationsAfterLogin(), 200);
         }
+        
+        // Redirect to eInvoicingSpecificationRegistry.html after successful login
+        setTimeout(() => {
+            window.location.href = 'eInvoicingSpecificationRegistry.html';
+        }, 1000);
         
         return true;
     } catch (error) {
@@ -1273,66 +573,13 @@ async function createSpecification(specData) {
     }
 }
 
-// Example function to get specifications (public access)
-async function getSpecifications(page = 1, pageSize = 10) {
-    try {
-        const response = await authenticatedFetch(`/api/specifications?page=${page}&pageSize=${pageSize}`, {
-            method: 'GET'
-        });
-        
-        if (response.ok) {
-            return await response.json();
-        }
-    } catch (error) {
-        console.error('Failed to fetch specifications:', error);
-        throw error;
-    }
-}
+// Example function to get specifications - REMOVED: Now handled by registryTable.js
+// Use registryTable.js fetchSpecifications() function instead
 
-async function fetchCoreInvoiceModels() {
-    try {
-        // Construct the full URL for the GET request
-        const apiUrl = `${AUTH_CONFIG.baseUrl}/coreinvoicemodels`; // Uses the base URL from AUTH_CONFIG
+// fetchCoreInvoiceModels function removed - now handled by coreInvoiceModel.js
+// Core Invoice Model data fetching is managed by coreInvoiceModel.js
 
-        console.log(`Attempting to fetch data from: ${apiUrl}`);
-
-        // Make the GET request using authenticatedFetch
-        const response = await authenticatedFetch(apiUrl, {
-            method: 'GET' // Explicitly set method to GET
-        });
-
-        // Check if the response was successful
-        if (!response.ok) {
-            // authenticatedFetch already handles common errors (401, 500, network errors)
-            // You can add specific handling here if needed for other status codes
-            throw new Error(`Failed to fetch data: ${response.statusText}`);
-        }
-
-        // Parse the JSON response
-        const data = await response.json();
-        console.log('Fetched Core Invoice Models:', data);
-
-        // Here you would typically process the data
-        // For example, populate a table, update UI elements, etc.
-        // As seen in coreInvoiceModel.js and javascript.js, you would iterate over 'data.items' if the API returns a paginated result.
-        // Example: populateTableWithData(data.items);
-
-        return data;
-
-    } catch (error) {
-        console.error('Error fetching core invoice models:', error.message);
-        // showMessage is already available for user-friendly notifications
-        // showMessage(`Could not load core invoice models: ${error.message}`, 'error');
-    }
-}
-
-// You can call this function when your page loads or when a user action triggers it
-document.addEventListener("DOMContentLoaded", function() {
-    // Only fetch core invoice models on pages that need them
-    if (window.location.pathname.includes('coreInvoiceModel.html')) {
-        fetchCoreInvoiceModels();
-    }
-});
+// Core Invoice Model page initialization removed - handled by coreInvoiceModel.js
 
 // Check if user can perform write operations
 function canCreateOrEdit() {
@@ -1414,24 +661,7 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 */
 
-// Fallback function to estimate total pages when API doesn't provide total count
-    function estimateTotalPages() {
-        // If we have data but no total count, make educated guesses
-        if (filteredData.length === rowsPerPage) {
-            // If we got exactly rowsPerPage items, there might be more pages
-            return Math.max(2, currentPage + 1);
-        } else if (filteredData.length < rowsPerPage && currentPage === 1) {
-            // If we got less than rowsPerPage on first page, this is probably the only page
-            return 1;
-        } else if (filteredData.length < rowsPerPage && currentPage > 1) {
-            // If we got less than rowsPerPage on a later page, this is probably the last page
-            return currentPage;
-        } else if (filteredData.length === 0) {
-            return 0;
-        }
-        // Default fallback
-        return Math.max(1, currentPage);
-    }
+// Pagination estimation function moved to registryTable.js
 
 /******************************************************************************
     Specification Editing Workflow Functions

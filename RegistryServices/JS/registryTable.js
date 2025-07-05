@@ -631,6 +631,56 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
+/******************************************************************************
+    Helper Functions
+ ******************************************************************************/
+// Helper function to safely get property value with API field mappings
+function getPropertyValue(obj, displayName) {
+    // Map display names to API field names
+    const fieldMappings = {
+        "Created/Modified Date": "modifiedDate", // Use modifiedDate from API response
+        "Name": "specificationName",
+        "Purpose": "purpose", 
+        "Type": "specificationType",
+        "Sector": "sector",
+        "Country": "country",
+        "Implementation Date": "dateOfImplementation",
+        "Preferred Syntax": "preferredSyntax",
+        "Registry Status": "registrationStatus",
+        "Governing Entity": "governingEntity",
+        "Conformance Level": "conformanceLevel"
+    };
+    
+    // Get the actual API field name
+    const apiFieldName = fieldMappings[displayName];
+    
+    // If it's Extension Component, return empty string for now
+    if (displayName === "Extension Component") {
+        return "";
+    }
+    
+    // Try the mapped field name first
+    if (apiFieldName && obj.hasOwnProperty(apiFieldName)) {
+        return obj[apiFieldName];
+    }
+    
+    // Fallback: try the display name directly
+    if (obj.hasOwnProperty(displayName)) {
+        return obj[displayName];
+    }
+    
+    // Try lowercase version
+    const lowerName = displayName.toLowerCase();
+    for (const key in obj) {
+        if (key.toLowerCase() === lowerName) {
+            return obj[key];
+        }
+    }
+    
+    // Return empty string if not found
+    return "";
+}
+
 // Export functions for global access if needed
 window.registryTable = {
     initializeRegistryTable,

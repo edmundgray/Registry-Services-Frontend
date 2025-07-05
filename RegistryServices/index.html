@@ -72,6 +72,14 @@
                 localStorage.removeItem('userRole');
                 localStorage.removeItem('selectedSpecification');
                 localStorage.removeItem('governingEntity');
+                // Clear additional auth-related items
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('refresh_token');
+                localStorage.removeItem('username');
+                localStorage.removeItem('userId');
+                localStorage.removeItem('userGroupID');
+                localStorage.removeItem('groupName');
+                localStorage.removeItem('token_expiry');
                 console.log("Local storage cleared.");
             } catch (e) {
                 console.error("Error clearing local storage:", e);

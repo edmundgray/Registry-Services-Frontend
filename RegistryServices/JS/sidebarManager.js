@@ -178,8 +178,11 @@ function showLoginForm() {
     } else {
         console.log('Modal not found, creating it');
         createLoginModal();
-        // Get the modal reference after creation
+        // Get the modal reference after creation and show it immediately
         modal = document.getElementById('loginModal');
+        if (modal) {
+            modal.style.display = 'block';
+        }
     }
     
     // Focus on the username field if modal exists
@@ -253,7 +256,8 @@ function handleLogin(event) {
     // Demo login logic - in production this would call an API
     let userRole = 'User';
     
-    if (username.toLowerCase() === 'admin' && password === 'admin') {
+    if ((username.toLowerCase() === 'admin' && password === 'admin') || 
+        (username.toLowerCase() === 'admin' && password === 'Password123')) {
         userRole = 'Admin';
     } else if (username.toLowerCase() === 'edmund' && password === 'edmund') {
         userRole = 'User';
@@ -268,11 +272,21 @@ function handleLogin(event) {
     // Simulate successful login
     performLogin(username, userRole);
     closeLoginModal();
+    
+    // Redirect to eInvoicingSpecificationRegistry.html after successful login
+    setTimeout(() => {
+        window.location.href = 'eInvoicingSpecificationRegistry.html';
+    }, 500);
 }
 
 function demoLogin(username, role) {
     performLogin(username, role);
     closeLoginModal();
+    
+    // Redirect to eInvoicingSpecificationRegistry.html after successful demo login
+    setTimeout(() => {
+        window.location.href = 'eInvoicingSpecificationRegistry.html';
+    }, 500);
 }
 
 function performLogin(username, role) {
