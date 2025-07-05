@@ -106,16 +106,7 @@ body {
 /******************************************************************************
     List Styling
  ******************************************************************************/
- #myInput {
-    background-image: url('/css/searchicon.png');
-    background-position: 10px 12px;
-    background-repeat: no-repeat;
-    width: 100%;
-    font-size: 12px;
-    padding: 12px 20px 12px 40px;
-    border: 1px solid #ddd;
-    margin-bottom: 12px;
-  }
+ /* Legacy #myInput styles removed - not used in current HTML files */
   
   #myTable {
     border-collapse: collapse;
@@ -195,8 +186,48 @@ body {
     background-color: #fff;
 }
 
+/* Search input wrapper for Font Awesome icons */
+.search-input-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+    flex: 1;
+    min-width: 200px;
+}
+
+/* Ensure both search inputs have equal width in the filter container */
+.filter-container .search-input-wrapper {
+    flex: 1 1 calc(50% - 7.5px); /* Equal width minus half the gap */
+}
+
+/* Stack search boxes vertically on small screens */
+@media (max-width: 768px) {
+    .filter-container .search-input-wrapper {
+        flex: 1 1 100%; /* Full width on mobile */
+        min-width: 100%;
+    }
+}
+
+.search-input-wrapper input[type="text"] {
+    width: 100%;
+    padding-left: 40px; /* Space for the search icon */
+}
+
+.search-input-wrapper::before {
+    content: "\f002"; /* Font Awesome search icon */
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #999;
+    pointer-events: none;
+    z-index: 1;
+}
+
 .filter-container input[type="text"] {
-    background-image: url('/css/searchicon.png');
+    background-image: none; /* Removed missing searchicon.png */
     background-position: 10px center;
     background-repeat: no-repeat;
     padding-left: 40px;
