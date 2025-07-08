@@ -10,7 +10,7 @@ window.AUTH_CONFIG = {
         access: 'access_token'
     },
     session: {
-        duration: 6 * 60 * 60 * 1000,      // 1 hour
+        duration: 60 * 60 * 1000,      // 1 hour
         warningTime: 5 * 60 * 1000     // 5 minutes warning
     }
 };
