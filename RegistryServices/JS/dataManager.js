@@ -196,7 +196,7 @@ class SpecificationDataManager {
             implementationStatus: this.originalData?.implementationStatus || 'In Progress',
 
             registrationStatus: this.originalData?.registrationStatus || 'In Progress',
-=
+
             conformanceLevel: this.originalData?.conformanceLevel || formData.conformanceLevel || '',
             
             // Nested data - preserve from working data if available
