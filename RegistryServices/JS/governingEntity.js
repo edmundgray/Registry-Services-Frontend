@@ -373,7 +373,7 @@ class GoverningEntityView {
         if (!entityDetailsElement) return;
 
         const entityTable = `
-            <table class="styled-table" style="max-width:900px;">
+            <table class="styled-table" style="max-width:900px; margin-top: 0;">
                 <thead>
                     <tr>
                         <th>Created</th>
@@ -402,7 +402,8 @@ class GoverningEntityView {
         if (!specificationsSectionElement) return;
 
         const specificationsTable = `
-            <table class="styled-table" id="specificationsTable" style="font-size:13px; margin-top: 0;">
+        <h2 style="margin: 0;font-size:20px;">Specifications</h2>
+            <table class="styled-table" id="specificationsTable" style="font-size:13px; margin-top: 10;">
                 <thead>
                     <tr>
                         <th>Created/Modified</th>
