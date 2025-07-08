@@ -491,6 +491,7 @@
             // Note: isFormDirty is deprecated in favor of hasActualChanges()
             // let isFormDirty = false;
             let dataManager = null;
+            let suppressBeforeUnload = false; // Flag to temporarily suppress beforeunload warning
 
             // Initialize data manager and load data
             async function initializeDataManager() {
@@ -596,6 +597,11 @@
                                 sourceLink: '',
                                 preferredSyntax: ''
                             };
+                            
+                            // Set this as the baseline data for change detection in create mode
+                            dataManager.workingData = { ...emptyData };
+                            console.log('DEBUG: IdentifyingInformation - Set baseline data for create mode:', dataManager.workingData);
+                            
                             populateForm(emptyData); // This will auto-populate governing entity
                             // Update save button appearance
                             setTimeout(() => {
@@ -761,10 +767,14 @@
                 try {
                     if (!dataManager || !dataManager.workingData) {
                         console.log('DEBUG: IdentifyingInformation - No baseline data (dataManager.workingData), checking if form has content');
-                        const currentData = getFormData();
-                        const hasContent = Object.values(currentData).some(value => value && value.trim() !== '');
-                        console.log('DEBUG: IdentifyingInformation - Form has content without baseline:', hasContent);
-                        return hasContent; // If no baseline data, check if form has any content
+                        // In create mode without baseline, check if form has any content
+                        if (dataManager && dataManager.isCreateMode()) {
+                            const currentData = getFormData();
+                            const hasContent = Object.values(currentData).some(value => value && value.trim() !== '');
+                            console.log('DEBUG: IdentifyingInformation - Create mode - Form has content without baseline:', hasContent);
+                            return hasContent;
+                        }
+                        return false;
                     }
                     
                     const currentData = getFormData();
@@ -807,6 +817,27 @@
                 try {
                     if (!dataManager || !dataManager.workingData) {
                         console.log('DEBUG: IdentifyingInformation - No baseline data for getChangedFields()');
+                        // In create mode without baseline, treat any non-empty fields as changes
+                        if (dataManager && dataManager.isCreateMode()) {
+                            console.log('DEBUG: IdentifyingInformation - Create mode: treating non-empty fields as changes');
+                            const currentData = getFormData();
+                            const changedFields = [];
+                            
+                            Object.keys(currentData).forEach(field => {
+                                const currentValue = currentData[field] || '';
+                                if (currentValue.trim() !== '') {
+                                    changedFields.push({
+                                        field: field,
+                                        displayName: getFieldDisplayName(field),
+                                        oldValue: '(empty)',
+                                        newValue: currentValue
+                                    });
+                                }
+                            });
+                            
+                            console.log('DEBUG: IdentifyingInformation - Create mode changes detected:', changedFields);
+                            return changedFields;
+                        }
                         return [];
                     }
                     
@@ -1034,6 +1065,158 @@
                 });
             }
 
+            function showNavigationConfirmationModal() {
+                const hasChanges = hasActualChanges();
+                
+                if (!hasChanges) {
+                    // No changes detected, just navigate
+                    window.location.href = 'coreInvoiceModel.html';
+                    return;
+                }
+
+                // Create custom confirmation modal
+                const modalHtml = `
+                    <div id="navigationConfirmModal" style="
+                        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                        background: rgba(0,0,0,0.5); z-index: 1002; display: flex;
+                        align-items: center; justify-content: center;">
+                        <div style="
+                            background: white; border-radius: 8px; padding: 24px; max-width: 500px;
+                            width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                            <h3 style="margin: 0 0 16px 0; color: #333;">
+                                <i class="fa-solid fa-car" style="color: #007bff; margin-right: 8px;"></i>
+                                Continue to Core Invoice Model
+                            </h3>
+                            <p style="margin: 0 0 16px 0; color: #666;">
+                                You have unsaved changes. What would you like to do?
+                            </p>
+                            <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; padding: 12px; margin: 16px 0;">
+                                <i class="fa-solid fa-exclamation-triangle" style="color: #856404; margin-right: 8px;"></i>
+                                <small style="color: #856404;">
+                                    <strong>Note:</strong> Your changes will be lost if you don't save them first.
+                                </small>
+                            </div>
+                            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+                                <button onclick="cancelNavigation()" style="
+                                    padding: 8px 16px; background: #6c757d; color: white; border: none;
+                                    border-radius: 4px; cursor: pointer; font-size: 14px;">
+                                    <i class="fa-solid fa-times" style="margin-right: 4px;"></i>
+                                    Cancel
+                                </button>
+                                <button onclick="continueWithoutSaving()" style="
+                                    padding: 8px 16px; background: #dc3545; color: white; border: none;
+                                    border-radius: 4px; cursor: pointer; font-size: 14px;">
+                                    <i class="fa-solid fa-forward" style="margin-right: 4px;"></i>
+                                    Continue Without Saving
+                                </button>
+                                <button onclick="saveAndContinue()" style="
+                                    padding: 8px 16px; background: #28a745; color: white; border: none;
+                                    border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold;">
+                                    <i class="fa-solid fa-save" style="margin-right: 4px;"></i>
+                                    Save & Continue
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Add modal to page
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                
+                // Define modal actions
+                window.cancelNavigation = () => {
+                    document.getElementById('navigationConfirmModal').remove();
+                    // Button state is automatically reset since we don't modify it during modal display
+                };
+                
+                window.continueWithoutSaving = () => {
+                    document.getElementById('navigationConfirmModal').remove();
+                    // Navigate without saving
+                    window.location.href = 'coreInvoiceModel.html';
+                };
+                
+                window.saveAndContinue = async () => {
+                    const modal = document.getElementById('navigationConfirmModal');
+                    const saveButton = modal.querySelector('button[onclick="saveAndContinue()"]');
+                    const originalText = saveButton.textContent;
+                    
+                    try {
+                        // Suppress beforeunload warning during save and navigation
+                        suppressBeforeUnload = true;
+                        console.log('DEBUG: IdentifyingInformation - Suppressing beforeunload warning for save and continue');
+                        
+                        // Show saving indicator
+                        saveButton.textContent = 'Saving...';
+                        saveButton.disabled = true;
+                        
+                        const formData = getFormData();
+                        
+                        // Update baseline immediately to prevent beforeunload warning
+                        dataManager.workingData = { ...formData };
+                        console.log('DEBUG: IdentifyingInformation - Baseline updated immediately before save to prevent beforeunload:', dataManager.workingData);
+                        
+                        // Save to API first
+                        const result = await dataManager.saveSpecificationToAPI(formData);
+                        
+                        // Update working data baseline with API response
+                        if (result && typeof dataManager.transformApiToFormData === 'function') {
+                            dataManager.workingData = dataManager.transformApiToFormData(result);
+                        } else {
+                            // Fallback: keep the form data as baseline
+                            dataManager.workingData = { ...formData };
+                        }
+                        dataManager.saveWorkingDataToLocalStorage();
+                        console.log('DEBUG: IdentifyingInformation - Final baseline updated after API save:', dataManager.workingData);
+                        
+                        // Remove modal and navigate
+                        modal.remove();
+                        window.location.href = 'coreInvoiceModel.html';
+                        
+                    } catch (error) {
+                        console.error('Error saving specification:', error);
+                        
+                        // Re-enable beforeunload warning since save failed
+                        suppressBeforeUnload = false;
+                        console.log('DEBUG: IdentifyingInformation - Re-enabled beforeunload warning due to save failure');
+                        
+                        // Reset baseline to original state since save failed
+                        try {
+                            if (dataManager && dataManager.loadWorkingDataFromLocalStorage) {
+                                const originalData = dataManager.loadWorkingDataFromLocalStorage();
+                                if (originalData) {
+                                    dataManager.workingData = originalData;
+                                    console.log('DEBUG: IdentifyingInformation - Baseline reset to original after save failure');
+                                }
+                            }
+                        } catch (resetError) {
+                            console.warn('DEBUG: IdentifyingInformation - Could not reset baseline after save failure:', resetError);
+                        }
+                        
+                        // Provide more user-friendly error messages
+                        let errorMessage = 'Error saving specification: ';
+                        if (error.message.includes('Failed to fetch')) {
+                            errorMessage += 'Unable to connect to the server. Please check your internet connection and try again.';
+                        } else if (error.message.includes('HTTP error! status: 401')) {
+                            errorMessage += 'Authentication failed. Please log in again.';
+                        } else if (error.message.includes('HTTP error! status: 403')) {
+                            errorMessage += 'You don\'t have permission to perform this action.';
+                        } else if (error.message.includes('HTTP error! status: 500')) {
+                            errorMessage += 'Server error. Please try again later or contact support.';
+                        } else if (error.message.includes('Unexpected end of JSON input')) {
+                            errorMessage += 'Server returned an invalid response. The data may have been saved successfully. Please refresh the page to check.';
+                        } else {
+                            errorMessage += error.message;
+                        }
+                        
+                        alert(errorMessage);
+                        
+                        // Restore button
+                        saveButton.textContent = originalText;
+                        saveButton.disabled = false;
+                    }
+                };
+            }
+
             async function saveAndGoToCoreInvoiceModel() {
                 const form = document.getElementById('identifyingForm');
                 
@@ -1043,66 +1226,8 @@
                     return;
                 }
 
-                // Check if there are actual changes
-                const hasChanges = hasActualChanges();
-                
-                if (!hasChanges) {
-                    // No changes detected, just navigate
-                    window.location.href = 'coreInvoiceModel.html';
-                    return;
-                }
-
-                // Get button reference and original text outside the try block
-                const button = document.querySelector('button[onclick="saveAndGoToCoreInvoiceModel()"]');
-                const originalText = button ? button.textContent : 'Core Invoice Model';
-
-                try {
-                    const formData = getFormData();
-                    
-                    // Show saving indicator
-                    if (button) {
-                        button.textContent = 'Saving...';
-                        button.disabled = true;
-                    }
-
-                    // Save to API first
-                    const result = await dataManager.saveSpecificationToAPI(formData);
-                    
-                    // Update working data baseline
-                    dataManager.workingData = dataManager.transformApiToFormData(result);
-                    dataManager.saveWorkingDataToLocalStorage();
-                    console.log('DEBUG: IdentifyingInformation - Baseline updated after save and navigate:', dataManager.workingData);
-                    
-                    // Navigate to Core Invoice Model
-                    window.location.href = 'coreInvoiceModel.html';
-
-                } catch (error) {
-                    console.error('Error saving specification:', error);
-                    
-                    // Provide more user-friendly error messages
-                    let errorMessage = 'Error saving specification: ';
-                    if (error.message.includes('Failed to fetch')) {
-                        errorMessage += 'Unable to connect to the server. Please check your internet connection and try again.';
-                    } else if (error.message.includes('HTTP error! status: 401')) {
-                        errorMessage += 'Authentication failed. Please log in again.';
-                    } else if (error.message.includes('HTTP error! status: 403')) {
-                        errorMessage += 'You don\'t have permission to perform this action.';
-                    } else if (error.message.includes('HTTP error! status: 500')) {
-                        errorMessage += 'Server error. Please try again later or contact support.';
-                    } else if (error.message.includes('Unexpected end of JSON input')) {
-                        errorMessage += 'Server returned an invalid response. The data may have been saved successfully. Please refresh the page to check.';
-                    } else {
-                        errorMessage += error.message;
-                    }
-                    
-                    alert(errorMessage);
-                    
-                    // Restore button
-                    if (button) {
-                        button.textContent = originalText;
-                        button.disabled = false;
-                    }
-                }
+                // Show navigation confirmation modal
+                showNavigationConfirmationModal();
             }
 
             function handleCancel() {
@@ -1379,10 +1504,24 @@
                 // Clean up any session elements before leaving
                 cleanupSessionNotifications();
                 
-                // Warn about unsaved changes
-                if (hasActualChanges()) {
-                    e.preventDefault();
-                    e.returnValue = '';
+                // Skip warning if explicitly suppressed (e.g., during save and continue)
+                if (suppressBeforeUnload) {
+                    console.log('DEBUG: beforeunload - Warning suppressed, allowing navigation');
+                    return;
+                }
+                
+                // Warn about unsaved changes only if there are actual changes
+                try {
+                    if (hasActualChanges()) {
+                        console.log('DEBUG: beforeunload - Changes detected, preventing navigation');
+                        e.preventDefault();
+                        e.returnValue = '';
+                    } else {
+                        console.log('DEBUG: beforeunload - No changes detected, allowing navigation');
+                    }
+                } catch (error) {
+                    console.error('DEBUG: beforeunload - Error checking for changes:', error);
+                    // If there's an error checking for changes, don't prevent navigation
                 }
             });
 
