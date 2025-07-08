@@ -194,10 +194,9 @@ class SpecificationDataManager {
             underlyingSpecificationIdentifier: formData.underlyingSpec || '',
             preferredSyntax: formData.preferredSyntax || '',
             implementationStatus: this.originalData?.implementationStatus || 'In Progress',
-            // Registration Status: Use formData value if explicitly provided, otherwise set to "In Progress" for Create Mode, preserve original for Edit Mode
-            registrationStatus: (formData.registrationStatus !== undefined && formData.registrationStatus !== null && formData.registrationStatus !== '') 
-                ? formData.registrationStatus 
-                : (this.isCreateMode() ? 'In Progress' : this.originalData?.registrationStatus),
+
+            registrationStatus: this.originalData?.registrationStatus || 'In Progress',
+=
             conformanceLevel: this.originalData?.conformanceLevel || formData.conformanceLevel || '',
             
             // Nested data - preserve from working data if available
