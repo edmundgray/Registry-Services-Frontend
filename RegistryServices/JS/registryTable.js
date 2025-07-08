@@ -13,6 +13,158 @@ let totalSpecifications = 0;
 // API base URL
 const API_BASE_URL = "https://registryservices-staging.azurewebsites.net/api";
 
+// Global variable to track if we're in business term search mode
+let isBusinessTermSearchActive = false;
+
+/******************************************************************************
+    Business Term Search Functions
+ ******************************************************************************/
+// Function to search specifications by Business Term ID
+async function searchByBusinessTermId(businessTermId) {
+    if (!businessTermId || businessTermId.trim() === '') {
+        // If empty, reset to normal mode
+        isBusinessTermSearchActive = false;
+        clearAllFilters();
+        await fetchSpecifications();
+        return;
+    }
+
+    try {
+        isBusinessTermSearchActive = true;
+        const trimmedTermId = businessTermId.trim();
+        
+        console.log(`Searching for Business Term ID: ${trimmedTermId}`);
+        
+        // Show loading state
+        showLoadingState();
+        
+        // Make three parallel API calls
+        const [coreResults, extensionResults, additionalReqResults] = await Promise.all([
+            fetchSpecificationsByBusinessTerm('CoreBusinessTermId', trimmedTermId),
+            fetchSpecificationsByBusinessTerm('ExtensionBusinessTermId', trimmedTermId),
+            fetchSpecificationsByBusinessTerm('AddReqBusinessTermID', trimmedTermId)
+        ]);
+        
+        // Amalgamate results and remove duplicates
+        const combinedResults = amalgamateResults(coreResults, extensionResults, additionalReqResults);
+        
+        // Update global data
+        originalData = combinedResults;
+        filteredData = combinedResults;
+        totalSpecifications = combinedResults.length;
+        
+        // Reset pagination to first page
+        currentPage = 1;
+        
+        // Calculate total pages for client-side pagination (since we have all results)
+        const totalPages = Math.ceil(totalSpecifications / rowsPerPage);
+        
+        // Populate the table with combined results
+        populateTable(combinedResults);
+        updatePaginationControls(totalPages);
+        
+        console.log(`Business Term search completed. Found ${combinedResults.length} specifications.`);
+        
+    } catch (error) {
+        console.error("Error searching by Business Term ID:", error);
+        alert("Failed to search by Business Term ID. Please try again.");
+        
+        // Reset to normal mode on error
+        isBusinessTermSearchActive = false;
+        originalData = [];
+        filteredData = [];
+        totalSpecifications = 0;
+        populateTable([]);
+        updatePaginationControls(0);
+    }
+}
+
+// Function to fetch specifications by specific business term parameter
+async function fetchSpecificationsByBusinessTerm(parameterName, businessTermId) {
+    try {
+        const params = new URLSearchParams({
+            [parameterName]: businessTermId,
+            PageNumber: currentPage.toString(),
+            PageSize: '1000' // Use large page size to get all results
+        });
+        
+        const url = `${API_BASE_URL}/specifications?${params.toString()}`;
+        console.log(`Fetching from: ${url}`);
+        
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log(`${parameterName} API Response:`, data);
+        
+        // Extract items from response
+        if (data.items && Array.isArray(data.items)) {
+            return data.items;
+        } else if (Array.isArray(data)) {
+            return data;
+        } else {
+            console.warn(`Unexpected response format from ${parameterName}:`, data);
+            return [];
+        }
+        
+    } catch (error) {
+        console.error(`Error fetching ${parameterName} results:`, error);
+        return []; // Return empty array on error
+    }
+}
+
+// Function to amalgamate results from three API calls and remove duplicates
+function amalgamateResults(coreResults, extensionResults, additionalReqResults) {
+    const allResults = [...coreResults, ...extensionResults, ...additionalReqResults];
+    
+    // Remove duplicates based on identityID
+    const uniqueResults = [];
+    const seenIds = new Set();
+    
+    for (const result of allResults) {
+        const identityId = result.identityID;
+        if (identityId && !seenIds.has(identityId)) {
+            seenIds.add(identityId);
+            uniqueResults.push(result);
+        }
+    }
+    
+    console.log(`Amalgamated results: ${allResults.length} total, ${uniqueResults.length} unique`);
+    return uniqueResults;
+}
+
+// Function to show loading state
+function showLoadingState() {
+    const table = document.getElementById("myTable");
+    if (!table) return;
+    
+    table.innerHTML = "";
+    const loadingRow = table.insertRow(0);
+    const loadingCell = loadingRow.insertCell(0);
+    loadingCell.colSpan = 12; // Span all columns
+    loadingCell.textContent = "Searching Business Term ID...";
+    loadingCell.style.textAlign = "center";
+    loadingCell.style.padding = "20px";
+    loadingCell.style.fontStyle = "italic";
+    loadingCell.style.color = "#666";
+}
+
+// Function to clear all filters
+function clearAllFilters() {
+    const searchInput = document.getElementById("searchInput");
+    const typeFilter = document.getElementById("typeFilter");
+    const sectorFilter = document.getElementById("sectorFilter");
+    const countryFilter = document.getElementById("countryFilter");
+    
+    if (searchInput) searchInput.value = "";
+    if (typeFilter) typeFilter.value = "";
+    if (sectorFilter) sectorFilter.value = "";
+    if (countryFilter) countryFilter.value = "";
+}
+
 /******************************************************************************
     Country Dropdown Population
  ******************************************************************************/
@@ -204,7 +356,16 @@ function populateTable(data) {
     
     table.innerHTML = "";
 
-    if (data.length > 0) {
+    // Handle client-side pagination for business term search results
+    let displayData = data;
+    if (isBusinessTermSearchActive && data.length > 0) {
+        const startIndex = (currentPage - 1) * rowsPerPage;
+        const endIndex = startIndex + rowsPerPage;
+        displayData = data.slice(startIndex, endIndex);
+        console.log(`Business term search pagination: showing ${startIndex}-${endIndex} of ${data.length} results`);
+    }
+
+    if (displayData.length > 0) {
         const headerRow = table.insertRow(0);
         
         // Define the desired column order with exact mappings to match the required layout
@@ -233,9 +394,9 @@ function populateTable(data) {
         });
 
         // For API data, we display all items in the current page data
-        // since pagination is handled server-side
-        for (let i = 0; i < data.length; i++) {
-            const entry = data[i];
+        // For business term search, we use client-side pagination
+        for (let i = 0; i < displayData.length; i++) {
+            const entry = displayData[i];
             const row = table.insertRow(-1);
             
             // Add styling for Submitted rows if user is logged in admin
@@ -511,6 +672,12 @@ function estimateTotalPages() {
 function applyFilters() {
     console.log(`Applying filters, fetching from API - Page: ${currentPage}, PageSize: ${rowsPerPage}`);
     
+    // If we're in business term search mode, don't apply other filters
+    if (isBusinessTermSearchActive) {
+        console.log("Business term search is active, ignoring other filters");
+        return;
+    }
+    
     // Show loading state (optional)
     const table = document.getElementById("myTable");
     if (table) {
@@ -538,7 +705,15 @@ function setupPaginationEventListeners() {
         rowsPerPage = parseInt(this.value, 10);
         currentPage = 1; // Reset to first page
         console.log(`Rows per page changed to ${rowsPerPage}, resetting to page 1`);
-        applyFilters();
+        
+        if (isBusinessTermSearchActive) {
+            // For business term search, update the table directly
+            const totalPages = Math.ceil(totalSpecifications / rowsPerPage);
+            populateTable(filteredData);
+            updatePaginationControls(totalPages);
+        } else {
+            applyFilters();
+        }
     });
 
     // First Page Button
@@ -547,7 +722,15 @@ function setupPaginationEventListeners() {
         if (currentPage !== 1) {
             currentPage = 1;
             console.log("First page clicked, moving to page 1");
-            applyFilters();
+            
+            if (isBusinessTermSearchActive) {
+                // For business term search, update the table directly
+                const totalPages = Math.ceil(totalSpecifications / rowsPerPage);
+                populateTable(filteredData);
+                updatePaginationControls(totalPages);
+            } else {
+                applyFilters();
+            }
         }
     });
 
@@ -557,7 +740,15 @@ function setupPaginationEventListeners() {
         if (currentPage > 1) {
             currentPage--;
             console.log(`Previous page clicked, moving to page ${currentPage}`);
-            applyFilters();
+            
+            if (isBusinessTermSearchActive) {
+                // For business term search, update the table directly
+                const totalPages = Math.ceil(totalSpecifications / rowsPerPage);
+                populateTable(filteredData);
+                updatePaginationControls(totalPages);
+            } else {
+                applyFilters();
+            }
         }
     });
 
@@ -568,7 +759,14 @@ function setupPaginationEventListeners() {
         if (currentPage < totalPages) {
             currentPage++;
             console.log(`Next page clicked, moving to page ${currentPage}`);
-            applyFilters();
+            
+            if (isBusinessTermSearchActive) {
+                // For business term search, update the table directly
+                populateTable(filteredData);
+                updatePaginationControls(totalPages);
+            } else {
+                applyFilters();
+            }
         }
     });
 
@@ -579,7 +777,14 @@ function setupPaginationEventListeners() {
         if (currentPage !== totalPages && totalPages > 0) {
             currentPage = totalPages;
             console.log(`Last page clicked, moving to page ${currentPage}`);
-            applyFilters();
+            
+            if (isBusinessTermSearchActive) {
+                // For business term search, update the table directly
+                populateTable(filteredData);
+                updatePaginationControls(totalPages);
+            } else {
+                applyFilters();
+            }
         }
     });
 }
@@ -588,21 +793,62 @@ function setupPaginationEventListeners() {
 function setupFilterEventListeners() {
     // Add event listeners for the filters
     const searchInput = document.getElementById("searchInput");
+    const businessTermSearch = document.getElementById("businessTermSearch");
     const typeFilter = document.getElementById("typeFilter");
     const sectorFilter = document.getElementById("sectorFilter");
     const countryFilter = document.getElementById("countryFilter");
 
     if (searchInput) {
-        searchInput.addEventListener("input", debounce(applyFilters, 300));
+        searchInput.addEventListener("input", debounce(() => {
+            // Clear business term search when using regular search
+            if (businessTermSearch) businessTermSearch.value = "";
+            isBusinessTermSearchActive = false;
+            applyFilters();
+        }, 300));
     }
+    
+    if (businessTermSearch) {
+        businessTermSearch.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                // Clear other filters when using business term search
+                clearAllFilters();
+                searchByBusinessTermId(this.value);
+            }
+        });
+        
+        // Also clear business term search mode when the input is cleared
+        businessTermSearch.addEventListener("input", function() {
+            if (this.value.trim() === "") {
+                isBusinessTermSearchActive = false;
+                // Reset to normal view
+                fetchSpecifications();
+            }
+        });
+    }
+    
     if (typeFilter) {
-        typeFilter.addEventListener("change", applyFilters);
+        typeFilter.addEventListener("change", () => {
+            // Clear business term search when using other filters
+            if (businessTermSearch) businessTermSearch.value = "";
+            isBusinessTermSearchActive = false;
+            applyFilters();
+        });
     }
     if (sectorFilter) {
-        sectorFilter.addEventListener("change", applyFilters);
+        sectorFilter.addEventListener("change", () => {
+            // Clear business term search when using other filters
+            if (businessTermSearch) businessTermSearch.value = "";
+            isBusinessTermSearchActive = false;
+            applyFilters();
+        });
     }
     if (countryFilter) {
-        countryFilter.addEventListener("change", applyFilters);
+        countryFilter.addEventListener("change", () => {
+            // Clear business term search when using other filters
+            if (businessTermSearch) businessTermSearch.value = "";
+            isBusinessTermSearchActive = false;
+            applyFilters();
+        });
     }
 }
 
@@ -634,6 +880,19 @@ document.addEventListener("DOMContentLoaded", function() {
 /******************************************************************************
     Helper Functions
  ******************************************************************************/
+// Debounce function to limit how often a function can be called
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
 // Helper function to safely get property value with API field mappings
 function getPropertyValue(obj, displayName) {
     // Map display names to API field names
@@ -687,5 +946,6 @@ window.registryTable = {
     populateTable,
     applyFilters,
     fetchSpecifications,
-    fetchSpecificationsWithFilters
+    fetchSpecificationsWithFilters,
+    searchByBusinessTermId
 };
