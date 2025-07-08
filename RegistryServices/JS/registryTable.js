@@ -349,7 +349,21 @@ function populateTable(allFilteredData) {
     
     table.innerHTML = "";
 
-    if (data.length > 0) {
+    // Unified pagination logic for both modes
+    let displayData = allFilteredData;
+    if (isBusinessTermSearchActive && allFilteredData.length > 0) {
+        const startIndex = (currentPage - 1) * rowsPerPage;
+        const endIndex = startIndex + rowsPerPage;
+        displayData = allFilteredData.slice(startIndex, endIndex);
+        console.log(`Business term search pagination: showing ${startIndex}-${endIndex} of ${allFilteredData.length} results`);
+    } else {
+        // Normal mode: always paginate
+        const startIndex = (currentPage - 1) * rowsPerPage;
+        const endIndex = startIndex + rowsPerPage;
+        displayData = allFilteredData.slice(startIndex, endIndex);
+    }
+
+    if (displayData.length > 0) {
         const headerRow = table.insertRow(0);
         
         // Define the desired column order with exact mappings to match the required layout
