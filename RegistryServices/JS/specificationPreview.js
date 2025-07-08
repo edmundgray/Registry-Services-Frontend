@@ -369,17 +369,21 @@ class SpecificationPreview {
                     this.dataManager.workingData = this.currentSpecification;
                 }
                 
-                this.dataManager.workingData.registryStatus = "Submitted";
+                // Update the registration status in working data
+                this.dataManager.workingData.registrationStatus = "Submitted";
                 this.dataManager.workingData["Registry Status"] = "Submitted"; // For backward compatibility
                 
-                // Save the updated specification
-                if (this.dataManager.isEditMode()) {
-                    // For edit mode, update the existing specification
-                    await this.dataManager.saveSpecificationData();
-                } else {
-                    // For new specifications, add to the specifications list
-                    await this.dataManager.saveNewSpecification();
-                }
+                // Also update the current specification object
+                this.currentSpecification.registrationStatus = "Submitted";
+                this.currentSpecification["Registry Status"] = "Submitted";
+                
+                console.log('SpecificationPreview: DEBUG - Registration Status set to "Submitted" in workingData:', this.dataManager.workingData.registrationStatus);
+                console.log('SpecificationPreview: DEBUG - Mode:', this.dataManager.isEditMode() ? 'Edit' : 'Create');
+                
+                // Save the updated specification using the working data as form data
+                // The saveSpecificationToAPI method will handle the transformation
+                const formData = this.dataManager.workingData;
+                await this.dataManager.saveSpecificationToAPI(formData);
                 
                 console.log('SpecificationPreview: Specification submitted successfully via data manager');
                 
@@ -393,10 +397,12 @@ class SpecificationPreview {
 
                 if (specIndex > -1) {
                     specifications[specIndex]["Registry Status"] = "Submitted";
+                    specifications[specIndex].registrationStatus = "Submitted"; // Ensure both field names are updated
                     localStorage.setItem('specifications', JSON.stringify(specifications));
                 } else {
                     // Add new specification to the list
                     this.currentSpecification["Registry Status"] = "Submitted";
+                    this.currentSpecification.registrationStatus = "Submitted"; // Ensure both field names are updated
                     specifications.push(this.currentSpecification);
                     localStorage.setItem('specifications', JSON.stringify(specifications));
                 }
@@ -429,7 +435,7 @@ class SpecificationPreview {
         try {
             // Clean up data manager state if available
             if (this.dataManager) {
-                this.dataManager.clearWorkingData();
+                this.dataManager.clearWorkingDataFromLocalStorage();
             }
             
             // Clean up old localStorage items for backward compatibility
