@@ -1509,6 +1509,60 @@ class SpecificationDataManager {
             console.error('Error clearing editing state:', error);
         }
     }
+
+    async updateSpecificationStatus(specificationId, newStatus) {
+    try {
+        // Load the current full specification data from the API.
+        // This call also populates `this.originalData` with the PascalCase version.
+        await this.loadSpecificationFromAPI(specificationId);
+        
+        // Ensure originalData is loaded and valid
+        if (!this.originalData || this.originalData.identityID !== specificationId) {
+            throw new Error(`Failed to load original data for specification ID: ${specificationId}`);
+        }
+
+        // Update ONLY the registration status
+        this.originalData.registrationStatus = newStatus;
+
+        // Send the back to the API for the PUT request.
+        const apiUrl = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}`;
+        const response = await authenticatedFetch(apiUrl, {
+            method: 'PUT',
+            // Send the complete, updated PascalCase object
+            body: JSON.stringify(this.originalData), 
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response.ok) {
+            let errorMessage = `Failed to update status: HTTP ${response.status}`;
+            try {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const errorData = await response.json();
+                    errorMessage += ` - ${JSON.stringify(errorData)}`;
+                } else {
+                    const errorText = await response.text();
+                    errorMessage += ` - ${errorText}`;
+                }
+            } catch (parseError) {
+                console.warn('Could not parse error response for status update:', parseError);
+            }
+            throw new Error(errorMessage);
+        }
+        
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            const responseText = await response.text();
+            return responseText.trim() ? JSON.parse(responseText) : { success: true, message: 'Update successful (no content)' };
+        } else {
+            return { success: true, message: 'Update successful (non-JSON response)' };
+        }
+    } catch (error) {
+        console.error('Error updating specification status:', error);
+        throw error;
+    }
+}
+    
 }
 
 // Make it globally available
