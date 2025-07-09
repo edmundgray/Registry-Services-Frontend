@@ -173,6 +173,18 @@ class SpecificationDataManager {
             console.error('ERROR: Invalid userGroupID detected:', userGroupID);
             throw new Error(`Invalid userGroupID: ${userGroupID}. Cannot save specification without valid group ID.`);
         }
+
+        //Determine Specification Type (CIUS or Extension)
+        let specificationType;
+        const hasExtensionComponents = this.workingData?.extensionComponentData && this.workingData.extensionComponentData.length > 0;
+        const hasAdditionalRequirements = this.workingData?.additionalRequirementsData && this.workingData.additionalRequirementsData.length > 0;
+
+        if (hasExtensionComponents || hasAdditionalRequirements) {
+            specificationType = 'Extension';
+        } else {
+            specificationType = 'CIUS';
+        }
+        console.log(`DEBUG: Determined Specification Type: ${specificationType} (Extensions: ${hasExtensionComponents}, Additional: ${hasAdditionalRequirements})`);
         
         return {
             identityID: this.originalData?.identityID || 0,
@@ -189,13 +201,13 @@ class SpecificationDataManager {
             coreVersion: formData.coreVersion || '',
             specificationSourceLink: formData.sourceLink || '',
             country: formData.country || '',
-            specificationType: this.originalData?.specificationType || formData.specificationType || '',
+            specificationType: specificationType,
             isCountrySpecification: this.originalData?.isCountrySpecification || true,
             underlyingSpecificationIdentifier: formData.underlyingSpec || '',
             preferredSyntax: formData.preferredSyntax || '',
             implementationStatus: this.originalData?.implementationStatus || 'In Progress',
 
-            registrationStatus: this.originalData?.registrationStatus || 'In Progress',
+            registrationStatus: this.workingData?.registrationStatus || this.originalData?.registrationStatus || 'In Progress',
 
             conformanceLevel: this.originalData?.conformanceLevel || formData.conformanceLevel || '',
             
@@ -349,7 +361,9 @@ class SpecificationDataManager {
             // If it's an object with selectedIds and typeOfChangeValues
             return coreInvoiceModelData.selectedIds.map(id => ({
                 id: id,
-                typeOfChange: coreInvoiceModelData.typeOfChangeValues?.[id] || 'No change'
+                businessTermID: id,
+                typeOfChange: coreInvoiceModelData.typeOfChangeValues?.[id] || 'No change',
+                cardinality: coreInvoiceModelData.cardinalityMap?.[id] || '0..1'
             }));
         } else if (coreInvoiceModelData.items) {
             // If it's already in the old API format with items wrapper
