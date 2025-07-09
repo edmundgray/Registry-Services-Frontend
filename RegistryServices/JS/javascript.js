@@ -698,30 +698,6 @@ function debounce(func, wait) {
     };
 }
 
-// LEGACY CODE - Commented out as New Specification button is now handled by dynamic sidebar
-// Add event listener for New Specification button
-/*
-document.addEventListener("DOMContentLoaded", function() {
-    const newSpecificationButton = document.getElementById("newSpecificationButton");
-    console.log("New Specification button found:", newSpecificationButton);
-    
-    if (newSpecificationButton) {
-        newSpecificationButton.addEventListener("click", function() {
-            console.log("New Specification button clicked, logged in status:", loggedInStatus);
-            if (loggedInStatus) {
-                console.log("Creating new specification");
-                createNewSpecification();
-            } else {
-                alert("Please log in to create a new specification.");
-            }
-        });
-        console.log("Event listener attached to New Specification button");
-    } else {
-        console.error("New Specification button not found!");
-    }
-});
-*/
-
 // Pagination estimation function moved to registryTable.js
 
 /******************************************************************************

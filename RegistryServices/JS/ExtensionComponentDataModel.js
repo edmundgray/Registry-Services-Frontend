@@ -730,7 +730,7 @@ async function populateComponentTable(selectElement, selectedIds = []) {
 
         row.innerHTML = `
             <td>${mappedEl.ID}</td><td>${mappedEl.Level}</td><td>${mappedEl.Cardinality}</td>
-            <td>${mappedEl['Business Term']}<i class="fa-solid fa-circle-question" title="${mappedEl['Usage Note']}"></i></td>
+            <td><i class="fa-solid fa-circle-question semantic-tooltip" title="${mappedEl['Usage Note']}"></i> ${mappedEl['Business Term']}</td>
             <td>${mappedEl['Usage Note']}</td><td>${mappedEl.Justification}</td><td>${mappedEl['Data Type']}</td>
             <td>${mappedEl['Type of Extension']}</td><td>${mappedEl['Core Conformant/Rules broken']}</td>
             <td style="text-align:center;"><input type="checkbox" class="element-selector" data-id="${businessTermID}"></td>

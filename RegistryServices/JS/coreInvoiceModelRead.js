@@ -114,10 +114,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     <td>${item.LevelStr || 'N/A'}</td>
                     <td>${item.Cardinality || 'N/A'}</td>
                     <td>
-                        <span class="semantic-tooltip" title="${item.SemanticDescription || ''}">
-                            <i class="fa-solid fa-circle-question"></i>
-                        </span>
-                        ${item.BusinessTerm || 'N/A'}
+                    <i class="fa-solid fa-circle-question semantic-tooltip" title="${item.SemanticDescription || ''}"></i>
+                    ${item.BusinessTerm || 'N/A'}
                     </td>
                     <td>${item.UsageNote || 'N/A'}</td>
                     <td>${item.BusinessRules || 'N/A'}</td>
