@@ -293,6 +293,91 @@ class SpecificationPreview {
         }
     }
 
+    populateRegistryStatusDropdown() {
+        const dropdown = document.getElementById("registryStatusDropdown");
+        if (dropdown && this.currentSpecification && (this.currentSpecification.registrationStatus || this.currentSpecification.implementationStatus)) {
+            const currentStatus = this.currentSpecification.registrationStatus || this.currentSpecification.implementationStatus;
+            dropdown.value = currentStatus;
+            console.log(`DEBUG: Preview Registry Status dropdown populated with: ${currentStatus}`);
+        } else if (dropdown) {
+            dropdown.value = ""; 
+            console.log('DEBUG: No status found for preview dropdown, setting to empty.');
+        }
+    }
+
+    setupRegistryStatusUpdateListener() {
+        const updateButton = document.getElementById("updateStatusButton");
+        const dropdown = document.getElementById("registryStatusDropdown");
+
+        if (updateButton && dropdown && this.currentSpecification && this.currentSpecification.identityID) {
+            updateButton.onclick = async () => {
+                const newStatus = dropdown.value;
+                if (!newStatus) {
+                    alert("Please select a status to update.");
+                    return;
+                }
+                if (newStatus === this.currentSpecification.registrationStatus) {
+                    alert("Status is already set to " + newStatus + ". No update needed.");
+                    return;
+                }
+
+                if (!confirm(`Are you sure you want to change the Registry Status to "${newStatus}"?`)) {
+                    return;
+                }
+
+                try {
+                    
+                    updateButton.textContent = 'Updating...';
+                    updateButton.disabled = true;
+
+                    
+                    await this.dataManager.updateSpecificationStatus(this.currentSpecification.identityID, newStatus);
+
+                    alert(`Registry Status for "${this.currentSpecification.specName}" updated to "${newStatus}" successfully!`);
+                    
+                    this.currentSpecification.registrationStatus = newStatus;
+                    this.populateRegistryStatusDropdown(); 
+                    
+                } catch (error) {
+                    console.error('Error updating Registry Status:', error);
+                    alert('Failed to update Registry Status: ' + error.message);
+                } finally {
+                    
+                    updateButton.textContent = 'Update Status';
+                    updateButton.disabled = false;
+                }
+            };
+            console.log('DEBUG: Preview Registry Status update listener attached.');
+        } else {
+            console.warn('DEBUG: Could not set up Preview Registry Status update listener (elements or spec.identityID missing).');
+        }
+    }
+
+    async initializePreview() {
+        console.log('SpecificationPreview: Setting up preview...');
+        
+        try {
+            // Initialize data manager
+            await this.initializeDataManager();
+            
+            // Update title and populate preview tables
+            this.updateTitle();
+            await this.populatePreviewTables();
+            
+            // Update button appearance
+            this.updateSubmitButtonAppearance();
+
+            // NEW: Populate the dropdown and set up its listener
+            this.populateRegistryStatusDropdown();
+            this.setupRegistryStatusUpdateListener();
+            
+        } catch (error) {
+            console.error('SpecificationPreview: Error during initialization:', error);
+            alert('Error loading specification preview: ' + error.message);
+        }
+    }
+
+
     async submitSpecification() {
         console.log('SpecificationPreview: Submitting specification...');
         
