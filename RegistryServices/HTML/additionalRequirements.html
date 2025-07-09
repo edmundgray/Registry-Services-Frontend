@@ -268,13 +268,13 @@
             
             <div class="button-row">
                 <div class="button-group">
-                    <button onclick="addRow()">Add another row</button>
-                    <button onclick="saveTable().catch(e => console.error('Save error:', e))">Save</button>
-                    <button onclick="refreshFromAPI().catch(e => console.error('Refresh error:', e))" title="Reload data from server">Refresh</button>
-                    <button onclick="cancelAction()">Cancel</button>
+                    <button onclick="addRow()" class="view-button" style="background:#217a36;">Add another row</button>
+                    <button onclick="saveTable().catch(e => console.error('Save error:', e))"  class="view-button" style="background:#ccc; color:#333;">Save</button>
+                    <button onclick="refreshFromAPI().catch(e => console.error('Refresh error:', e))" title="Reload data from server" class="view-button" style="background:#217a36;">Refresh</button>
+                    <button onclick="cancelAction()" class="view-button" style="background-color: #F4A261; color: #fff;">Cancel</button>
                 </div>
 
-                <button class="spec-preview-btn" onclick="goToSpecificationPreview().catch(e => console.error('Navigation error:', e))">Specification Preview</button>
+                <button onclick="goToSpecificationPreview().catch(e => console.error('Navigation error:', e))" class="view-button" style="background:#217a36;">Specification Preview</button>
             </div>
         </div>
         

@@ -779,6 +779,24 @@ button[onclick*="deleteRow"]:active {
     gap: 10px;
 }
 
+#newSpecBtn {
+    background-color: #007BFF; 
+    color: #fff;               
+}
+
+#newSpecBtn:hover {
+    background-color: #0056b3; 
+}
+
+#newSpec {
+    background-color: #4CAF50; 
+    color: #fff;               
+}
+
+#newSpec:hover {
+    background-color: #218838; 
+}
+
 /******************************************************************************
     Styling for the Additional Requirements Page
  ******************************************************************************/
