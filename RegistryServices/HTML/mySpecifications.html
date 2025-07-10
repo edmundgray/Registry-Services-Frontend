@@ -222,38 +222,11 @@
             
             <br/>
 
-            <div style="text-align: right"><button id="newSpec" onclick="createNewSpecification();" >Add New Specification</button></div>
+            <div><button onclick="createNewSpecification();">Add New Specification</button></div>
 
             <br/>
 <!----------------------------------------------------------------------------
-        1/2 Submitted Specifications
-  ------------------------------------------------------------------------------>
-            <h2>Submitted</h2>
-            <table id="submittedTable">
-                <!-- 1st row is for the column names -->
-                <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Purpose</th>
-                    <th>Type</th>
-                    <th>Sector</th>
-                    <th>Country</th>
-                    <th>Implementation Date</th>
-                    <th>Preferred Syntax</th>
-                    <th>Governing Entity</th>
-                    <th>Extension Component</th>
-                    <th>Conformance Level</th>
-                    <th>Actions</th>
-                </tr>
-                </thead>
-                <tbody id="submittedTableBody">
-                <!-- This will be populated dynamically with API data -->
-                </tbody>
-            </table>
-
-            <br/><br/>
-<!----------------------------------------------------------------------------
-        2/2 In Progress Specifications
+        1/2 In Progress Specifications
   ------------------------------------------------------------------------------>
             <h2>In Progress</h2>
             <table id="inProgressTable">
@@ -274,6 +247,33 @@
                 </tr>
                 </thead>
                 <tbody id="draftTableBody">
+                <!-- This will be populated dynamically with API data -->
+                </tbody>
+            </table>
+
+            <br/><br/>
+<!----------------------------------------------------------------------------
+        2/2 Submitted Specifications
+  ------------------------------------------------------------------------------>
+            <h2>Submitted</h2>
+            <table id="submittedTable">
+                <!-- 1st row is for the column names -->
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Purpose</th>
+                    <th>Type</th>
+                    <th>Sector</th>
+                    <th>Country</th>
+                    <th>Implementation Date</th>
+                    <th>Preferred Syntax</th>
+                    <th>Governing Entity</th>
+                    <th>Extension Component</th>
+                    <th>Conformance Level</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="submittedTableBody">
                 <!-- This will be populated dynamically with API data -->
                 </tbody>
             </table>
@@ -480,8 +480,8 @@
                         <td>${spec.specificationName || 'N/A'}</td>
                         <td>${spec.purpose || 'N/A'}</td>
                         <td>${spec.specificationType || 'N/A'}</td>
-                        <td>${spec.sector || 'N/A'}</td>
-                        <td>${spec.country || 'N/A'}</td>
+                        <td>${spec.sector === 'any' ? 'Any Sector' : (spec.sector || 'N/A')}</td>
+                        <td>${spec.country === 'any' ? 'Any Country' : (spec.country || 'N/A')}</td>
                         <td>${formatDate(spec.dateOfImplementation)}</td>
                         <td>${spec.preferredSyntax || 'N/A'}</td>
                         <td>${spec.governingEntity || 'N/A'}</td>
@@ -518,8 +518,8 @@
                         <td>${spec.specificationName || 'N/A'}</td>
                         <td>${spec.purpose || 'N/A'}</td>
                         <td>${spec.specificationType || 'N/A'}</td>
-                        <td>${spec.sector || 'N/A'}</td>
-                        <td>${spec.country || 'N/A'}</td>
+                        <td>${spec.sector === 'any' ? 'Any Sector' : (spec.sector || 'N/A')}</td>
+                        <td>${spec.country === 'any' ? 'Any Country' : (spec.country || 'N/A')}</td>
                         <td>${formatDate(spec.dateOfImplementation)}</td>
                         <td>${spec.preferredSyntax || 'N/A'}</td>
                         <td>${spec.governingEntity || 'N/A'}</td>
@@ -570,8 +570,8 @@
                             <td>${spec.specificationName || 'N/A'}</td>
                             <td>${spec.purpose || 'N/A'}</td>
                             <td>${spec.specificationType || 'N/A'}</td>
-                            <td>${spec.sector || 'N/A'}</td>
-                            <td>${spec.country || 'N/A'}</td>
+                            <td>${spec.sector === 'any' ? 'Any Sector' : (spec.sector || 'N/A')}</td>
+                            <td>${spec.country === 'any' ? 'Any Country' : (spec.country || 'N/A')}</td>
                             <td>${formatDate(spec.dateOfImplementation)}</td>
                             <td>${spec.preferredSyntax || 'N/A'}</td>
                             <td>${spec.governingEntity || 'N/A'}</td>

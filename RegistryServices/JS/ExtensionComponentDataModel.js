@@ -59,29 +59,17 @@ let componentTable; // Reference to the component table DOM element
 let editingComponentIndex = null; // Track which component is being edited
 let isEditing = false; // Track editing state
 
-let currentExtensionElementsHierarchy = [];
-
-// This helper function correctly interprets dot-notation levels (e.g., "1.1" gives depth 2)
-function getNumericDepthFromLevel(levelStr) {
+// Initialize data manager
+function getNumericLevelFromDotNotation(levelStr) {
     if (!levelStr) return 0;
-
-    // First, try to handle '+' notation (e.g., '+', '++', '+++')
-    // This assumes that '+' based levels are for primary hierarchy within this data.
     if (levelStr.includes('+')) {
-        // Count the number of '+' signs. A single '+' means depth 1, '++' means depth 2, etc.
-        return levelStr.split('+').length - 1; 
+    return levelStr.split('+').length - 1;
     }
-
-    // If it's not '+' notation, try to handle dot-notation (e.g., '1', '1.1', '1.1.1')
-    // This assumes dot-notation indicates depth: '1' -> 1, '1.1' -> 2, '1.1.1' -> 3
     const parts = levelStr.split('.');
-    // Ensure it's a valid dot-notation number sequence before returning its length as depth.
-    if (parts.length > 0 && parts.every(part => !isNaN(parseInt(part)) && String(parseInt(part)) === part)) { // Added check for valid integer parts
-        return parts.length; 
+    if (parts.length === 1 && !isNaN(parseInt(parts[0]))) {
+    return 1; 
     }
-    
-    // If neither matches or the format is invalid for hierarchy
-    return 0; // Default to 0, or you might choose to log a warning for unexpected formats
+    return parts.length > 0 ? parts.length : 0;
 }
 
 async function initializeDataManager() {
@@ -349,15 +337,6 @@ document.addEventListener('DOMContentLoaded', function() {
         localStorage.removeItem('workflowDataPreserved');
         localStorage.removeItem('preservedFromPage');
     }
-
-    componentsContainer.addEventListener('change', (event) => {
-        if (event.target.matches('.element-selector')) {
-            console.log('DEBUG: Element selector changed, triggering cascading logic');
-            window.handleCascadingSelectionForExtension(event.target);
-        }
-        // Also update save button appearance for any change, regardless of cascading
-        updateSaveButtonAppearance();
-    });
 });
 
 async function loadExtensionData() {
@@ -510,7 +489,6 @@ async function addNewComponentSection(preSelectedComponentId = '', preSelectedEl
                     <th>ID</th><th>Level</th><th>Cardinality</th><th>Business Term</th><th>Usage Note</th>
                     <th>Justification</th><th>Data Type</th><th>Type of Extension</th>
                     <th>Core Conformant /Rules broken</th><th>Included in Spec</th>
-                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -601,183 +579,101 @@ async function populateComponentTable(selectElement, selectedIds = []) {
         }
     }
 
-    const processedElements = componentElements.map(item => ({
-        ...item,
-        NumericDepth: getNumericDepthFromLevel(item.level || ''),
-        children: [] // Initialize children array
-    }));
-
-    // Sort elements by their levels to ensure correct hierarchical processing order
-    // This ensures '1.1' comes before '1.1.1', etc.
-    processedElements.sort((a, b) => {
-        const levelA = (a.level || '').split('.').map(Number);
-        const levelB = (b.level || '').split('.').map(Number);
-
-        for (let i = 0; i < Math.min(levelA.length, levelB.length); i++) {
-            if (levelA[i] !== levelB[i]) {
-                return levelA[i] - levelB[i];
-            }
-        }
-        return levelA.length - levelB.length;
-    });
-
-    const roots = [];
-    const parentTracker = {}; // Key: numericDepth, Value: element object
-
-    processedElements.forEach(item => {
-        const currentDepth = item.NumericDepth;
-
-        // If current item has a depth greater than 1, it should have a parent
-        if (currentDepth > 1) {
-            // Find the last encountered element at the previous depth level
-            // This is the most direct parent candidate based on sequential depth
-            const parent = parentTracker[currentDepth - 1];
-
-            if (parent && parent.NumericDepth === (currentDepth - 1)) {
-                // If a parent candidate exists and its depth is exactly one less than the current item's,
-                // then assign the current item as its child.
-                parent.children.push(item);
-            } else {
-                // This case indicates a potential gap in the hierarchy (e.g., a '+++' item without a '++' parent).
-                // Or it means a root element without a known parent.
-                // In such cases, we treat it as a root element.
-                roots.push(item);
-            }
-        } else {
-            // Depth 1 elements are always roots
-            roots.push(item);
-        }
-
-        // Update parentTracker: This item is now the last element seen at its current depth
-        parentTracker[currentDepth] = item;
-
-        // Clear trackers for deeper levels. If we've processed an item at depth N,
-        // any elements previously marked as the last seen for depths N+1, N+2, etc.,
-        // are no longer direct ancestors of future elements unless explicitly assigned.
-        for (let i = currentDepth + 1; i <= 10; i++) { // Max depth assumed for safety, adjust if needed
-            delete parentTracker[i];
-        }
-    });
-
     tableBody.innerHTML = ''; // Clear previous elements
-    if (roots.length === 0 && componentElements.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="10" style="text-align:center;">No elements found for this component.</td></tr>`;
-        return;
+    if (componentElements.length === 0) {
+         tableBody.innerHTML = `<tr><td colspan="10" style="text-align:center;">No elements found for this component.</td></tr>`;
+         return;
     }
-    
-    // Store the processed elements (flattened list but with 'children' populated) for cascading logic access
-    window.currentExtensionElementsHierarchy = processedElements;
 
-    // Recursive row rendering function
-    function renderRowAndChildren(item, container) {
+    componentElements.forEach(el => {
         const row = document.createElement('tr');
-        const businessTermID = item.businessTermID;
-        const isChecked = selectedIds.includes(businessTermID);
-
-        // Apply styling classes based on element type and numeric depth
-        const isXG = businessTermID.startsWith('XG');
-        const isXT = businessTermID.startsWith('XT');
-        const isBG = businessTermID.startsWith('BG');
-        const numericDepth = getNumericDepthFromLevel(item.level || ''); // Use numericDepth for styling
-
-        if (numericDepth > 1) { // Any element deeper than root is a child row visually
-            row.classList.add('child-row');
-            // Adjust padding for nested elements to show hierarchy visually
-            row.style.paddingLeft = `${20 * (numericDepth - 1)}px`;
-        }
         
-        if (isXG) {
-            if (numericDepth === 1) { // Level 1 XG
-                row.classList.add('level-1-xg');
-                row.classList.add('parent-row');
-            } else if (numericDepth > 1) { // Nested XG
-                row.classList.add('level-2-xg');
-            }
-        } else if (isXT) {
-            row.classList.add('level-xt');
-        } else if (isBG) {
-            if (numericDepth === 1) { // Level 1 BG
-                row.classList.add('level-1-bg');
-                row.classList.add('parent-row');
-            } else if (numericDepth > 1) { // Nested BG
-                row.classList.add('level-2-bg');
-            }
-        }
-        
-        if (item.children && item.children.length > 0) {
-            row.classList.add('has-children-parent-row');
-        }
-
-        // Helper function to combine usage notes (copy from original)
+        // Helper function to combine usage notes
         function combineUsageNotes(usageNoteCore, usageNoteExtension, semanticDescription) {
             const notes = [usageNoteCore, usageNoteExtension, semanticDescription]
                 .filter(note => note && note.trim())
                 .map(note => note.trim());
             return notes.length > 0 ? notes.join(' | ') : 'N/A';
         }
+        
+        // Map properties from API response with proper businessTermID extraction
+        const businessTermID = el.businessTermID;
+        const isChecked = selectedIds.includes(businessTermID);
+        
+        console.log('DEBUG: Processing element:', { 
+            businessTermID, 
+            isChecked, 
+            selectedIds,
+            element: el 
+        });
+
+        const isXG = businessTermID.startsWith('XG');
+        const isXT = businessTermID.startsWith('XT');
+        const isBG = businessTermID.startsWith('BG'); // Check for BG
+        const numericLevel = getNumericLevelFromDotNotation(el.level || '');
+        
+        if (isXG) {
+            if (numericLevel === 1) { // Interpretation of 'LEVEL 1 parent' for XG
+                row.classList.add('level-1-xg');
+            } else if (numericLevel === 2 || numericLevel === 3) { // Interpretation of 'LEVEL 2 or 3 parent' for XG
+                row.classList.add('level-2-xg'); // Assuming level-3-xg is same as level-2-xg for now
+            }
+            // XG elements are typically parents or nested within an XG hierarchy,
+            // apply parent/child classes if they have children or are part of a structure
+            // (You may need to enhance this based on actual XG data structure if it has nesting)
+            if (numericLevel === 1) { // Assuming level 1 XG is a main parent
+                row.classList.add('parent-row');
+            } else if (numericLevel > 1) { // Assuming other levels are children
+                row.classList.add('child-row');
+            }
+
+        } else if (isXT) {
+            row.classList.add('level-xt');
+            // XT elements are typically not parents themselves, but are children.
+            // Apply child-row if their level implies nesting.
+            if (numericLevel > 0) { // If it has any level, it's a child of something
+                row.classList.add('child-row');
+            }
+        } else if (isBG) { // Apply green coloring for BG elements
+            if (numericLevel === 1) { // Dark green for LEVEL 1 BG parents
+                row.classList.add('level-1-bg');
+                row.classList.add('parent-row'); // Add parent-row for level 1 BG
+            } else if (numericLevel === 2 || numericLevel === 3) { // Medium green for LEVEL 2 or 3 BG parents
+                row.classList.add('level-2-bg'); // Use level-2-bg for both 2 and 3
+                row.classList.add('child-row'); // Add child-row for nested BG elements
+            }
+            // If it's a BG element but not a recognized parent level, it will fall through to default table styling
+        }
 
         const mappedEl = {
             ID: businessTermID,
-            Level: item.level || 'N/A',
-            Cardinality: item.cardinality || 'N/A',
-            "Business Term": item.businessTerm || 'N/A',
-            "Usage Note": combineUsageNotes(item.usageNoteCore, item.usageNoteExtension, item.semanticDescription),
-            Justification: item.justification || 'N/A',
-            "Data Type": item.dataType || 'N/A',
-            "Type of Extension": item.extensionType || 'N/A',
-            "Core Conformant/Rules broken": item.conformanceType || 'N/A'
+            Level: el.level || 'N/A',
+            Cardinality: el.cardinality || 'N/A',
+            "Business Term": el.businessTerm || 'N/A',
+            "Usage Note": combineUsageNotes(el.usageNoteCore, el.usageNoteExtension, el.semanticDescription),
+            Justification: el.justification || 'N/A',
+            "Data Type": el.dataType || 'N/A',
+            "Type of Extension": el.extensionType || 'N/A',
+            "Core Conformant/Rules broken": el.conformanceType || 'N/A'
         };
 
         row.innerHTML = `
             <td>${mappedEl.ID}</td><td>${mappedEl.Level}</td><td>${mappedEl.Cardinality}</td>
-            <td><i class="fa-solid fa-circle-question semantic-tooltip" title="${mappedEl['Usage Note']}"></i> ${mappedEl['Business Term']}</td>
+            <td>${mappedEl['Business Term']}<i class="fa-solid fa-circle-question" title="${mappedEl['Usage Note']}"></i></td>
             <td>${mappedEl['Usage Note']}</td><td>${mappedEl.Justification}</td><td>${mappedEl['Data Type']}</td>
             <td>${mappedEl['Type of Extension']}</td><td>${mappedEl['Core Conformant/Rules broken']}</td>
             <td style="text-align:center;"><input type="checkbox" class="element-selector" data-id="${businessTermID}"></td>
-            <td class="actions-cell" style="text-align:center;">
         `;
-        container.appendChild(row);
-
+        tableBody.appendChild(row);
+        
+        // Set the checked property programmatically (not just the attribute)
         const addedCheckbox = row.querySelector('.element-selector');
-        if (addedCheckbox) {
-            addedCheckbox.checked = isChecked; // Set initial checked state
+        if (addedCheckbox && isChecked) {
+            addedCheckbox.checked = true;
+            console.log(`DEBUG: Checkbox for ${businessTermID} set to checked`);
         }
-
-        const immediateChildTrs = [];
-        if (item.children && item.children.length > 0) {
-            const showMoreBtn = document.createElement('button');
-            showMoreBtn.className = 'show-more-btn';
-            showMoreBtn.textContent = 'Show more';
-            showMoreBtn.style.fontSize = '12px';
-            showMoreBtn.style.verticalAlign = 'middle';
-
-            const buttonCell = row.querySelector('.actions-cell'); // Last cell is for actions
-            if (buttonCell) { // Ensure the cell exists before appending
-                buttonCell.appendChild(showMoreBtn);
-            } else {
-                console.warn("Actions button cell not found for show more button!");
-            }
-
-            item.children.forEach(child => {
-                const childTr = renderRowAndChildren(child, container);
-                immediateChildTrs.push(childTr);
-                childTr.style.display = 'none'; // Hide children by default
-            });
-
-            showMoreBtn.addEventListener('click', function() {
-                const isHidden = immediateChildTrs[0].style.display === 'none';
-                immediateChildTrs.forEach(childTr => childTr.style.display = isHidden ? '' : 'none');
-                this.textContent = isHidden ? 'Show less' : 'Show more';
-                this.blur();
-            });
-        }
-        return row; // Return the created row for immediateChildTrs
-    }
-
-    // Start rendering from the root elements
-    roots.forEach(root => renderRowAndChildren(root, tableBody));
-    // --- END HIERARCHY BUILDING AND RENDERING LOGIC ---
-
+    });
+    
     console.log('DEBUG: Table populated with', componentElements.length, 'elements,', selectedIds.filter(id => componentElements.some(el => el.businessTermID === id)).length, 'pre-selected');
     
     // Update baseline data after elements are applied with a short delay for DOM stability
@@ -785,130 +681,6 @@ async function populateComponentTable(selectElement, selectedIds = []) {
         updateBaselineData();
     }, 50);
 }
-
-// --- Cascading Logic Functions ---
-
-// Helper to find an element by its ID in the processed hierarchy (flat list with children)
-function findElementInExtensionHierarchy(id, elements) {
-    for (const el of elements) {
-        if (el.businessTermID === id) return el;
-        if (el.children && el.children.length > 0) {
-            const found = findElementInExtensionHierarchy(id, el.children);
-            if (found) return found;
-        }
-    }
-    return null;
-}
-
-// Helper to find the direct parent of an element in the processed hierarchy
-function findParentOfExtensionElement(childId, allElements) {
-    for (const parent of allElements) {
-        if (parent.children && parent.children.some(child => child.businessTermID === childId)) {
-            return parent;
-        }
-        // Recursively search in children's children for the parent
-        if (parent.children && parent.children.length > 0) {
-            const found = findParentOfExtensionElement(childId, parent.children);
-            if (found) return found;
-        }
-    }
-    return null;
-}
-
-// Cascading function to check all children of a parent
-function checkChildrenRecursiveForExtension(currentElement) {
-    if (currentElement.children) {
-        currentElement.children.forEach(child => {
-            const childCheckbox = document.querySelector(`.element-selector[data-id="${child.businessTermID}"]`);
-            if (childCheckbox) {
-                if (!childCheckbox.checked) {
-                    childCheckbox.checked = true;
-                    console.log("DEBUG_HELPER: Checked child:", child.businessTermID);
-                }
-            } else {
-                console.warn("DEBUG_HELPER: Child checkbox element not found in DOM for:", child.businessTermID);
-            }
-            if (child.children && child.children.length > 0) {
-                checkChildrenRecursiveForExtension(child);
-            }
-        });
-    }
-}
-
-// Cascading function to uncheck all children of a parent
-function uncheckChildrenRecursiveForExtension(currentElement) {
-     if (currentElement.children) {
-        currentElement.children.forEach(child => {
-            const childCheckbox = document.querySelector(`.element-selector[data-id="${child.businessTermID}"]`);
-            if (childCheckbox) {
-                if (childCheckbox.checked && !childCheckbox.disabled) {
-                    childCheckbox.checked = false;
-                    console.log("DEBUG_HELPER: Unchecked child:", child.businessTermID);
-                }
-            } else {
-                console.warn("DEBUG_HELPER: Child checkbox element not found in DOM for:", child.businessTermID);
-            }
-            if (child.children && child.children.length > 0) {
-                uncheckChildrenRecursiveForExtension(child);
-            }
-        });
-    }
-}
-
-// The main cascading handler for element-selector checkboxes
-window.handleCascadingSelectionForExtension = function(changedCheckbox) {
-    const itemId = changedCheckbox.getAttribute('data-id');
-    const isChecked = changedCheckbox.checked;
-    console.log("DEBUG_CASCADING: handleCascadingSelectionForExtension called for ID:", itemId, "Checked:", isChecked);
-
-    // Find the item in the hierarchical data that was built
-    // We use window.currentExtensionElementsHierarchy which is a flat list but with 'children' populated
-    const item = findElementInExtensionHierarchy(itemId, window.currentExtensionElementsHierarchy);
-    
-    if (!item){
-        console.warn("DEBUG_CASCADING: Item NOT found in hierarchy for ID:", itemId + ". Cannot cascade.");
-        return;
-    } 
-
-    // A. Handle Parent selection -> cascading down to children
-    if (item.children && item.children.length > 0) {
-        console.log("DEBUG_CASCADING: Item is a parent with children. Initiating cascade DOWN.");
-        
-        if (isChecked) {
-            checkChildrenRecursiveForExtension(item);
-        } else {
-            uncheckChildrenRecursiveForExtension(item);
-        }
-    }
-
-    // B. Handle Child selection -> cascading up to its parents
-    if (isChecked) {
-        console.log("DEBUG_CASCADING: Item is checked. Attempting to cascade UP to parents.");
-        let current = item;
-        // Find the parent in the top-level list of processed elements
-        let parentItem = findParentOfExtensionElement(current.businessTermID, window.currentExtensionElementsHierarchy);
-
-        while (parentItem) {
-            console.log("DEBUG_CASCADING: Found parent candidate:", parentItem.businessTermID);
-            const parentCheckbox = document.querySelector(`.element-selector[data-id="${parentItem.businessTermID}"]`);
-            if (parentCheckbox) {
-                if (!parentCheckbox.checked) {
-                    parentCheckbox.checked = true;
-                    console.log("DEBUG_CASCADING: Successfully checked parent checkbox for:", parentItem.businessTermID);
-                } else {
-                    console.log("DEBUG_CASCADING: Parent checkbox for", parentItem.businessTermID, "was already checked.");
-                }
-            } else {
-                console.warn("DEBUG_CASCADING: Parent checkbox element NOT found in DOM for ID:", parentItem.businessTermID);
-            }
-            current = parentItem;
-            parentItem = findParentOfExtensionElement(current.businessTermID, window.currentExtensionElementsHierarchy);
-        }
-    }
-    // Ensure save button appearance is updated after cascading changes
-    updateSaveButtonAppearance();
-    console.log("DEBUG_CASCADING: Cascading process finished for ID:", itemId);
-};
 
 // Enhanced change detection functions
 function hasActualChanges() {
@@ -936,7 +708,7 @@ function hasActualChanges() {
     
     // Check if same elements are selected
     const currentSet = new Set(currentData.selectedElements);
-    const originalSet = new Set(originalData.selectedElements || []);
+    const originalSet = new Set(originalData.selectedElements);
     for (const element of currentSet) {
         if (!originalSet.has(element)) {
             console.log('Change detected: New extension component selected:', element);
@@ -1354,33 +1126,10 @@ function showNotification(message, type = 'info') {
         padding: 15px; border-radius: 5px; color: white; font-weight: bold;
         background-color: ${type === 'success' ? '#28a745' : type === 'warning' ? '#ffc107' : type === 'error' ? '#dc3545' : '#17a2b8'};
     `;
-    
-    let contentHtml = `<p style="margin: 0;">${message}</p>`;
-    if (actions.length > 0) {
-        contentHtml += `<div style="margin-top: 10px;">`;
-        actions.forEach(action => {
-            contentHtml += `<button onclick="(${action.action.toString()})(); this.closest('.notification').remove();" style="
-                padding: 5px 10px; background: rgba(255,255,255,0.3); border: none; border-radius: 3px; 
-                color: white; cursor: pointer; margin-right: 5px; font-size: 12px;">${action.text}</button>`;
-        });
-        contentHtml += `</div>`;
-    } else {
-        // Add a close button if no other actions
-        contentHtml += `<button onclick="this.closest('.notification').remove();" style="
-            position: absolute; top: 5px; right: 5px; background: none; border: none; 
-            font-size: 16px; cursor: pointer; color: rgba(255,255,255,0.7);">&times;</button>`;
-    }
-    
-    notification.innerHTML = contentHtml;
     document.body.appendChild(notification);
-    
-    if (actions.length === 0) { // Auto-remove if no explicit actions
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.remove();
-            }
-        }, 4000);
-    }
+    setTimeout(() => {
+        notification.remove();
+    }, 4000);
 }
 
 // --- Global Function Exports for HTML onclick handlers ---

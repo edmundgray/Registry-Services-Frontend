@@ -173,18 +173,6 @@ class SpecificationDataManager {
             console.error('ERROR: Invalid userGroupID detected:', userGroupID);
             throw new Error(`Invalid userGroupID: ${userGroupID}. Cannot save specification without valid group ID.`);
         }
-
-        //Determine Specification Type (CIUS or Extension)
-        let specificationType;
-        const hasExtensionComponents = this.workingData?.extensionComponentData && this.workingData.extensionComponentData.length > 0;
-        const hasAdditionalRequirements = this.workingData?.additionalRequirementsData && this.workingData.additionalRequirementsData.length > 0;
-
-        if (hasExtensionComponents || hasAdditionalRequirements) {
-            specificationType = 'Extension';
-        } else {
-            specificationType = 'CIUS';
-        }
-        console.log(`DEBUG: Determined Specification Type: ${specificationType} (Extensions: ${hasExtensionComponents}, Additional: ${hasAdditionalRequirements})`);
         
         return {
             identityID: this.originalData?.identityID || 0,
@@ -201,14 +189,12 @@ class SpecificationDataManager {
             coreVersion: formData.coreVersion || '',
             specificationSourceLink: formData.sourceLink || '',
             country: formData.country || '',
-            specificationType: specificationType,
+            specificationType: this.originalData?.specificationType || formData.specificationType || '',
             isCountrySpecification: this.originalData?.isCountrySpecification || true,
             underlyingSpecificationIdentifier: formData.underlyingSpec || '',
             preferredSyntax: formData.preferredSyntax || '',
             implementationStatus: this.originalData?.implementationStatus || 'In Progress',
-
-            registrationStatus: this.workingData?.registrationStatus || this.originalData?.registrationStatus || 'In Progress',
-
+            registrationStatus: this.originalData?.registrationStatus || 'Draft',
             conformanceLevel: this.originalData?.conformanceLevel || formData.conformanceLevel || '',
             
             // Nested data - preserve from working data if available
@@ -361,9 +347,7 @@ class SpecificationDataManager {
             // If it's an object with selectedIds and typeOfChangeValues
             return coreInvoiceModelData.selectedIds.map(id => ({
                 id: id,
-                businessTermID: id,
-                typeOfChange: coreInvoiceModelData.typeOfChangeValues?.[id] || 'No change',
-                cardinality: coreInvoiceModelData.cardinalityMap?.[id] || '0..1'
+                typeOfChange: coreInvoiceModelData.typeOfChangeValues?.[id] || 'No change'
             }));
         } else if (coreInvoiceModelData.items) {
             // If it's already in the old API format with items wrapper
@@ -1509,60 +1493,6 @@ class SpecificationDataManager {
             console.error('Error clearing editing state:', error);
         }
     }
-
-    async updateSpecificationStatus(specificationId, newStatus) {
-    try {
-        // Load the current full specification data from the API.
-        // This call also populates `this.originalData` with the PascalCase version.
-        await this.loadSpecificationFromAPI(specificationId);
-        
-        // Ensure originalData is loaded and valid
-        if (!this.originalData || this.originalData.identityID !== specificationId) {
-            throw new Error(`Failed to load original data for specification ID: ${specificationId}`);
-        }
-
-        // Update ONLY the registration status
-        this.originalData.registrationStatus = newStatus;
-
-        // Send the back to the API for the PUT request.
-        const apiUrl = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}`;
-        const response = await authenticatedFetch(apiUrl, {
-            method: 'PUT',
-            // Send the complete, updated PascalCase object
-            body: JSON.stringify(this.originalData), 
-            headers: { 'Content-Type': 'application/json' }
-        });
-
-        if (!response.ok) {
-            let errorMessage = `Failed to update status: HTTP ${response.status}`;
-            try {
-                const contentType = response.headers.get('content-type');
-                if (contentType && contentType.includes('application/json')) {
-                    const errorData = await response.json();
-                    errorMessage += ` - ${JSON.stringify(errorData)}`;
-                } else {
-                    const errorText = await response.text();
-                    errorMessage += ` - ${errorText}`;
-                }
-            } catch (parseError) {
-                console.warn('Could not parse error response for status update:', parseError);
-            }
-            throw new Error(errorMessage);
-        }
-        
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-            const responseText = await response.text();
-            return responseText.trim() ? JSON.parse(responseText) : { success: true, message: 'Update successful (no content)' };
-        } else {
-            return { success: true, message: 'Update successful (non-JSON response)' };
-        }
-    } catch (error) {
-        console.error('Error updating specification status:', error);
-        throw error;
-    }
-}
-    
 }
 
 // Make it globally available

@@ -5,30 +5,8 @@
         
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
         <link rel="stylesheet" href="../CSS/style.css">
-        
-        <!-- Add authManager.js for AUTH_CONFIG and basic authentication -->
-        <script src="../JS/auth/authManager.js"></script>
-        <script>
-            // Create a minimal authManager instance for login functionality
-            window.authManager = new AuthManager();
-            
-            // Override the login success callback to redirect to eInvoicingSpecificationRegistry.html
-            const originalHandleLoginSuccess = window.handleLoginSuccess;
-            window.handleLoginSuccess = function(response) {
-                console.log('DEBUG: Login successful on Extension Component read-only page, redirecting to eInvoicingSpecificationRegistry.html');
-                
-                // Call original login success handler to set up authentication state
-                if (originalHandleLoginSuccess) {
-                    originalHandleLoginSuccess(response);
-                }
-                
-                // Redirect to main registry page immediately after successful login
-                window.location.href = 'eInvoicingSpecificationRegistry.html';
-            };
-        </script>
         <script src="../JS/sidebarManager.js"></script>
         <script src="../JS/javascript.js"></script>
-        <script src="../JS/dataManager.js"></script>
         <script src="../JS/ExtensionComponentDataModelRead.js"></script>
         
         <title>Registry Services</title>

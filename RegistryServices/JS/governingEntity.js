@@ -373,7 +373,7 @@ class GoverningEntityView {
         if (!entityDetailsElement) return;
 
         const entityTable = `
-            <table class="styled-table" style="max-width:900px; margin-top: 0;">
+            <table class="styled-table" style="max-width:900px;">
                 <thead>
                     <tr>
                         <th>Created</th>
@@ -402,8 +402,7 @@ class GoverningEntityView {
         if (!specificationsSectionElement) return;
 
         const specificationsTable = `
-        <h2 style="margin: 0;font-size:20px;">Specifications</h2>
-            <table class="styled-table" id="specificationsTable" style="font-size:13px; margin-top: 10;">
+            <table class="styled-table" id="specificationsTable" style="font-size:13px; margin-top: 0;">
                 <thead>
                     <tr>
                         <th>Created/Modified</th>
@@ -519,8 +518,8 @@ class GoverningEntityView {
                 <td>${spec.purpose || ''}</td>
                 <td>${spec.dateOfImplementation ? new Date(spec.dateOfImplementation).toLocaleDateString('en-GB') : 'N/A'}</td>
                 <td>${spec.specificationType || ''}</td>
-                <td>${spec.sector || ''}</td>
-                <td>${spec.country || ''}</td>
+                <td>${spec.sector === 'any' ? 'Any Sector' : (spec.sector || '')}</td>
+                <td>${spec.country === 'any' ? 'Any Country' : (spec.country || '')}</td>
                 <td>${spec.registrationStatus || spec.implementationStatus || ''}</td>
                 <td>${actionButtonHtml}</td>
             `;

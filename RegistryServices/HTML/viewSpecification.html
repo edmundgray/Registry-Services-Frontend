@@ -49,13 +49,6 @@
             .edit-button-top-right:hover {
                 background-color: #218838;
             }
-
-            .action-buttons-container {
-                display: flex;
-                align-items: center;
-                gap: 10px; /* Space between the dropdown group and the Edit button */
-            }
-
         </style>
     </head>
     <body>
@@ -69,18 +62,7 @@
             </div>
             <div class="header-with-edit">
                 <h1><i class="fa-solid fa-house"></i> View Specification</h1>
-                <div class="action-buttons-container">
-                <div class="admin-only" style="display: flex; align-items: center; gap: 5px;">
-                    <label for="registryStatusDropdown" style="font-size: 0.8em;">Registry Status:</label>
-                    <select id="registryStatusDropdown" style="padding: 5px; border-radius: 4px; font-size: 0.8em;">
-                        <option value="Submitted">Submitted</option>
-                        <option value="Under Review">Under Review</option>
-                        <option value="Verified">Verified</option>
-                    </select>
-                    <button id="updateStatusButton" class="view-button" style="margin-left: 0; font-size: 0.8em; padding: 5px 8px; ">Update Status</button>
-                </div>
                 <button id="editSpecificationButton" class="edit-button-top-right">Edit</button>
-            </div>
             </div>
             <br/>
             <div id="detailsTableContainer"></div>
@@ -343,8 +325,6 @@
                     // Populate the page with specification data
                     await populateSpecificationData(currentSpecification);
                     
-                    setupRegistryStatusUpdateListener(currentSpecification);
-
                     hideLoadingIndicator();
                     
                 } catch (error) {
@@ -352,51 +332,6 @@
                     hideLoadingIndicator();
                     showErrorMessage(`Failed to load specification: ${error.message}`);
                 }
-            }
-
-            function populateSummaryTable(spec) {
-                const detailsTableContainer = document.getElementById("detailsTableContainer");
-                if (!detailsTableContainer) return;
-                detailsTableContainer.innerHTML = ''; // Clear existing content
-                
-                const table = document.createElement("table");
-                table.id = "detailsTable";
-                table.style.width = "100%";
-                table.style.border = "1px solid #ccc";
-                table.style.borderCollapse = "collapse";
-                
-                // Create header row
-                const headerRow = table.insertRow();
-                const headers = ['Name', 'Purpose', 'Type', 'Sector', 'Country', 'Implementation Date', 'Status'];
-                headers.forEach(header => {
-                    const th = document.createElement("th");
-                    th.textContent = header;
-                    th.style.border = "1px solid #ccc";
-                    th.style.padding = "8px";
-                    th.style.backgroundColor = "#f5f5f5";
-                    headerRow.appendChild(th);
-                });
-                
-                // Create data row
-                const dataRow = table.insertRow();
-                const values = [
-                    spec.specificationName || 'N/A',
-                    spec.purpose || 'N/A',
-                    spec.specificationType || 'N/A',
-                    spec.sector || 'N/A',
-                    spec.country || 'N/A',
-                    spec.dateOfImplementation ? new Date(spec.dateOfImplementation).toLocaleDateString() : 'N/A',
-                    spec.registrationStatus || spec.implementationStatus || 'N/A'
-                ];
-                
-                values.forEach(value => {
-                    const td = dataRow.insertCell();
-                    td.textContent = value;
-                    td.style.border = "1px solid #ccc";
-                    td.style.padding = "8px";
-                });
-                
-                detailsTableContainer.appendChild(table);
             }
 
             async function populateSpecificationData(spec) {
@@ -415,11 +350,8 @@
                     // Populate Supporting Artefacts tab
                     populateSupportingArtefacts(spec);
                     
-                    populateRegistryStatusDropdown(spec);
                     // Set up edit button functionality
                     setupEditButton(spec);
-
-                    
                     
                 } catch (error) {
                     console.error('Error populating specification data:', error);
@@ -455,8 +387,8 @@
                     spec.specificationName || 'N/A',
                     spec.purpose || 'N/A',
                     spec.specificationType || 'N/A',
-                    spec.sector || 'N/A',
-                    spec.country || 'N/A',
+                    spec.sector === 'any' ? 'Any Sector' : (spec.sector || 'N/A'),
+                    spec.country === 'any' ? 'Any Country' : (spec.country || 'N/A'),
                     spec.dateOfImplementation ? new Date(spec.dateOfImplementation).toLocaleDateString() : 'N/A',
                     spec.registrationStatus || spec.implementationStatus || 'N/A'
                 ];
@@ -476,8 +408,8 @@
                 document.getElementById("specificationName").textContent = spec.specificationName || 'N/A';
                 document.getElementById("governingEntity").textContent = spec.governingEntity || 'N/A';
                 document.getElementById("contactInformation").textContent = spec.contactInformation || 'N/A';
-                document.getElementById("sector").textContent = spec.sector || 'N/A';
-                document.getElementById("country").textContent = spec.country || 'N/A';
+                document.getElementById("sector").textContent = spec.sector === 'any' ? 'Any Sector' : (spec.sector || 'N/A');
+                document.getElementById("country").textContent = spec.country === 'any' ? 'Any Country' : (spec.country || 'N/A');
                 document.getElementById("purpose").textContent = spec.purpose || 'N/A';
                 
                 // Technical Information
@@ -677,83 +609,6 @@
                 });
                 document.getElementById(tabId).classList.add('active');
                 event.target.classList.add('active');
-            }
-
-            function populateRegistryStatusDropdown(spec) {
-                const dropdown = document.getElementById("registryStatusDropdown");
-                if (dropdown && spec && (spec.registrationStatus || spec.implementationStatus)) {
-                    const currentStatus = spec.registrationStatus || spec.implementationStatus;
-                    dropdown.value = currentStatus;
-                    console.log(`DEBUG: Registry Status dropdown populated with: ${currentStatus}`);
-                } else if (dropdown) {
-                    dropdown.value = ""; // Clear if no status
-                    console.log('DEBUG: No status found for dropdown, setting to empty.');
-                }
-            }
-
-            function setupRegistryStatusUpdateListener(spec) {
-                const updateButton = document.getElementById("updateStatusButton");
-                const dropdown = document.getElementById("registryStatusDropdown");
-
-                if (updateButton && dropdown && spec && spec.identityID) {
-                    updateButton.onclick = async () => {
-                        const newStatus = dropdown.value;
-                        if (!newStatus) {
-                            alert("Please select a status to update.");
-                            return;
-                        }
-                        if (newStatus === spec.registrationStatus) {
-                            alert("Status is already set to " + newStatus + ". No update needed.");
-                            return;
-                        }
-
-                        if (!confirm(`Are you sure you want to change the Registry Status to "${newStatus}"?`)) {
-                            return;
-                        }
-
-                        try {
-                            // Show a temporary "Updating..." state for the button
-                            updateButton.textContent = 'Updating...';
-                            updateButton.disabled = true;
-
-                            // Use dataManager to update the status
-                            const dataManager = new SpecificationDataManager();
-                            await dataManager.updateSpecificationStatus(spec.identityID, newStatus);
-
-                            alert(`Registry Status for "${spec.specificationName}" updated to "${newStatus}" successfully!`);
-                            // Update the displayed status immediately without full page reload
-                            currentSpecification.registrationStatus = newStatus;
-                            populateSummaryTable(currentSpecification); // Update top summary table
-                            populateRegistryStatusDropdown(currentSpecification); // Update dropdown again
-                            
-                        } catch (error) {
-                            console.error('Error updating Registry Status:', error);
-                            alert('Failed to update Registry Status: ' + error.message);
-                        } finally {
-                            // Restore button state
-                            updateButton.textContent = 'Update Status';
-                            updateButton.disabled = false;
-                        }
-                    };
-                    console.log('DEBUG: Registry Status update listener attached.');
-                    
-                    // Initial visibility check for the button and dropdown on page load
-                    // This relies on `isAdmin()` from javascript.js and `updateVisibilityWithRoles()`
-                    const adminControlsDiv = document.querySelector('.header-with-edit .admin-only');
-                    if (adminControlsDiv) {
-                        // Ensure visibility is correctly applied after DOM is ready
-                        setTimeout(() => {
-                            // Check if isAdmin() is globally available and true
-                            if (typeof isAdmin === 'function' && isAdmin(window.authManager)) {
-                                adminControlsDiv.style.display = 'block';
-                            } else {
-                                adminControlsDiv.style.display = 'none';
-                            }
-                        }, 100); // Small delay to ensure `isAdmin` and `authManager` are fully initialized
-                    }
-                } else {
-                    console.warn('DEBUG: Could not set up Registry Status update listener (elements or spec.identityID missing).');
-                }
             }
         </script>
         

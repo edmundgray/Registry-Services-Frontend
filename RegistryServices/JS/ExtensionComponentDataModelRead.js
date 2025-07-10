@@ -220,7 +220,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 <td>${mappedEl.ID}</td>
                 <td>${mappedEl.Level}</td>
                 <td>${mappedEl.Cardinality}</td>
-                <td><i class="fa-solid fa-circle-question semantic-tooltip" title="${mappedEl['Usage Note']}"></i> ${mappedEl['Business Term']}</td>
+                <td>${mappedEl['Business Term']}<i class="fa-solid fa-circle-question" title="${mappedEl['Usage Note']}"></i></td>
                 <td>${mappedEl['Usage Note']}</td>
                 <td>${mappedEl.Justification}</td>
                 <td>${mappedEl['Data Type']}</td>

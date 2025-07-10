@@ -6,165 +6,12 @@
 // Global variables for registry table
 let currentPage = 1;
 let rowsPerPage = 10;
-let visibleDataOnPage = [];
-let originalData = [];
 let filteredData = [];
+let originalData = [];
 let totalSpecifications = 0;
 
 // API base URL
 const API_BASE_URL = "https://registryservices-staging.azurewebsites.net/api";
-
-// Global variable to track if we're in business term search mode
-let isBusinessTermSearchActive = false;
-
-/******************************************************************************
-    Business Term Search Functions
- ******************************************************************************/
-// Function to search specifications by Business Term ID
-async function searchByBusinessTermId(businessTermId) {
-    if (!businessTermId || businessTermId.trim() === '') {
-        // If empty, reset to normal mode
-        isBusinessTermSearchActive = false;
-        clearAllFilters();
-        await fetchSpecifications();
-        return;
-    }
-
-    try {
-        isBusinessTermSearchActive = true;
-        const trimmedTermId = businessTermId.trim();
-        
-        console.log(`Searching for Business Term ID: ${trimmedTermId}`);
-        
-        // Show loading state
-        showLoadingState();
-        
-        // Make three parallel API calls
-        const [coreResults, extensionResults, additionalReqResults] = await Promise.all([
-            fetchSpecificationsByBusinessTerm('CoreBusinessTermId', trimmedTermId),
-            fetchSpecificationsByBusinessTerm('ExtensionBusinessTermId', trimmedTermId),
-            fetchSpecificationsByBusinessTerm('AddReqBusinessTermID', trimmedTermId)
-        ]);
-        
-        // Amalgamate results and remove duplicates
-        const combinedResults = amalgamateResults(coreResults, extensionResults, additionalReqResults);
-        
-        // Update global data
-        originalData = combinedResults;
-        filteredData = combinedResults;
-        totalSpecifications = combinedResults.length;
-        
-        // Reset pagination to first page
-        currentPage = 1;
-        
-        // Calculate total pages for client-side pagination (since we have all results)
-        const totalPages = Math.ceil(totalSpecifications / rowsPerPage);
-        
-        // Populate the table with combined results
-        populateTable(combinedResults);
-        updatePaginationControls(totalPages);
-        
-        console.log(`Business Term search completed. Found ${combinedResults.length} specifications.`);
-        
-    } catch (error) {
-        console.error("Error searching by Business Term ID:", error);
-        alert("Failed to search by Business Term ID. Please try again.");
-        
-        // Reset to normal mode on error
-        isBusinessTermSearchActive = false;
-        originalData = [];
-        filteredData = [];
-        totalSpecifications = 0;
-        populateTable([]);
-        updatePaginationControls(0);
-    }
-}
-
-// Function to fetch specifications by specific business term parameter
-async function fetchSpecificationsByBusinessTerm(parameterName, businessTermId) {
-    try {
-        const params = new URLSearchParams({
-            [parameterName]: businessTermId,
-            PageNumber: currentPage.toString(),
-            PageSize: '1000' // Use large page size to get all results
-        });
-        
-        const url = `${API_BASE_URL}/specifications?${params.toString()}`;
-        console.log(`Fetching from: ${url}`);
-        
-        const response = await fetch(url);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log(`${parameterName} API Response:`, data);
-        
-        // Extract items from response
-        if (data.items && Array.isArray(data.items)) {
-            return data.items;
-        } else if (Array.isArray(data)) {
-            return data;
-        } else {
-            console.warn(`Unexpected response format from ${parameterName}:`, data);
-            return [];
-        }
-        
-    } catch (error) {
-        console.error(`Error fetching ${parameterName} results:`, error);
-        return []; // Return empty array on error
-    }
-}
-
-// Function to amalgamate results from three API calls and remove duplicates
-function amalgamateResults(coreResults, extensionResults, additionalReqResults) {
-    const allResults = [...coreResults, ...extensionResults, ...additionalReqResults];
-    
-    // Remove duplicates based on identityID
-    const uniqueResults = [];
-    const seenIds = new Set();
-    
-    for (const result of allResults) {
-        const identityId = result.identityID;
-        if (identityId && !seenIds.has(identityId)) {
-            seenIds.add(identityId);
-            uniqueResults.push(result);
-        }
-    }
-    
-    console.log(`Amalgamated results: ${allResults.length} total, ${uniqueResults.length} unique`);
-    return uniqueResults;
-}
-
-// Function to show loading state
-function showLoadingState() {
-    const table = document.getElementById("myTable");
-    if (!table) return;
-    
-    table.innerHTML = "";
-    const loadingRow = table.insertRow(0);
-    const loadingCell = loadingRow.insertCell(0);
-    loadingCell.colSpan = 12; // Span all columns
-    loadingCell.textContent = "Searching Business Term ID...";
-    loadingCell.style.textAlign = "center";
-    loadingCell.style.padding = "20px";
-    loadingCell.style.fontStyle = "italic";
-    loadingCell.style.color = "#666";
-}
-
-// Function to clear all filters
-function clearAllFilters() {
-    const searchInput = document.getElementById("searchInput");
-    const typeFilter = document.getElementById("typeFilter");
-    const sectorFilter = document.getElementById("sectorFilter");
-    const countryFilter = document.getElementById("countryFilter");
-    
-    if (searchInput) searchInput.value = "";
-    if (typeFilter) typeFilter.value = "";
-    if (sectorFilter) sectorFilter.value = "";
-    if (countryFilter) countryFilter.value = "";
-}
 
 /******************************************************************************
     Country Dropdown Population
@@ -215,6 +62,12 @@ function populateCountryDropdown() {
     defaultOption.value = "";
     defaultOption.textContent = "All Countries";
     countryFilter.appendChild(defaultOption);
+    
+    // Add "Any Country" option
+    const anyCountryOption = document.createElement("option");
+    anyCountryOption.value = "any";
+    anyCountryOption.textContent = "Any Country";
+    countryFilter.appendChild(anyCountryOption);
 
     // Add the countries as options
     countries.forEach(country => {
@@ -231,48 +84,57 @@ function populateCountryDropdown() {
 // Fetch specifications from the API
 async function fetchSpecifications() {
     try {
-        console.log("Fetching ALL specifications from API for client-side filtering...");
-        // Fetch all data (or a very large page size) to filter client-side
-        const response = await fetch(`${API_BASE_URL}/specifications?PageNumber=1&PageSize=10000`); // Increased PageSize
-
+        console.log("Fetching specifications from API...");
+        const response = await fetch(`${API_BASE_URL}/specifications?PageNumber=${currentPage}&PageSize=${rowsPerPage}`);
+        
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-
+        
         const data = await response.json();
-        console.log("API Response (full raw data):", data);
-
-        let allApiData = [];
+        console.log("API Response:", data);
+        
+        // Handle the response structure
         if (data.items && Array.isArray(data.items)) {
-            allApiData = data.items;
+            originalData = data.items;
+            filteredData = data.items;
+
+            // Check for total count in metadata first, then try other possible property names
+            totalSpecifications = (data.metadata && data.metadata.totalCount) || 
+                                  data.totalCount || data.TotalCount || data.total || data.Total || 
+                                  data.count || data.Count || 0;
+            console.log(`Loaded ${data.items.length} items, total: ${totalSpecifications}`);
+            
+            // If no total count in response, make a rough estimate based on current data
+            if (totalSpecifications === 0 && data.items.length > 0) {
+                totalSpecifications = Math.max(data.items.length, currentPage * rowsPerPage);
+                console.log(`No total count found, estimated: ${totalSpecifications}`);
+            }
         } else if (Array.isArray(data)) {
-            allApiData = data;
+            // Handle case where response is directly an array
+            originalData = data;
+            filteredData = data;
+            totalSpecifications = data.length;
+            console.log(`Loaded ${data.length} items (direct array)`);
         } else {
-            console.warn("Unexpected API response format for full fetch:", data);
+            // Unexpected response format
+            console.warn("Unexpected API response format:", data);
+            originalData = [];
+            filteredData = [];
+            totalSpecifications = 0;
         }
-
-        // --- Proposed Change: Client-side filtering for 'Under Review' and 'Verified' statuses on ALL data ---
-        originalData = allApiData.filter(spec => {
-            const status = (spec.registrationStatus || '').toLowerCase();
-            return status === 'under review' || status === 'verified';
-        });
-        // --- End Proposed Change ---
         
-        totalSpecifications = originalData.length; // totalSpecifications now reflects the count of ALL filtered items
-
-        console.log(`Fetched ${allApiData.length} raw items, filtered to ${originalData.length} (Under Review/Verified only)`);
-        
-        // Populate the table with the current page's slice of the filtered data
-        populateTable(originalData); // populateTable now handles its own slicing
+        populateTable(filteredData);
     } catch (error) {
         console.error("Error fetching specifications:", error);
         alert("Failed to load specifications from the server. Please check your connection and try again.");
+        // Fallback to empty data
         originalData = [];
+        filteredData = [];
         totalSpecifications = 0;
-        populateTable(originalData); // Pass empty data for display
+        populateTable(filteredData);
     }
 }
-
 
 // Function to fetch specifications with filters
 async function fetchSpecificationsWithFilters() {
@@ -282,10 +144,10 @@ async function fetchSpecificationsWithFilters() {
         const sectorFilter = document.getElementById("sectorFilter").value;
         const countryFilter = document.getElementById("countryFilter").value;
         
-        // Build query parameters for the API call (still fetching potentially large set)
+        // Build query parameters
         const params = new URLSearchParams({
-            PageNumber: 1, // Always fetch from page 1 when applying new filters
-            PageSize: 10000 // Increased PageSize
+            PageNumber: currentPage.toString(),
+            PageSize: rowsPerPage.toString()
         });
         
         if (searchText.trim()) params.append('SearchTerm', searchText.trim());
@@ -303,39 +165,38 @@ async function fetchSpecificationsWithFilters() {
         }
         
         const data = await response.json();
-        console.log("Filtered API Response (raw):", data);
+        console.log("Filtered API Response:", data);
         
-        let allApiData = [];
+        // Handle the response structure
         if (data.items && Array.isArray(data.items)) {
-            allApiData = data.items;
+            filteredData = data.items;
+            // Check for total count in metadata first, then try other possible property names
+            totalSpecifications = (data.metadata && data.metadata.totalCount) || 
+                                  data.totalCount || data.TotalCount || data.total || data.Total || 
+                                  data.count || data.Count || 0;
+            console.log(`Filtered to ${data.items.length} items, total: ${totalSpecifications}`);
+            
+            // If no total count in response, make a rough estimate based on current data
+            if (totalSpecifications === 0 && data.items.length > 0) {
+                totalSpecifications = Math.max(data.items.length, currentPage * rowsPerPage);
+                console.log(`No total count found, estimated: ${totalSpecifications}`);
+            }
         } else if (Array.isArray(data)) {
-            allApiData = data;
+            // Handle case where response is directly an array
+            filteredData = data;
+            totalSpecifications = data.length;
+            console.log(`Filtered to ${data.length} items (direct array)`);
         } else {
-            console.warn("Unexpected API response format for filtered fetch:", data);
+            // Unexpected response format
+            console.warn("Unexpected API response format:", data);
+            filteredData = [];
+            totalSpecifications = 0;
         }
-
-        // --- Proposed Change: Client-side filtering for 'Under Review' and 'Verified' statuses on ALL data ---
-        originalData = allApiData.filter(spec => {
-            const status = (spec.registrationStatus || '').toLowerCase();
-            return status === 'under review' || status === 'verified';
-        });
-        // --- End Proposed Change ---
-
-        totalSpecifications = originalData.length; // totalSpecifications now reflects the count of ALL filtered items
-
-        console.log(`Fetched ${allApiData.length} raw items, filtered to ${originalData.length} (Under Review/Verified only)`);
         
-        // Reset currentPage to 1 when filters are applied
-        currentPage = 1;
-
-        // Populate the table with the current page's slice of the filtered data
-        populateTable(originalData); // populateTable now handles its own slicing
+        populateTable(filteredData);
     } catch (error) {
         console.error("Error fetching filtered specifications:", error);
         alert("Failed to filter specifications. Please try again.");
-        originalData = [];
-        totalSpecifications = 0;
-        populateTable(originalData); // Pass empty data for display
     }
 }
 
@@ -343,27 +204,13 @@ async function fetchSpecificationsWithFilters() {
     Table Population Functions
  ******************************************************************************/
 // Populating the table with registry data
-function populateTable(allFilteredData) {
+function populateTable(data) {
     const table = document.getElementById("myTable");
     if (!table) return; // Exit if table doesn't exist on this page
     
     table.innerHTML = "";
 
-    // Unified pagination logic for both modes
-    let displayData = allFilteredData;
-    if (isBusinessTermSearchActive && allFilteredData.length > 0) {
-        const startIndex = (currentPage - 1) * rowsPerPage;
-        const endIndex = startIndex + rowsPerPage;
-        displayData = allFilteredData.slice(startIndex, endIndex);
-        console.log(`Business term search pagination: showing ${startIndex}-${endIndex} of ${allFilteredData.length} results`);
-    } else {
-        // Normal mode: always paginate
-        const startIndex = (currentPage - 1) * rowsPerPage;
-        const endIndex = startIndex + rowsPerPage;
-        displayData = allFilteredData.slice(startIndex, endIndex);
-    }
-
-    if (displayData.length > 0) {
+    if (data.length > 0) {
         const headerRow = table.insertRow(0);
         
         // Define the desired column order with exact mappings to match the required layout
@@ -392,8 +239,9 @@ function populateTable(allFilteredData) {
         });
 
         // For API data, we display all items in the current page data
-        for (let i = 0; i < displayData.length; i++) {
-            const entry = displayData[i];
+        // since pagination is handled server-side
+        for (let i = 0; i < data.length; i++) {
+            const entry = data[i];
             const row = table.insertRow(-1);
             
             // Add styling for Submitted rows if user is logged in admin
@@ -454,7 +302,19 @@ function populateTable(allFilteredData) {
                     };
 
                     const sectorValue = getPropertyValue(entry, header);
-                    cell.textContent = sectorMapping[sectorValue] || sectorValue || "N/A";
+                    if (sectorValue === "any") {
+                        cell.textContent = "Any Sector";
+                    } else {
+                        cell.textContent = sectorMapping[sectorValue] || sectorValue || "N/A";
+                    }
+                } else if (header === "Country") {
+                    // Special handling for country values
+                    const countryValue = getPropertyValue(entry, header);
+                    if (countryValue === "any") {
+                        cell.textContent = "Any Country";
+                    } else {
+                        cell.textContent = countryValue || "N/A";
+                    }
                 } else if (header === "View") {
                     const button = document.createElement("button");
 
@@ -514,14 +374,13 @@ function populateTable(allFilteredData) {
         noDataCell.textContent = "No specifications found matching your criteria.";
     }
 
-    // Now, calculate total pages based on the accurate totalSpecifications
+    // Calculate total pages based on API total count, not current data length
     let totalPages = Math.ceil(totalSpecifications / rowsPerPage);
     
-    // If totalSpecifications is 0, totalPages should be 0 or 1 if there's an active page.
-    if (totalSpecifications === 0) {
-        totalPages = 0; // No items, no pages
-    } else if (totalPages === 0 && totalSpecifications > 0) { // Edge case: less than 1 page
-        totalPages = 1;
+    // If totalSpecifications is 0 or unreliable, use estimation
+    if (totalSpecifications === 0 || totalPages === 0) {
+        totalPages = estimateTotalPages();
+        console.log(`Using estimated totalPages: ${totalPages}`);
     }
     
     console.log(`Calculated totalPages: ${totalPages} (totalSpecifications: ${totalSpecifications}, rowsPerPage: ${rowsPerPage})`);
@@ -630,12 +489,8 @@ function addPageButton(pageNum, pageNumbersDiv) {
         
         if (pageNum !== currentPage) {
             currentPage = pageNum;
-            console.log(`Current page changed to ${currentPage}, calling populateTable with originalData`);
-            if (isBusinessTermSearchActive) {
-                populateTable(filteredData);
-            } else {
-                populateTable(originalData);
-            }
+            console.log(`Current page changed to ${currentPage}, calling applyFilters`);
+            applyFilters();
         }
     });
     
@@ -650,18 +505,29 @@ function addEllipsis(pageNumbersDiv) {
     pageNumbersDiv.appendChild(ellipsis);
 }
 
+// Fallback function to estimate total pages when API doesn't provide total count
+function estimateTotalPages() {
+    if (filteredData.length === 0) return 1;
+    
+    // If we got a full page of results, assume there might be more
+    if (filteredData.length === rowsPerPage && currentPage === 1) {
+        return Math.max(2, Math.ceil(filteredData.length * 1.5 / rowsPerPage));
+    }
+    
+    // If we're not on the first page and got results, estimate based on current position
+    if (currentPage > 1) {
+        return Math.max(currentPage, Math.ceil((currentPage - 1) * rowsPerPage + filteredData.length) / rowsPerPage);
+    }
+    
+    return Math.max(1, Math.ceil(filteredData.length / rowsPerPage));
+}
+
 /******************************************************************************
     Filter and Event Handling Functions
  ******************************************************************************/
 // Apply the filters - now uses API instead of client-side filtering
 function applyFilters() {
     console.log(`Applying filters, fetching from API - Page: ${currentPage}, PageSize: ${rowsPerPage}`);
-    
-    // If we're in business term search mode, don't apply other filters
-    if (isBusinessTermSearchActive) {
-        console.log("Business term search is active, ignoring other filters");
-        return;
-    }
     
     // Show loading state (optional)
     const table = document.getElementById("myTable");
@@ -690,15 +556,7 @@ function setupPaginationEventListeners() {
         rowsPerPage = parseInt(this.value, 10);
         currentPage = 1; // Reset to first page
         console.log(`Rows per page changed to ${rowsPerPage}, resetting to page 1`);
-        
-        if (isBusinessTermSearchActive) {
-            // For business term search, update the table directly
-            const totalPages = Math.ceil(totalSpecifications / rowsPerPage);
-            populateTable(filteredData);
-            updatePaginationControls(totalPages);
-        } else {
-            applyFilters();
-        }
+        applyFilters();
     });
 
     // First Page Button
@@ -707,13 +565,7 @@ function setupPaginationEventListeners() {
         if (currentPage !== 1) {
             currentPage = 1;
             console.log("First page clicked, moving to page 1");
-            if (isBusinessTermSearchActive) {
-                const totalPages = Math.ceil(totalSpecifications / rowsPerPage);
-                populateTable(filteredData);
-                updatePaginationControls(totalPages);
-            } else {
-                applyFilters();
-            }
+            applyFilters();
         }
     });
 
@@ -723,13 +575,7 @@ function setupPaginationEventListeners() {
         if (currentPage > 1) {
             currentPage--;
             console.log(`Previous page clicked, moving to page ${currentPage}`);
-            if (isBusinessTermSearchActive) {
-                const totalPages = Math.ceil(totalSpecifications / rowsPerPage);
-                populateTable(filteredData);
-                updatePaginationControls(totalPages);
-            } else {
-                applyFilters();
-            }
+            applyFilters();
         }
     });
 
@@ -740,12 +586,7 @@ function setupPaginationEventListeners() {
         if (currentPage < totalPages) {
             currentPage++;
             console.log(`Next page clicked, moving to page ${currentPage}`);
-            if (isBusinessTermSearchActive) {
-                populateTable(filteredData);
-                updatePaginationControls(totalPages);
-            } else {
-                applyFilters();
-            }
+            applyFilters();
         }
     });
 
@@ -756,12 +597,7 @@ function setupPaginationEventListeners() {
         if (currentPage !== totalPages && totalPages > 0) {
             currentPage = totalPages;
             console.log(`Last page clicked, moving to page ${currentPage}`);
-            if (isBusinessTermSearchActive) {
-                populateTable(filteredData);
-                updatePaginationControls(totalPages);
-            } else {
-                applyFilters();
-            }
+            applyFilters();
         }
     });
 }
@@ -770,62 +606,21 @@ function setupPaginationEventListeners() {
 function setupFilterEventListeners() {
     // Add event listeners for the filters
     const searchInput = document.getElementById("searchInput");
-    const businessTermSearch = document.getElementById("businessTermSearch");
     const typeFilter = document.getElementById("typeFilter");
     const sectorFilter = document.getElementById("sectorFilter");
     const countryFilter = document.getElementById("countryFilter");
 
     if (searchInput) {
-        searchInput.addEventListener("input", debounce(() => {
-            // Clear business term search when using regular search
-            if (businessTermSearch) businessTermSearch.value = "";
-            isBusinessTermSearchActive = false;
-            applyFilters();
-        }, 300));
+        searchInput.addEventListener("input", debounce(applyFilters, 300));
     }
-    
-    if (businessTermSearch) {
-        businessTermSearch.addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                // Clear other filters when using business term search
-                clearAllFilters();
-                searchByBusinessTermId(this.value);
-            }
-        });
-        
-        // Also clear business term search mode when the input is cleared
-        businessTermSearch.addEventListener("input", function() {
-            if (this.value.trim() === "") {
-                isBusinessTermSearchActive = false;
-                // Reset to normal view
-                fetchSpecifications();
-            }
-        });
-    }
-    
     if (typeFilter) {
-        typeFilter.addEventListener("change", () => {
-            // Clear business term search when using other filters
-            if (businessTermSearch) businessTermSearch.value = "";
-            isBusinessTermSearchActive = false;
-            applyFilters();
-        });
+        typeFilter.addEventListener("change", applyFilters);
     }
     if (sectorFilter) {
-        sectorFilter.addEventListener("change", () => {
-            // Clear business term search when using other filters
-            if (businessTermSearch) businessTermSearch.value = "";
-            isBusinessTermSearchActive = false;
-            applyFilters();
-        });
+        sectorFilter.addEventListener("change", applyFilters);
     }
     if (countryFilter) {
-        countryFilter.addEventListener("change", () => {
-            // Clear business term search when using other filters
-            if (businessTermSearch) businessTermSearch.value = "";
-            isBusinessTermSearchActive = false;
-            applyFilters();
-        });
+        countryFilter.addEventListener("change", applyFilters);
     }
 }
 
@@ -857,19 +652,6 @@ document.addEventListener("DOMContentLoaded", function() {
 /******************************************************************************
     Helper Functions
  ******************************************************************************/
-// Debounce function to limit how often a function can be called
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
 // Helper function to safely get property value with API field mappings
 function getPropertyValue(obj, displayName) {
     // Map display names to API field names
@@ -923,6 +705,5 @@ window.registryTable = {
     populateTable,
     applyFilters,
     fetchSpecifications,
-    fetchSpecificationsWithFilters,
-    searchByBusinessTermId
+    fetchSpecificationsWithFilters
 };

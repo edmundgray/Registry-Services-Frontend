@@ -101,8 +101,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 Cardinality: item.cardinality || item.Cardinality || '1..1',
                 SemanticDescription: item.semanticDescription || item.SemanticDescription || item['Semantic Description'] || 'N/A',
                 UsageNote: item.usageNote || item.UsageNote || item['Usage Note'] || 'N/A',
-                BusinessRules: item.coreBusinessRules || item.businessRules || item.BusinessRules || item['Business Rules'] || 'N/A',
-                DataType: item.coreDataType || item.dataType || item.DataType || item['Data Type'] || 'N/A',
+                BusinessRules: item.businessRules || item.BusinessRules || item['Business Rules'] || 'N/A',
+                DataType: item.dataType || item.DataType || item['Data Type'] || 'N/A',
                 ReqID: item.reqId || item.ReqID || item['Req ID'] || 'N/A',
                 TypeOfChange: item.typeOfChange || item.TypeOfChange || 'No change',
                 rowPos: item.rowPos, // Keep rowPos for sorting
@@ -199,8 +199,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     <td>${item.LevelStr || 'N/A'}</td>
                     <td>${item.Cardinality || 'N/A'}</td>
                     <td>
-                    <i class="fa-solid fa-circle-question semantic-tooltip" title="${item.SemanticDescription || ''}"></i>
-                    ${item.BusinessTerm || 'N/A'}
+                        <span class="semantic-tooltip" title="${item.SemanticDescription || ''}">
+                            <i class="fa-solid fa-circle-question"></i>
+                        </span>
+                        ${item.BusinessTerm || 'N/A'}
                     </td>
                     <td>${item.UsageNote || 'N/A'}</td>
                     <td>${item.BusinessRules || 'N/A'}</td>
