@@ -757,6 +757,46 @@ function editSpecification(identityID) {
     window.location.href = 'IdentifyingInformation.html';
 }
 
+function viewSpecification(identityID) {
+    console.log('Viewing specification with ID:', identityID);
+
+    if (!identityID) {
+        console.error('No identityID provided for viewing specification');
+        alert('Error: No specification ID provided');
+        return;
+    }
+
+    // Store the specification ID for the view page
+    localStorage.setItem('viewSpecificationId', identityID);
+
+    // Navigate to the view specification page with the ID as a URL parameter
+    const viewUrl = `viewSpecification.html?id=${identityID}`;
+    console.log('DEBUG: Navigating to view page:', viewUrl);
+
+    // Set breadcrumb context for viewing from mySpecifications or other sources
+    if (window.breadcrumbManager) {
+        const context = {
+            source: 'mySpecs', // Default to mySpecs, update if actual source is registry
+            action: 'view',
+            currentPage: 'viewSpecification.html',
+            specId: identityID,
+            specIdentityId: identityID
+        };
+        // Try to determine source from referrer if needed, or ensure calling context sets it
+        const referrer = document.referrer;
+        if (referrer.includes('eInvoicingSpecificationRegistry.html')) {
+            context.source = 'registry';
+        } else if (referrer.includes('mySpecifications.html')) {
+            context.source = 'mySpecs';
+        } else if (referrer.includes('governingEntityView.html')) { // Add governingEntityView as a source
+            context.source = 'governingEntityView'; // Or 'admin' if you have a specific source name for admin pages
+        }
+        window.breadcrumbManager.setContext(context);
+    }
+
+    window.location.href = viewUrl;
+}
+
 // Function to initiate creation of a new specification
 function createNewSpecification() {
     console.log('Initiating creation of new specification');
