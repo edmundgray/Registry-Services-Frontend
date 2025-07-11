@@ -604,24 +604,7 @@
                        spec.specificationExtensionComponents.length > 0;
             }
 
-            function viewSpecification(identityID) {
-                console.log('Viewing specification with ID:', identityID);
-                
-                if (!identityID) {
-                    console.error('No identityID provided for viewing specification');
-                    alert('Error: No specification ID provided');
-                    return;
-                }
-                
-                // Store the specification ID for the view page
-                localStorage.setItem('viewSpecificationId', identityID);
-                
-                // Navigate to the view specification page with the ID as a URL parameter
-                const viewUrl = `viewSpecification.html?id=${identityID}`;
-                console.log('DEBUG: Navigating to view page:', viewUrl);
-                
-                window.location.href = viewUrl;
-            }
+            
 
             // Loading and error display functions
             function showLoadingIndicator() {

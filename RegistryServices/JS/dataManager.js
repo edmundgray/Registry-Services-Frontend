@@ -666,13 +666,17 @@ class SpecificationDataManager {
                 
                 for (const businessTermID of coreElementsData.selectedIds) {
                     try {
+                        const valueFromMap = coreElementsData.usageNoteMap?.[businessTermID];
+                        console.log(`DEBUG_ASSIGN_USAGE_NOTE: ID: ${businessTermID}, Value from map: "${valueFromMap}", Type: ${typeof valueFromMap}, Is undefined/null/empty string? ${valueFromMap === undefined || valueFromMap === null || valueFromMap === ''}`);
+
                         const elementData = {
                             businessTermID: businessTermID,
                             typeOfChange: coreElementsData.typeOfChangeValues?.[businessTermID] || 'No change',
-                            cardinality: coreElementsData.cardinalityMap?.[businessTermID] || '0..1'
+                            cardinality: coreElementsData.cardinalityMap?.[businessTermID] || '0..1',
+                            usageNote: coreElementsData.usageNoteMap?.[businessTermID] || ''
                         };
                         
-                        console.log('DEBUG: Adding element:', elementData);
+                        console.log('DEBUG_SEND_ELEMENT: Prepared elementData for sending:', elementData);
                         await this.addCoreElement(specificationId, elementData);
                         results.addedCount++;
                         
