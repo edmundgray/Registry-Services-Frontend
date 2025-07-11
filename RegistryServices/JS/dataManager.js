@@ -418,7 +418,8 @@ class SpecificationDataManager {
             const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/coreElements`;
             
             const response = await authenticatedFetch(url, {
-                method: 'GET'
+                method: 'GET',
+                cache: 'no-cache'
             });
 
             if (!response.ok) {
@@ -471,6 +472,7 @@ class SpecificationDataManager {
 
     transformCoreElementsFromAPI(apiData) {
         // Transform API response to local selection format
+        console.log('DEBUG_RAW_API_DATA_RECEIVED_BY_TRANSFORM: Raw apiData.items:', apiData.items);
         const selectedIds = [];
         const typeOfChangeValues = {};
         const cardinalityMap = {};
@@ -490,9 +492,9 @@ class SpecificationDataManager {
                         cardinalityMap[item.businessTermID] = item.cardinality;
                     }
                     
-                    if (item.usageNote) {
+                    
                         usageNoteMap[item.businessTermID] = item.usageNote;
-                    }
+                    
                 }
                 
                 // IMPORTANT: Store the complete element with entityID for deletion
@@ -666,13 +668,22 @@ class SpecificationDataManager {
                 
                 for (const businessTermID of coreElementsData.selectedIds) {
                     try {
+                        // MODIFICATION START: Get usageNote directly from this.workingData
+        // This ensures we're pulling from the state that was just saved to localStorage
+        const usageNoteFromWorkingData = this.workingData?.coreInvoiceModelData?.usageNotesMap?.[businessTermID];
+        // Ensure it's a string even if the value is null/undefined from map
+        const finalUsageNote = (usageNoteFromWorkingData === undefined || usageNoteFromWorkingData === null) ? '' : usageNoteFromWorkingData;
+        // MODIFICATION END
+                        console.log(`DEBUG_ASSIGN_USAGE_NOTE: ID: ${businessTermID}, Value from coreElementsData param map: "${coreElementsData.usageNoteMap?.[businessTermID]}", Value from this.workingData: "${finalUsageNote}"`);
+
                         const elementData = {
                             businessTermID: businessTermID,
                             typeOfChange: coreElementsData.typeOfChangeValues?.[businessTermID] || 'No change',
-                            cardinality: coreElementsData.cardinalityMap?.[businessTermID] || '0..1'
+                            cardinality: coreElementsData.cardinalityMap?.[businessTermID] || '0..1',
+                            usageNote: finalUsageNote
                         };
                         
-                        console.log('DEBUG: Adding element:', elementData);
+                        console.log('DEBUG_SEND_ELEMENT: Prepared elementData for sending:', elementData);
                         await this.addCoreElement(specificationId, elementData);
                         results.addedCount++;
                         

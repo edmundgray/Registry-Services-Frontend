@@ -197,16 +197,28 @@ document.addEventListener("DOMContentLoaded", function () {
                 tr.innerHTML = `
                     <td>${item.ID || 'N/A'}</td>
                     <td>${item.LevelStr || 'N/A'}</td>
-                    <td>${item.Cardinality || 'N/A'}</td>
+                    <td>
+                        <input type="text" class="cardinality-input" data-id="${item.ID}" value="${item.Cardinality || ''}">
+                    </td>
                     <td>
                     <i class="fa-solid fa-circle-question semantic-tooltip" title="${item.SemanticDescription || ''}"></i>
                     ${item.BusinessTerm || 'N/A'}
                     </td>
-                    <td>${item.UsageNote || 'N/A'}</td>
+                    <td>
+                        <textarea class="usage-note-textarea" data-id="${item.ID}" style="min-height: 32px; resize: vertical; ">${item.UsageNote || ''}</textarea>
+                    </td>
                     <td>${item.BusinessRules || 'N/A'}</td>
                     <td>${item.DataType || 'N/A'}</td>
                 `;
 
+                const currentTextarea = tr.querySelector(`textarea.usage-note-textarea[data-id="${item.ID}"]`);
+                if (currentTextarea) {
+                    currentTextarea.value = item.UsageNote || '';
+                    // Add event listener directly for robustness if not already handled by a general table listener
+                    currentTextarea.addEventListener('input', () => {
+                        updateSaveButtonAppearance();
+                    });
+                }
                 // Add the appropriate columns based on whether this is read-only or editable
                 if (isReadOnly) {
                     // Read-only version: Add Actions cell (Show more button) as the last column
@@ -253,19 +265,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     tr.appendChild(btnCell);
                 }
 
-                // Add color classes based on level and ID prefix, but never for BT rows
-                // if (!isBT) {
-                //     if (item.NumericLevel === 3 && item.ID && item.ID.startsWith('BG')) {
-                //         tr.classList.add('level-3-bg');
-                //     } else if (item.NumericLevel === 2) {
-                //         if (item.ID && item.ID.startsWith('BG')) {
-                //             tr.classList.add('level-2-bg');
-                //         }
-                //     }
-                //     if (item.NumericLevel === 1 && item.ID && item.ID.startsWith('BG')) {
-                //         tr.classList.add('level-1-bg');
-                //     }
-                // }
+                
 
                 // Append the parent row first
                 container.appendChild(tr);
