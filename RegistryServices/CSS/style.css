@@ -167,18 +167,19 @@ body {
 }
 
 .view-button {
-    padding: 5px 10px;
-    font-size: 12px;
+    padding: 4.75px 12.35px;
+    font-size: 0.741rem;
     color: #fff;
-    background-color: #F4A261;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: background 0.3s, background-color 0.3s;
+    /* DO NOT set background or background-color here! Let JS control it. */
 }
 
 .view-button:hover {
-    background-color: #E68A3F;
+    filter: brightness(0.95);
+    /* DO NOT set background or background-color here! */
 }
 
 .filter-container {
@@ -632,7 +633,7 @@ body {
  ******************************************************************************/
 .semantic-tooltip {
     margin-left: 6px;
-    color: #F4A261;
+    color: #F4A261;view 
     cursor: pointer;
     font-size: 1em;
     vertical-align: middle;
@@ -654,15 +655,15 @@ body {
     display: inline-block;
     white-space: nowrap;
     min-width: 90px;
-    padding: 4px 14px;
-    font-size: 12px;
+    padding: 10px 20px;
+    font-size: 14px;
     color: #fff;
     background-color: #F4A261;
     border: none;
     border-radius: 20px;
     cursor: pointer;
     font-weight: 600;
-    box-shadow: 0 2px 8px rgba(244, 162, 97, 0.15);
+    box-shadow: 0 2px 8px rgba(244,162,97,0.15);
     transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
     outline: none;
     vertical-align: middle;
