@@ -592,9 +592,19 @@
             function setupEditButton(spec) {
                 const editButton = document.getElementById("editSpecificationButton");
                 if (editButton) {
-                    // Use the global editSpecification function for consistency
-                    editButton.addEventListener("click", function() {
-                        if (spec.identityID) {
+                    // SCRUM - 151: Hide Edit button for unauthenticated users
+                    if (!window.authManager.isAuthenticated) {
+                        editButton.style.display = 'none';
+                        console.log('DEBUG: Edit button hidden - user not authenticated');
+                        return;
+                    }
+                    
+                    editButton.style.display = 'inline-block';
+                    
+                    editButton.addEventListener("click", function() 
+                    {
+                        if (spec.identityID) 
+                        {
                             console.log('DEBUG: viewSpecification - Spec data for editing:', spec);
                             console.log('DEBUG: viewSpecification - Identity ID:', spec.identityID);
                             console.log('DEBUG: viewSpecification - Navigating to edit mode for specification:', spec.specificationName);
@@ -603,9 +613,11 @@
                             localStorage.setItem("returnToPage", "viewSpecification.html?id=" + spec.identityID);
                             
                             // Set breadcrumb context for edit workflow from view page
-                            if (window.breadcrumbManager) {
+                            if (window.breadcrumbManager) 
+                            {
                                 const currentContext = window.breadcrumbManager.getContext();
-                                const editContext = {
+                                const editContext = 
+                                {
                                     source: currentContext ? currentContext.source : 'registry',
                                     action: 'edit',
                                     currentPage: 'IdentifyingInformation.html',
@@ -617,7 +629,9 @@
                             
                             // Call the global editSpecification function
                             editSpecification(spec.identityID);
-                        } else {
+                        } 
+                        else 
+                        {
                             console.error('DEBUG: viewSpecification - No identityID found in spec:', spec);
                             alert("Cannot edit: Specification ID not available.");
                         }
@@ -626,16 +640,19 @@
             }
 
             // Utility functions for loading states and error handling
-            function showLoadingIndicator() {
+            function showLoadingIndicator() 
+            {
                 const detailsContainer = document.getElementById("detailsTableContainer");
                 detailsContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;"><i class="fa-solid fa-spinner fa-spin"></i> Loading specification...</div>';
             }
 
-            function hideLoadingIndicator() {
+            function hideLoadingIndicator() 
+            {
                 // Loading indicator will be replaced by actual content in createSummaryTable
             }
 
-            function showErrorMessage(message) {
+            function showErrorMessage(message) 
+            {
                 const detailsContainer = document.getElementById("detailsTableContainer");
                 detailsContainer.innerHTML = `
                     <div style="background: #fee; border: 1px solid #fcc; border-radius: 5px; padding: 15px; margin: 10px 0; color: #c33;">
@@ -669,17 +686,20 @@
 
             // Tab switching logic (separate function to avoid conflicts)
             function showTab(tabId) {
-                document.querySelectorAll('.tab-content').forEach(content => {
+                document.querySelectorAll('.tab-content').forEach(content => 
+                {
                     content.classList.remove('active');
                 });
-                document.querySelectorAll('.tab-button').forEach(button => {
+                document.querySelectorAll('.tab-button').forEach(button => 
+                {
                     button.classList.remove('active');
                 });
                 document.getElementById(tabId).classList.add('active');
                 event.target.classList.add('active');
             }
 
-            function populateRegistryStatusDropdown(spec) {
+            function populateRegistryStatusDropdown(spec) 
+            {
                 const dropdown = document.getElementById("registryStatusDropdown");
                 if (dropdown && spec && (spec.registrationStatus || spec.implementationStatus)) {
                     const currentStatus = spec.registrationStatus || spec.implementationStatus;
