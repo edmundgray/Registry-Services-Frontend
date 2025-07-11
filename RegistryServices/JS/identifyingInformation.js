@@ -49,7 +49,8 @@ function handleSaveAndRedirect() {
 // Initialize identifying information page functionality
 function initializeIdentifyingInformation() {
     console.log("Identifying Information page initialized");
-    
+    attachFormEventListeners(); // Attach listeners so Save button updates on change
+    updateSaveButtonAppearance(); // Set initial color
     // Any additional initialization logic for the identifying information page can go here
     // For example: form validation setup, field population, etc.
 }
@@ -62,6 +63,41 @@ document.addEventListener("DOMContentLoaded", function() {
         initializeIdentifyingInformation();
     }
 });
+
+function updateSaveButtonAppearance() {
+    try {
+        const saveButton = document.querySelector('button[onclick="handleSave()"]');
+        const hasChanges = hasActualChanges();
+
+        if (saveButton) {
+            if (hasChanges) {
+                saveButton.style.setProperty('background', '#28a745', 'important'); // Green
+                saveButton.style.setProperty('background-color', '#28a745', 'important');
+                saveButton.style.color = '#fff';
+                saveButton.style.fontWeight = 'bold';
+                saveButton.style.boxShadow = '0 2px 4px rgba(40, 167, 69, 0.3)';
+            } else {
+                saveButton.style.setProperty('background', '#6c757d', 'important'); // Grey
+                saveButton.style.setProperty('background-color', '#6c757d', 'important');
+                saveButton.style.color = '#fff';
+                saveButton.style.fontWeight = 'normal';
+                saveButton.style.boxShadow = 'none';
+            }
+        }
+    } catch (error) {
+        console.error('DEBUG: IdentifyingInformation - Error in updateSaveButtonAppearance():', error);
+    }
+}
+
+function attachFormEventListeners() {
+    const form = document.getElementById('identifyingForm');
+    if (!form) return;
+    // Listen for changes on all inputs, selects, and textareas
+    form.querySelectorAll('input, select, textarea').forEach(el => {
+        el.addEventListener('input', updateSaveButtonAppearance);
+        el.addEventListener('change', updateSaveButtonAppearance);
+    });
+}
 
 // Export functions for global access if needed
 window.identifyingInformation = {
