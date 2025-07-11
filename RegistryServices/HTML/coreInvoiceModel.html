@@ -376,7 +376,7 @@
                                 selectedIds: coreElementsData.selectedIds || [],
                                 typeOfChangeValues: {},
                                 cardinalityMap: {},
-                                usageNotesMap: {}
+                                usageNoteMap: {}
                             };
                             console.log('DEBUG: CoreInvoiceModel - Temporary baseline data set during initialization');
                             
@@ -414,7 +414,7 @@
                                         selectedIds: [],
                                         typeOfChangeValues: {},
                                         cardinalityMap: {},
-                                        usageNotesMap: {}
+                                        usageNoteMap: {}
                                     };
                                     console.log('DEBUG: CoreInvoiceModel - Empty baseline data initialized in fallback');
                                 }
@@ -450,7 +450,7 @@
                                         selectedIds: [],
                                         typeOfChangeValues: {},
                                         cardinalityMap: {},
-                                        usageNotesMap: {}
+                                        usageNoteMap: {}
                                     };
                                 console.log('DEBUG: CoreInvoiceModel - Empty baseline data initialized for new spec');
                             }
@@ -470,7 +470,7 @@
                                 selectedIds: [],
                                 typeOfChangeValues: {},
                                 cardinalityMap: {},
-                                usageNotesMap: {}
+                                usageNoteMap: {}
                             };
                             console.log('DEBUG: CoreInvoiceModel - Empty baseline data initialized for load error case');
                             return workingData;
@@ -496,7 +496,7 @@
                             selectedIds: [],
                             typeOfChangeValues: {},
                             cardinalityMap: {},
-                            usageNotesMap: {}
+                            usageNoteMap: {}
                         };
                         console.log('DEBUG: CoreInvoiceModel - Empty baseline data initialized for no spec ID case');
                         
@@ -567,7 +567,7 @@
                 let selectedIds = [];
                 let typeOfChangeValues = {};
                 let cardinalityMap = coreInvoiceModelData.cardinalityMap || {};
-                let usageNotesMap = coreInvoiceModelData.usageNotesMap || {};                
+                let usageNoteMap = coreInvoiceModelData.usageNoteMap || {};                
 
                 if (Array.isArray(coreInvoiceModelData)) {
                     // Legacy array format
@@ -581,7 +581,7 @@
                 console.log('DEBUG: CoreInvoiceModel - Processing selectedIds:', selectedIds);
                 console.log('DEBUG: CoreInvoiceModel - Processing typeOfChangeValues:', typeOfChangeValues);
                 console.log('DEBUG: CoreInvoiceModel - Processing cardinalityMap:', cardinalityMap);
-                console.log('DEBUG: CoreInvoiceModel - Processing usageNotesMap:', usageNotesMap);
+                console.log('DEBUG: CoreInvoiceModel - Processing usageNoteMap:', usageNoteMap);
     
                 // Apply selections
                 const applySelections = () => {
@@ -617,10 +617,10 @@
                         }
                     });
 
-                    Object.keys(usageNotesMap).forEach(businessTermID => {
+                    Object.keys(usageNoteMap).forEach(businessTermID => {
                         const textarea = document.querySelector(`textarea.usage-note-textarea[data-id="${businessTermID}"]`);
                         if (textarea) {
-                            textarea.value = usageNotesMap[businessTermID];
+                            textarea.value = usageNoteMap[businessTermID];
                         } else {
                             console.warn(`DEBUG: CoreInvoiceModel - Usage Note textarea not found for ${businessTermID}`);
                         }
@@ -658,7 +658,7 @@
                     console.log('DEBUG: CoreInvoiceModel - Baseline data updated after UI population:', currentSelections);
                     console.log('DEBUG: CoreInvoiceModel - Baseline selectedIds count:', currentSelections.selectedIds.length);
                     console.log('DEBUG: CoreInvoiceModel - Baseline has cardinalityMap:', !!currentSelections.cardinalityMap);
-                    console.log('DEBUG: CoreInvoiceModel - Baseline has usageNotesMap:', !!currentSelections.usageNotesMap);
+                    console.log('DEBUG: CoreInvoiceModel - Baseline has usageNoteMap:', !!currentSelections.usageNoteMap);
                 } catch (error) {
                     console.error('DEBUG: CoreInvoiceModel - Error updating baseline data:', error);
                 }
@@ -775,14 +775,14 @@
                 }
                 
                 // Compare cardinality and usage note changes
-                if (originalData.cardinalityMap && originalData.usageNotesMap && 
-                    currentData.cardinalityMap && currentData.usageNotesMap) {
+                if (originalData.cardinalityMap && originalData.usageNoteMap && 
+                    currentData.cardinalityMap && currentData.usageNoteMap) {
                     for (const elementId of currentData.selectedIds) {
                         if (currentData.cardinalityMap[elementId] !== originalData.cardinalityMap[elementId]) {
                             console.log(`DEBUG: hasActualChanges() - Change detected in cardinality for ${elementId}: "${originalData.cardinalityMap[elementId]}" -> "${currentData.cardinalityMap[elementId]}"`);
                             return true;
                         }
-                        if (currentData.usageNotesMap[elementId] !== originalData.usageNotesMap[elementId]) {
+                        if (currentData.usageNoteMap[elementId] !== originalData.usageNoteMap[elementId]) {
                             console.log(`DEBUG: hasActualChanges() - Change detected in usage notes for ${elementId}`);
                             return true;
                         }
@@ -834,8 +834,8 @@
                 }
                 
                 // Cardinality and usage note changes
-                if (originalData.cardinalityMap && originalData.usageNotesMap && 
-                    currentData.cardinalityMap && currentData.usageNotesMap) {
+                if (originalData.cardinalityMap && originalData.usageNoteMap && 
+                    currentData.cardinalityMap && currentData.usageNoteMap) {
                     for (const elementId of currentData.selectedIds) {
                         if (currentData.cardinalityMap[elementId] !== originalData.cardinalityMap[elementId]) {
                             changedFields.push({
@@ -845,21 +845,21 @@
                                 newValue: currentData.cardinalityMap[elementId] || ''
                             });
                         }
-                        if (currentData.usageNotesMap[elementId] !== originalData.usageNotesMap[elementId]) {
+                        if (currentData.usageNoteMap[elementId] !== originalData.usageNoteMap[elementId]) {
                             changedFields.push({
                                 field: `${elementId}_notes`,
                                 displayName: `${elementId} - Usage Notes`,
-                                oldValue: originalData.usageNotesMap[elementId] || '',
-                                newValue: currentData.usageNotesMap[elementId] || ''
+                                oldValue: originalData.usageNoteMap[elementId] || '',
+                                newValue: currentData.usageNoteMap[elementId] || ''
                             });
                         }
                     }
                 } else {
                     console.log('DEBUG: getChangedFields() - Missing cardinality or usage note maps, skipping detailed comparison');
                     console.log('DEBUG: originalData.cardinalityMap:', !!originalData.cardinalityMap);
-                    console.log('DEBUG: originalData.usageNotesMap:', !!originalData.usageNotesMap);
+                    console.log('DEBUG: originalData.usageNoteMap:', !!originalData.usageNoteMap);
                     console.log('DEBUG: currentData.cardinalityMap:', !!currentData.cardinalityMap);
-                    console.log('DEBUG: currentData.usageNotesMap:', !!currentData.usageNotesMap);
+                    console.log('DEBUG: currentData.usageNoteMap:', !!currentData.usageNoteMap);
                 }
                 
                 return changedFields;
@@ -1109,7 +1109,7 @@
                     selectedIds, 
                     typeOfChangeValues,
                     cardinalityMap,
-                    usageNotesMap: usageNoteMap  // Renamed for consistency
+                    usageNoteMap: usageNoteMap  // Renamed for consistency
                 };
             }
 
