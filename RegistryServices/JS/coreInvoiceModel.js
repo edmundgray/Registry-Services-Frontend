@@ -253,6 +253,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     typeOfChangeCell.innerHTML = `
                         <select class="type-of-change-dropdown" data-id="${item.ID}">
                             <option value="No change" ${savedChangeType === 'No change' ? 'selected' : ''}>No change</option>
+                            <option value="Make an optional element mandatory" ${savedChangeType === 'Make an optional element mandatory' ? 'selected' : ''}>Make an optional element mandatory</option>
                             <option value="Make definition narrower" ${savedChangeType === 'Make definition narrower' ? 'selected' : ''}>Make definition narrower</option>
                             <option value="Decrease number of repetitions" ${savedChangeType === 'Decrease number of repetitions' ? 'selected' : ''}>Decrease number of repetitions</option>
                             <option value="Restrict values in an existing list" ${savedChangeType === 'Restrict values in an existing list' ? 'selected' : ''}>Restrict values in an existing list</option>
