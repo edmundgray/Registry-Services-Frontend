@@ -377,19 +377,15 @@ class GoverningEntityView {
                 <thead>
                     <tr>
                         <th>Created</th>
-                        <th>Sector</th>
-                        <th>Country</th>
-                        <th>Primary Contact Name</th>
-                        <th>Primary Contact Information</th>
+                        <th>Name</th>
+                        <th>Description</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <td>${this.entity.createdDate ? new Date(this.entity.createdDate).toLocaleDateString('en-GB') : 'N/A'}</td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
+                        <td>${this.entity.groupName || 'N/A'}</td>
+                        <td>${this.entity.description || 'No description provided.'}</td>
                     </tr>
                 </tbody>
             </table>
