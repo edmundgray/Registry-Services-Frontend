@@ -28,7 +28,7 @@ class SpecificationDataManager {
         try {
             const apiUrl = `${AUTH_CONFIG.baseUrl}/specifications/${identityID}`;
 
-            const response = await authenticatedFetch(apiUrl, {
+            const response = await window.authManager.authenticatedFetch(apiUrl, {
                 method: 'GET',
                 forceAuth: true
             });
@@ -256,7 +256,7 @@ class SpecificationDataManager {
                 ? `${AUTH_CONFIG.baseUrl}/specifications/${this.currentSpecId}`
                 : `${AUTH_CONFIG.baseUrl}/specifications`;
 
-            const response = await authenticatedFetch(url, {
+            const response = await window.authManager.authenticatedFetch(url, {
                 method: method,
                 body: JSON.stringify(apiData),
                 headers: {
@@ -417,7 +417,7 @@ class SpecificationDataManager {
             // Remove PageSize parameter - pagination removed from API
             const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/coreElements`;
             
-            const response = await authenticatedFetch(url, {
+            const response = await window.authManager.authenticatedFetch(url, {
                 method: 'GET'
             });
 
@@ -527,7 +527,7 @@ class SpecificationDataManager {
             const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/coreElements/${entityId}`;
             console.log('DEBUG: Delete URL:', url);
 
-            const response = await authenticatedFetch(url, {
+            const response = await window.authManager.authenticatedFetch(url, {
                 method: 'DELETE'
             });
 
@@ -567,7 +567,7 @@ class SpecificationDataManager {
         try {
             const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/coreElements`;
 
-            const response = await authenticatedFetch(url, {
+            const response = await window.authManager.authenticatedFetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(elementData)
@@ -704,7 +704,7 @@ class SpecificationDataManager {
         try {
             const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/extensionElements`;
 
-            const response = await authenticatedFetch(url, {
+            const response = await window.authManager.authenticatedFetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(elementData)
@@ -761,7 +761,7 @@ class SpecificationDataManager {
         try {
             const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/extensionElements/${entityId}`;
 
-            const response = await authenticatedFetch(url, {
+            const response = await window.authManager.authenticatedFetch(url, {
                 method: 'DELETE'
             });
 
@@ -836,7 +836,7 @@ class SpecificationDataManager {
         try {
             const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/extensionElements`;
             
-            const response = await authenticatedFetch(url, {
+            const response = await window.authManager.authenticatedFetch(url, {
                 method: 'GET'
             });
 
@@ -968,7 +968,7 @@ class SpecificationDataManager {
             const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/additionalrequirements`;
             console.log('DEBUG: Loading additional requirements from API:', url);
 
-            const response = await authenticatedFetch(url, {
+            const response = await window.authManager.authenticatedFetch(url, {
                 method: 'GET'
             });
 
@@ -1017,7 +1017,7 @@ class SpecificationDataManager {
             const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/additionalrequirements/${businessTermId}`;
             console.log('DEBUG: Delete additional requirement URL:', url);
 
-            const response = await authenticatedFetch(url, {
+            const response = await window.authManager.authenticatedFetch(url, {
                 method: 'DELETE'
             });
 
@@ -1056,7 +1056,7 @@ class SpecificationDataManager {
             const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/additionalrequirements`;
             console.log('DEBUG: Adding additional requirement to API:', url, requirementData);
 
-            const response = await authenticatedFetch(url, {
+            const response = await window.authManager.authenticatedFetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(requirementData)
@@ -1244,7 +1244,7 @@ class SpecificationDataManager {
             const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/additionalrequirements`;
             console.log('DEBUG: Loading additional requirements from API:', url);
 
-            const response = await authenticatedFetch(url, {
+            const response = await window.authManager.authenticatedFetch(url, {
                 method: 'GET'
             });
 
@@ -1293,7 +1293,7 @@ class SpecificationDataManager {
             const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/additionalrequirements/${businessTermId}`;
             console.log('DEBUG: Delete additional requirement URL:', url);
 
-            const response = await authenticatedFetch(url, {
+            const response = await window.authManager.authenticatedFetch(url, {
                 method: 'DELETE'
             });
 
@@ -1332,7 +1332,7 @@ class SpecificationDataManager {
             const url = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}/additionalrequirements`;
             console.log('DEBUG: Adding additional requirement to API:', url, requirementData);
 
-            const response = await authenticatedFetch(url, {
+            const response = await window.authManager.authenticatedFetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(requirementData)
@@ -1530,7 +1530,7 @@ class SpecificationDataManager {
 
         // Send the back to the API for the PUT request.
         const apiUrl = `${AUTH_CONFIG.baseUrl}/specifications/${specificationId}`;
-        const response = await authenticatedFetch(apiUrl, {
+        const response = await window.authManager.authenticatedFetch(apiUrl, {
             method: 'PUT',
             // Send the complete, updated PascalCase object
             body: JSON.stringify(this.originalData), 

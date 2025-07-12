@@ -1,50 +1,7 @@
 // --- Authenticated Fetch and Session Expiry Logic ---
-window.authManager = new AuthManager();
-
-async function authenticatedFetch(url, options = {}) {
-    try {
-        const headers = { ...(options.headers || {}), ...window.authManager.getAuthHeaders() };
-        let response = await fetch(url, { ...options, headers });
-        if (response.status === 401 || response.status === 403) {
-            const refreshed = await window.authManager.refreshToken();
-            if (refreshed) {
-                const newHeaders = { ...(options.headers || {}), ...window.authManager.getAuthHeaders() };
-                response = await fetch(url, { ...options, headers: newHeaders });
-                if (response.status === 401 || response.status === 403) {
-                    handleSessionExpiry();
-                    throw new Error('Session expired');
-                }
-            } else {
-                handleSessionExpiry();
-                throw new Error('Session expired');
-            }
-        }
-        return response;
-    } catch (error) {
-        console.error('Authenticated fetch error:', error);
-        throw error;
-    }
-}
-
-function handleSessionExpiry() {
-    preserveWorkflowData();
-    window.authManager.clearAuthData();
-    showNotification('Your session has expired. You will be redirected to the login page in 3 seconds.', 'warning');
-    setTimeout(() => {
-        window.location.href = '../index.html';
-    }, 3000);
-}
-
-function preserveWorkflowData() {
-    const selectedSpec = sessionStorage.getItem('selectedSpecification');
-    const workingData = sessionStorage.getItem('workingData_extensionComponents');
-    const breadcrumbContext = sessionStorage.getItem('breadcrumbContext');
-    if (selectedSpec) localStorage.setItem('preserved_selectedSpecification', selectedSpec);
-    if (workingData) localStorage.setItem('preserved_workingData_extensionComponents', workingData);
-    if (breadcrumbContext) localStorage.setItem('preserved_breadcrumbContext', breadcrumbContext);
-    localStorage.setItem('workflowDataPreserved', 'true');
-    localStorage.setItem('preservedFromPage', 'ExtensionComponentDataModel');
-}
+// All session/auth logic is now centralized in JS/auth/authManager.js
+// Use window.authManager.authenticatedFetch for all API calls
+window.authManager = window.authManager || new AuthManager();
 
 // --- Main Data Model Logic ---
 // Note: isFormDirty is deprecated in favor of hasActualChanges()
@@ -114,7 +71,7 @@ async function initializeDataManager() {
             if (!extensionComponentHeadersCache) {
                 console.log('DEBUG: Loading extension component headers for transformation');
                 const headersApiUrl = `${AUTH_CONFIG.baseUrl}/extensionmodels/headers`;
-                const headersResponse = await authenticatedFetch(headersApiUrl, {
+                const headersResponse = await window.authManager.authenticatedFetch(headersApiUrl, {
                     method: 'GET',
                     forceAuth: true
                 });
@@ -308,10 +265,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize auth and session management
     window.authManager.init();
-    if (window.WorkflowSessionManager) {
-        window.sessionManager = new WorkflowSessionManager('extensionComponentDataModel');
-        window.sessionManager.init();
-    }
+    // Removed WorkflowSessionManager logic (now obsolete)
     window.sidebarManager.initializeSidebar(window.authManager);
     window.breadcrumbManager.init();
     
@@ -370,7 +324,7 @@ async function loadExtensionData() {
         if (!availableComponents) {
             const headersApiUrl = `${AUTH_CONFIG.baseUrl}/extensionmodels/headers`;
             console.log(`Attempting to fetch Extension Component Headers from API: ${headersApiUrl}`);
-            const headersResponse = await authenticatedFetch(headersApiUrl, {
+            const headersResponse = await window.authManager.authenticatedFetch(headersApiUrl, {
                 method: 'GET',
                 forceAuth: true
             });
@@ -466,7 +420,7 @@ async function addNewComponentSection(preSelectedComponentId = '', preSelectedEl
         } else {
             try {
                 const headersApiUrl = `${AUTH_CONFIG.baseUrl}/extensionmodels/headers`;
-                const headersResponse = await authenticatedFetch(headersApiUrl, { method: 'GET', forceAuth: true });
+                const headersResponse = await window.authManager.authenticatedFetch(headersApiUrl, { method: 'GET', forceAuth: true });
                 availableComponents = await headersResponse.json();
                 extensionComponentHeadersCache = availableComponents; // Cache for future use
             } catch (error) {
@@ -583,7 +537,7 @@ async function populateComponentTable(selectElement, selectedIds = []) {
         const elementsApiUrl = `${AUTH_CONFIG.baseUrl}/extensionmodels/elements/${selectedComponentId}`;
         console.log(`Fetching elements for component: ${elementsApiUrl}`);
         try {
-            const elementsResponse = await authenticatedFetch(elementsApiUrl, {
+        const elementsResponse = await window.authManager.authenticatedFetch(elementsApiUrl, {
                 method: 'GET',
                 forceAuth: true
             });

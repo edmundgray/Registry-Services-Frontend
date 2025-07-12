@@ -85,16 +85,8 @@
                 console.error("Error clearing local storage:", e);
             }
 
-            console.log("Initialization complete. Redirecting...");
-
-            // Redirect to the main application page
-            // Using a short timeout to ensure the user sees the message,
-            // which can be helpful for debugging.
-            setTimeout(function() {
-                // FIX: Removed the leading './' from the URL to resolve the "not a valid URL" error.
-                // The browser will resolve this relative path from the current location.
-                window.location.href = 'HTML/eInvoicingSpecificationRegistry.html';
-            }, 500);
+            console.log("Initialization complete. Redirecting to main application page.");
+            window.location.href = 'HTML/eInvoicingSpecificationRegistry.html';
         });
     </script>
 

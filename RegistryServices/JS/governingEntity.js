@@ -87,21 +87,36 @@ class GoverningEntityList {
     async loadData() {
         console.log('GoverningEntityList: Loading governing entity data...');
         
-        // Check if user is an Admin
-        if (typeof isAdmin === 'function' && !isAdmin(window.authManager)) {
-            console.warn('GoverningEntityList: User is not an Admin. Cannot fetch user group data.');
-            if (this.tableBody) {
-                this.tableBody.innerHTML = `<tr><td colspan="9" style="text-align:center;font-style:italic;color:red;">You must be logged in as an Admin to view governing entities.</td></tr>`;
+        // Check if user is an Admin, with debug output
+        if (typeof isAdmin === 'function') {
+            if (!window.authManager) {
+                console.error('[DEBUG] Admin check: window.authManager is undefined!');
+                if (this.tableBody) {
+                    this.tableBody.innerHTML = `<tr><td colspan="9" style="text-align:center;font-style:italic;color:red;">Authentication system not initialized. Please log in again.</td></tr>`;
+                }
+                return;
             }
-            return;
+            console.debug('[DEBUG] Admin check:', {
+                userRole: window.authManager.userRole,
+                isAuthenticated: window.authManager.isAuthenticated,
+                isAdminResult: isAdmin(window.authManager),
+                currentUser: (typeof getCurrentUser === 'function') ? getCurrentUser(window.authManager) : undefined
+            });
+            if (!isAdmin(window.authManager)) {
+                console.warn('GoverningEntityList: User is not an Admin. Cannot fetch user group data.');
+                if (this.tableBody) {
+                    this.tableBody.innerHTML = `<tr><td colspan="9" style="text-align:center;font-style:italic;color:red;">You must be logged in as an Admin to view governing entities.</td></tr>`;
+                }
+                return;
+            }
         }
 
         try {
             const apiUrl = `${AUTH_CONFIG.baseUrl}/usergroups`;
             console.log(`GoverningEntityList: Attempting to fetch from API: ${apiUrl}`);
 
-            // Use authenticatedFetch for admin-only endpoint
-            const response = await authenticatedFetch(apiUrl, {
+            // Use centralized authenticatedFetch for admin-only endpoint
+            const response = await window.authManager.authenticatedFetch(apiUrl, {
                 method: 'GET',
                 forceAuth: true // Ensure authentication headers are sent
             });
@@ -345,7 +360,7 @@ class GoverningEntityView {
         console.log(`GoverningEntityView: Fetching details for user group ID: ${this.userGroupId}`);
         try {
             const apiUrl = `${AUTH_CONFIG.baseUrl}/usergroups/${this.userGroupId}`;
-            const response = await authenticatedFetch(apiUrl, { method: 'GET', forceAuth: true });
+            const response = await window.authManager.authenticatedFetch(apiUrl, { method: 'GET', forceAuth: true });
 
             if (!response.ok) {
                 if (response.status === 404) {
@@ -447,7 +462,7 @@ class GoverningEntityView {
             const apiUrl = `${AUTH_CONFIG.baseUrl}/specifications/by-user-group?PageSize=1000`; // Assuming PageSize is a parameter
             console.log(`GoverningEntityView: Attempting to fetch specifications from API: ${apiUrl}`);
 
-            const response = await authenticatedFetch(apiUrl, {
+            const response = await window.authManager.authenticatedFetch(apiUrl, {
                 method: 'GET',
                 forceAuth: true 
             });
