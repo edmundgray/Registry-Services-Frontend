@@ -6,21 +6,14 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
         <link rel="stylesheet" href="../CSS/style.css">
 
-        <!-- Add authManager.js for global AuthManager and AUTH_CONFIG -->
+        <!-- AuthManager.js provides global AuthManager and AUTH_CONFIG; initialization is now handled centrally -->
         <script src="../JS/auth/authManager.js"></script>
         <script>
-            // Create a global authManager instance and authenticatedFetch
-            window.authManager = new AuthManager();
-            function authenticatedFetch(url, options = {}) {
-                const authHeaders = window.authManager.getAuthHeaders();
-                console.log('DEBUG: authenticatedFetch called with URL:', url);
-                console.log('DEBUG: Auth headers:', authHeaders);
-                
-                const headers = { ...(options.headers || {}), ...authHeaders };
-                console.log('DEBUG: Final headers for request:', headers);
-                
-                return fetch(url, { ...options, headers });
-            }
+        // Ensure global authManager is always initialized
+        if (!window.authManager) {
+            window.authManager = new window.AuthManager();
+            console.debug('[DEBUG] window.authManager initialized globally in viewSpecification.html');
+        }
         </script>
         <script src="../JS/sidebarManager.js"></script>
         <script src="../JS/breadcrumbManager.js"></script>
@@ -316,7 +309,7 @@
                     showLoadingIndicator();
                     
                     // Try to get the specification from API (no authentication required for public viewing)
-                    const response = await authenticatedFetch(`${AUTH_CONFIG.baseUrl}/specifications/${specificationId}`, {
+                    const response = await window.authManager.authenticatedFetch(`${AUTH_CONFIG.baseUrl}/specifications/${specificationId}`, {
                         method: 'GET'
                         // Removed forceAuth: true to allow unauthenticated access
                     });

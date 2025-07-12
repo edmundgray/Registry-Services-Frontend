@@ -87,13 +87,28 @@ class GoverningEntityList {
     async loadData() {
         console.log('GoverningEntityList: Loading governing entity data...');
         
-        // Check if user is an Admin
-        if (typeof isAdmin === 'function' && !isAdmin(window.authManager)) {
-            console.warn('GoverningEntityList: User is not an Admin. Cannot fetch user group data.');
-            if (this.tableBody) {
-                this.tableBody.innerHTML = `<tr><td colspan="9" style="text-align:center;font-style:italic;color:red;">You must be logged in as an Admin to view governing entities.</td></tr>`;
+        // Check if user is an Admin, with debug output
+        if (typeof isAdmin === 'function') {
+            if (!window.authManager) {
+                console.error('[DEBUG] Admin check: window.authManager is undefined!');
+                if (this.tableBody) {
+                    this.tableBody.innerHTML = `<tr><td colspan="9" style="text-align:center;font-style:italic;color:red;">Authentication system not initialized. Please log in again.</td></tr>`;
+                }
+                return;
             }
-            return;
+            console.debug('[DEBUG] Admin check:', {
+                userRole: window.authManager.userRole,
+                isAuthenticated: window.authManager.isAuthenticated,
+                isAdminResult: isAdmin(window.authManager),
+                currentUser: (typeof getCurrentUser === 'function') ? getCurrentUser(window.authManager) : undefined
+            });
+            if (!isAdmin(window.authManager)) {
+                console.warn('GoverningEntityList: User is not an Admin. Cannot fetch user group data.');
+                if (this.tableBody) {
+                    this.tableBody.innerHTML = `<tr><td colspan="9" style="text-align:center;font-style:italic;color:red;">You must be logged in as an Admin to view governing entities.</td></tr>`;
+                }
+                return;
+            }
         }
 
         try {

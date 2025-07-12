@@ -405,6 +405,8 @@ function logout() {
     }
 
     console.log('User logged out');
+    // Redirect to main registry page after logout
+    window.location.href = 'eInvoicingSpecificationRegistry.html';
 }
 
 // Create global sidebar manager instance
