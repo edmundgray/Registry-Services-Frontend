@@ -145,25 +145,46 @@ class SidebarManager {
 
     // Update the sidebar in the current page
     updateSidebar(authManager) {
-        const existingSidebar = document.querySelector('.sidebar');
+        let existingSidebar = document.querySelector('.sidebar');
         if (existingSidebar) {
             const newSidebarHTML = this.generateSidebar(authManager);
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = newSidebarHTML;
             const newSidebar = tempDiv.querySelector('.sidebar');
-            
             existingSidebar.parentNode.replaceChild(newSidebar, existingSidebar);
+            console.log('[DEBUG] Sidebar replaced in DOM');
+        } else {
+            // Sidebar does not exist, create and insert it at the start of body
+            const newSidebarHTML = this.generateSidebar(authManager);
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = newSidebarHTML;
+            const newSidebar = tempDiv.querySelector('.sidebar');
+            if (newSidebar) {
+                document.body.insertBefore(newSidebar, document.body.firstChild);
+                console.log('[DEBUG] Sidebar created and inserted in DOM');
+            } else {
+                console.warn('[DEBUG] Sidebar HTML generated but .sidebar not found in tempDiv');
+            }
         }
     }
 
     // Initialize sidebar on page load
     initializeSidebar(authManager) {
+        console.log('[DEBUG] sidebarManager.initializeSidebar called');
         const sidebarContainer = document.getElementById('sidebarContainer');
         if (sidebarContainer) {
+            console.log('[DEBUG] #sidebarContainer found, injecting sidebar HTML');
             sidebarContainer.innerHTML = this.generateSidebar(authManager);
         } else {
-            // If no container, try to update existing sidebar
+            console.log('[DEBUG] #sidebarContainer NOT found, calling updateSidebar');
             this.updateSidebar(authManager);
+        }
+        // Check if sidebar is present in DOM after rendering
+        const sidebarEl = document.querySelector('.sidebar');
+        if (sidebarEl) {
+            console.log('[DEBUG] Sidebar element found in DOM:', sidebarEl);
+        } else {
+            console.warn('[DEBUG] Sidebar element NOT found in DOM');
         }
     }
 }
@@ -272,21 +293,63 @@ function handleLogin(event) {
     // Simulate successful login
     performLogin(username, userRole);
     closeLoginModal();
-    
-    // Redirect to eInvoicingSpecificationRegistry.html after successful login
-    setTimeout(() => {
+
+    // Debug pause: show a message and button before redirect
+    const pauseDiv = document.createElement('div');
+    pauseDiv.id = 'loginDebugPause';
+    pauseDiv.style.position = 'fixed';
+    pauseDiv.style.top = '0';
+    pauseDiv.style.left = '0';
+    pauseDiv.style.width = '100vw';
+    pauseDiv.style.height = '100vh';
+    pauseDiv.style.background = 'rgba(0,0,0,0.5)';
+    pauseDiv.style.display = 'flex';
+    pauseDiv.style.flexDirection = 'column';
+    pauseDiv.style.justifyContent = 'center';
+    pauseDiv.style.alignItems = 'center';
+    pauseDiv.style.zIndex = '10000';
+    pauseDiv.innerHTML = `
+        <div style="background: #fff; padding: 32px 40px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); text-align: center;">
+            <div style="color: #d9534f; font-weight: bold; font-size: 1.2rem;">Paused for debug: Check the console and storage now.</div>
+            <button id="continueLoginBtn" style="margin-top: 24px; padding: 10px 28px; font-size: 1rem; background: #09f; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Continue to Application</button>
+        </div>
+    `;
+    document.body.appendChild(pauseDiv);
+    document.getElementById('continueLoginBtn').onclick = function() {
+        pauseDiv.remove();
         window.location.href = 'eInvoicingSpecificationRegistry.html';
-    }, 500);
+    };
 }
 
 function demoLogin(username, role) {
     performLogin(username, role);
     closeLoginModal();
-    
-    // Redirect to eInvoicingSpecificationRegistry.html after successful demo login
-    setTimeout(() => {
+
+    // Debug pause: show a message and button before redirect
+    const pauseDiv = document.createElement('div');
+    pauseDiv.id = 'loginDebugPause';
+    pauseDiv.style.position = 'fixed';
+    pauseDiv.style.top = '0';
+    pauseDiv.style.left = '0';
+    pauseDiv.style.width = '100vw';
+    pauseDiv.style.height = '100vh';
+    pauseDiv.style.background = 'rgba(0,0,0,0.5)';
+    pauseDiv.style.display = 'flex';
+    pauseDiv.style.flexDirection = 'column';
+    pauseDiv.style.justifyContent = 'center';
+    pauseDiv.style.alignItems = 'center';
+    pauseDiv.style.zIndex = '10000';
+    pauseDiv.innerHTML = `
+        <div style="background: #fff; padding: 32px 40px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); text-align: center;">
+            <div style="color: #d9534f; font-weight: bold; font-size: 1.2rem;">Paused for debug: Check the console and storage now.</div>
+            <button id="continueLoginBtn" style="margin-top: 24px; padding: 10px 28px; font-size: 1rem; background: #09f; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Continue to Application</button>
+        </div>
+    `;
+    document.body.appendChild(pauseDiv);
+    document.getElementById('continueLoginBtn').onclick = function() {
+        pauseDiv.remove();
         window.location.href = 'eInvoicingSpecificationRegistry.html';
-    }, 500);
+    };
 }
 
 function performLogin(username, role) {

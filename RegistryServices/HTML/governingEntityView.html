@@ -8,15 +8,7 @@
         
         <!-- Add authManager.js for global AuthManager and AUTH_CONFIG -->
         <script src="../JS/auth/authManager.js"></script>
-        <script>
-            // Create a global authManager instance
-            window.authManager = new AuthManager();
-            // Define authenticatedFetch globally
-            function authenticatedFetch(url, options = {}) {
-                const headers = { ...(options.headers || {}), ...window.authManager.getAuthHeaders() };
-                return fetch(url, { ...options, headers });
-            }
-        </script>
+        <script>window.authManager = new window.AuthManager();</script>
         <script src="../JS/sidebarManager.js"></script>
         <script src="../JS/dataManager.js"></script>
         <script src="../JS/javascript.js"></script>
@@ -66,12 +58,9 @@
         </script>
         
         <script>
-            // Initialize the sidebar and authentication when the page loads
-            document.addEventListener('DOMContentLoaded', function() {
-                // Initialize auth manager
-                window.authManager.init();
-                
-                // Initialize sidebar
+            // Explicitly initialize sidebar after all scripts are loaded
+            window.addEventListener('DOMContentLoaded', function() {
+                console.log('[DEBUG] Explicit sidebar initialization');
                 window.sidebarManager.initializeSidebar(window.authManager);
             });
         </script>

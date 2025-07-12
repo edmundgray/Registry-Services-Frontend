@@ -224,7 +224,6 @@ function createLoginModal() {
             updateVisibility();
             closeLoginModal();
             showMessage('Login successful!', 'success');
-            
             // Redirect to eInvoicingSpecificationRegistry.html after successful login
             setTimeout(() => {
                 window.location.href = 'eInvoicingSpecificationRegistry.html';
@@ -271,27 +270,29 @@ async function loginUser(username, password) {
         
         // Extract token and user info from response - handle multiple possible field names
         const accessToken = loginData.token || loginData.accessToken || loginData.access_token || loginData.authToken;
+        const refreshToken = loginData.refreshToken || loginData.refresh_token;
         const userRole = loginData.role || loginData.userRole || loginData.roles || 'User';
         const userId = loginData.id || loginData.userId || loginData.user_id || loginData.userID;
         const userGroupID = loginData.userGroupID || loginData.groupId || loginData.group_id;
         const groupName = loginData.groupName || loginData.group_name;
-        
+
         if (!accessToken) {
             console.error('DEBUG: No access token found in login response. Available fields:', Object.keys(loginData));
             throw new Error('Login response did not contain an access token');
         }
-        
+
         console.log('DEBUG: Real login successful!');
         console.log('DEBUG: Token received (first 30 chars):', accessToken.substring(0, 30) + '...');
+        console.log('DEBUG: Refresh token:', refreshToken);
         console.log('DEBUG: User role:', userRole);
         console.log('DEBUG: User ID:', userId);
         console.log('DEBUG: User Group ID:', userGroupID);
         console.log('DEBUG: Group Name:', groupName);
-        
+
         // IMPORTANT: Clear any old authentication data first
         window.authManager.logout();
         localStorage.clear(); // Clear all old data
-        
+
         // Set up the auth manager with real data from API
         window.authManager.isAuthenticated = true;
         window.authManager.username = username;
@@ -300,9 +301,14 @@ async function loginUser(username, password) {
         window.authManager.userGroupID = userGroupID;
         window.authManager.groupName = groupName;
         window.authManager.accessToken = accessToken;
-        
+        // Optionally store refreshToken on authManager if needed
+        window.authManager.refreshToken = refreshToken;
+
         // Store in localStorage with the correct keys
         localStorage.setItem('access_token', accessToken);
+        if (refreshToken) {
+            localStorage.setItem('refresh_token', refreshToken);
+        }
         localStorage.setItem('userRole', userRole);
         localStorage.setItem('username', username);
         if (userId) {
@@ -314,21 +320,24 @@ async function loginUser(username, password) {
         if (groupName) {
             localStorage.setItem('groupName', groupName);
         }
-        
+
         console.log('DEBUG: Auth manager updated with real token');
-        console.log('DEBUG: Token stored in localStorage:', localStorage.getItem('access_token').substring(0, 30) + '...');
+        console.log('DEBUG: Token stored in localStorage:', localStorage.getItem('access_token') ? localStorage.getItem('access_token').substring(0, 30) + '...' : 'Not set');
+        console.log('DEBUG: Refresh token stored in localStorage:', localStorage.getItem('refresh_token'));
         console.log('DEBUG: Auth manager verification:', {
             isAuthenticated: window.authManager.isAuthenticated,
             accessToken: window.authManager.accessToken ? window.authManager.accessToken.substring(0, 30) + '...' : 'Not set',
+            refreshToken: window.authManager.refreshToken,
             username: window.authManager.username,
             userRole: window.authManager.userRole
         });
-        
+
         return {
             success: true,
             username: username,
             role: userRole,
-            token: accessToken
+            token: accessToken,
+            refreshToken: refreshToken
         };
         
     } catch (error) {

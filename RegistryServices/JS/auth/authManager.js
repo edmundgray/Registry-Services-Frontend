@@ -1,6 +1,6 @@
 // JS/auth/authManager.js
 // Authentication configuration and AuthManager class for Registry Services
-
+//<!-- Session logic is now centralized in authManager.js -->
 window.AUTH_CONFIG = {
     baseUrl: 'https://registryservices-staging.azurewebsites.net/api',
     endpoints: {
@@ -25,19 +25,33 @@ window.AuthManager = class {
         this.groupName = null;
         this.accessToken = null;
         this.refreshToken = null;
-        
         // Session timeout management
         this.tokenExpiryTime = null;
         this.tokenRefreshTimer = null;
         this.warningTimer = null;
         this.isRefreshing = false;
         this.warningShown = false;
-        
         // Configuration
         this.WARNING_MINUTES_BEFORE_EXPIRY = 5; // Warn 5 minutes before expiry
         this.AUTO_REFRESH_MINUTES_BEFORE_EXPIRY = 2; // Auto-refresh 2 minutes before expiry
-        
+        // Expose JWT and decoded payload for debugging/inspection
+        this.token = undefined;
+        this.tokenData = undefined;
         this.init();
+    }
+
+    // Debug function to return the token, refreshToken, and expiry that should be stored on login
+    getLoginTokenDebugInfo(data, username) {
+        const tokenToStore = data.token || data.accessToken;
+        const refreshTokenToStore = data.refreshToken;
+        const expiresInToStore = data.expiresIn || 3600;
+        const usernameToStore = data.username || username;
+        return {
+            token: tokenToStore,
+            refreshToken: refreshTokenToStore,
+            expiresIn: expiresInToStore,
+            username: usernameToStore
+        };
     }
 
     init() {
@@ -49,7 +63,11 @@ window.AuthManager = class {
         const userGroupID = localStorage.getItem('userGroupID');
         const groupName = localStorage.getItem('groupName');
         const tokenExpiry = localStorage.getItem('token_expiry');
-        const refreshToken = localStorage.getItem('refresh_token');
+        let refreshToken = localStorage.getItem('refresh_token');
+        // Treat both null and the string 'null' as no token
+        if (refreshToken === null || refreshToken === 'null') {
+            refreshToken = undefined;
+        }
         
         console.log('DEBUG: AuthManager init - loading from localStorage:', {
             tokenPresent: !!token,
@@ -73,6 +91,18 @@ window.AuthManager = class {
             this.refreshToken = refreshToken;
             this.tokenExpiryTime = tokenExpiry ? parseInt(tokenExpiry) : null;
             this.isAuthenticated = true;
+            // Expose JWT and decoded payload for debugging/inspection
+            this.token = token;
+            try {
+                const parts = token.split('.');
+                if (parts.length === 3) {
+                    this.tokenData = JSON.parse(atob(parts[1]));
+                } else {
+                    this.tokenData = undefined;
+                }
+            } catch (e) {
+                this.tokenData = undefined;
+            }
             
             // Set up session timers if we have expiry time
             if (this.tokenExpiryTime) {
@@ -90,50 +120,82 @@ window.AuthManager = class {
     }
 
     // Enhanced token storage with expiry tracking
-    setTokens(accessToken, refreshToken = null, expiresIn = 3600) {
+    setTokens(accessToken, refreshToken, expiresIn, username, userId, userGroupID, groupName) {
         this.accessToken = accessToken;
-        this.refreshToken = refreshToken;
-        this.isAuthenticated = true;
-        
-        // Calculate expiry time
-        this.tokenExpiryTime = Date.now() + (expiresIn * 1000);
-        
-        // Store in localStorage
-        localStorage.setItem('access_token', accessToken);
-        localStorage.setItem('token_expiry', this.tokenExpiryTime.toString());
-        if (refreshToken) {
-            localStorage.setItem('refresh_token', refreshToken);
+        // Never store the string 'null' as a refresh token
+        if (refreshToken === null || refreshToken === 'null') {
+            this.refreshToken = undefined;
+        } else {
+            this.refreshToken = refreshToken;
         }
-        
-        // Set up automatic refresh timers
+        this.tokenExpiryTime = Date.now() + (expiresIn * 1000);
+        this.isAuthenticated = true;
+        this.warningShown = false;
+
+        // Expose JWT and decoded payload for debugging/inspection
+        this.token = accessToken;
+        try {
+            const parts = accessToken.split('.');
+            if (parts.length === 3) {
+                this.tokenData = JSON.parse(atob(parts[1]));
+            } else {
+                this.tokenData = undefined;
+            }
+        } catch (e) {
+            this.tokenData = undefined;
+        }
+
+        // Store tokens and expiry time in localStorage
+        localStorage.setItem('access_token', this.accessToken);
+        // Only store refresh_token if it is defined and not 'null'
+        if (this.refreshToken) {
+            localStorage.setItem('refresh_token', this.refreshToken);
+        } else {
+            localStorage.removeItem('refresh_token');
+        }
+        localStorage.setItem('token_expiry', this.tokenExpiryTime.toString());
+
+        // Store user info if provided (during login)
+        if (username) {
+            this.username = username;
+            localStorage.setItem('username', this.username);
+        }
+        if (userId) {
+            this.userID = userId;
+            localStorage.setItem('userId', this.userID);
+        }
+        if (userGroupID) {
+            this.userGroupID = userGroupID;
+            localStorage.setItem('userGroupID', this.userGroupID);
+        }
+        if (groupName) {
+            this.groupName = groupName;
+            localStorage.setItem('groupName', this.groupName);
+        }
+
         this.setupTokenRefreshTimers();
+
+        // Dispatch event for other components
+        window.dispatchEvent(new CustomEvent('authenticationChanged', { detail: { isAuthenticated: true } }));
     }
 
     // Set up timers for warning and auto-refresh (auto-refresh disabled)
     setupTokenRefreshTimers() {
         this.clearTokenTimers();
-        
         if (!this.tokenExpiryTime) return;
-        
         const timeToExpiry = this.tokenExpiryTime - Date.now();
         const warningTime = timeToExpiry - (this.WARNING_MINUTES_BEFORE_EXPIRY * 60 * 1000);
-        
         console.log('DEBUG: Setting up token timers (auto-refresh disabled):', {
             timeToExpiry: Math.floor(timeToExpiry / 1000),
             warningIn: Math.floor(warningTime / 1000)
         });
-        
         // Set warning timer only (auto-refresh disabled)
         if (warningTime > 0) {
             this.warningTimer = setTimeout(() => {
                 this.showSessionWarning();
             }, warningTime);
         }
-        
-        // Auto-refresh timer disabled - endpoints not available
-        // this.tokenRefreshTimer = setTimeout(() => {
-        //     this.attemptBackgroundRefresh();
-        // }, refreshTime);
+        // No silent auto-refresh timer per requirements
     }
 
     // Clear existing timers
@@ -165,13 +227,14 @@ window.AuthManager = class {
     showSessionWarning() {
         if (this.warningShown) return;
         this.warningShown = true;
-        
         const timeLeft = Math.ceil((this.tokenExpiryTime - Date.now()) / (60 * 1000));
-        
         this.showSessionWarningModal(timeLeft).then((continueSession) => {
             if (continueSession) {
                 // User chose to continue - attempt refresh
                 this.attemptBackgroundRefresh();
+            } else {
+                // User chose not to continue, or closed the modal
+                this.logout();
             }
         });
     }
@@ -180,11 +243,18 @@ window.AuthManager = class {
     async attemptBackgroundRefresh() {
         if (this.isRefreshing) return;
         this.isRefreshing = true;
-        
-        console.log('Token refresh disabled - endpoints not available. Showing session expiry modal instead.');
-        
+        console.log('Attempting to refresh token...');
         try {
-            // Instead of trying to refresh, show session expiry modal
+            const refreshed = await this.refreshAccessToken();
+            if (refreshed) {
+                console.log('Token refreshed successfully.');
+                // The warning modal should be closed by showSessionWarningModal
+            } else {
+                console.log('Token refresh failed. User will be logged out.');
+                this.handleRefreshFailure();
+            }
+        } catch (error) {
+            console.error('Error during token refresh attempt:', error);
             this.handleRefreshFailure();
         } finally {
             this.isRefreshing = false;
@@ -193,8 +263,42 @@ window.AuthManager = class {
 
     // Refresh using refresh token (DISABLED - endpoint not available)
     async refreshAccessToken() {
-        console.log('Token refresh endpoint not available - cannot refresh token');
-        throw new Error('Token refresh functionality disabled - endpoint not available');
+        if (!this.refreshToken) {
+            console.error('No refresh token available.');
+            this.logout();
+            return false;
+        }
+        // Debug: Show tokens being sent to the API
+        console.log('[DEBUG] Calling refresh endpoint with:', {
+            refreshToken: this.refreshToken,
+            accessToken: this.accessToken
+        });
+        try {
+            const response = await fetch(`${AUTH_CONFIG.baseUrl}/auth/refresh-token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    refreshToken: this.refreshToken,
+                    accessToken: this.accessToken
+                })
+            });
+            if (response.ok) {
+                const data = await response.json();
+                // Assuming the refresh response contains token, refreshToken, and expiresIn
+                this.setTokens(data.token, data.refreshToken, data.expiresIn);
+                console.log('Successfully refreshed and set new tokens.');
+                window.dispatchEvent(new CustomEvent('tokenRefreshed'));
+                return true;
+            } else {
+                console.error('Refresh token request failed with status:', response.status);
+                this.logout(); // Logout if refresh fails
+                return false;
+            }
+        } catch (error) {
+            console.error('Error fetching refresh token:', error);
+            this.logout();
+            return false;
+        }
     }
 
     // Validate current session and extend if possible (DISABLED - endpoint not available)
@@ -300,23 +404,39 @@ window.AuthManager = class {
         loginBtn.onclick = async () => {
             const username = usernameInput.value.trim();
             const password = passwordInput.value.trim();
-            
+
             if (!username || !password) {
                 errorDiv.textContent = 'Please enter both username and password';
                 errorDiv.style.display = 'block';
                 return;
             }
-            
+
             try {
                 loginBtn.disabled = true;
                 loginBtn.textContent = 'Logging in...';
-                
+
                 await this.performLogin(username, password);
-                cleanup();
-                
-                // Dispatch success event
-                window.dispatchEvent(new CustomEvent('reauthenticationSuccess'));
-                
+
+                // Pause for debug: show a message and button before closing modal and redirecting
+                const modalBody = modal.querySelector('.modal-body');
+                const pauseDiv = document.createElement('div');
+                pauseDiv.style.marginTop = '20px';
+                pauseDiv.innerHTML = `
+                    <div style="color: #d9534f; font-weight: bold;">Paused for debug: Check the console and storage now.</div>
+                    <button id="continueLoginBtn" style="margin-top: 16px; padding: 8px 20px; font-size: 1rem; background: #09f; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Continue to Application</button>
+                `;
+                modalBody.appendChild(pauseDiv);
+                loginBtn.style.display = 'none';
+                cancelBtn.style.display = 'none';
+                usernameInput.disabled = true;
+                passwordInput.disabled = true;
+                errorDiv.style.display = 'none';
+                document.getElementById('continueLoginBtn').onclick = () => {
+                    cleanup();
+                    // Dispatch success event
+                    window.dispatchEvent(new CustomEvent('reauthenticationSuccess'));
+                };
+
             } catch (error) {
                 errorDiv.textContent = error.message || 'Login failed. Please try again.';
                 errorDiv.style.display = 'block';
@@ -348,34 +468,50 @@ window.AuthManager = class {
             },
             body: JSON.stringify({ username, password })
         });
-        
         if (!response.ok) {
             throw new Error('Invalid credentials');
         }
-        
         const data = await response.json();
-        
-        // Store authentication data
-        this.accessToken = data.accessToken;
-        this.refreshToken = data.refreshToken;
-        this.userRole = data.role;
-        this.username = data.username;
-        this.userID = data.userId;
-        this.userGroupID = data.userGroupID;
-        this.groupName = data.groupName;
-        this.isAuthenticated = true;
-        
-        // Store in localStorage
-        localStorage.setItem('access_token', data.accessToken);
-        localStorage.setItem('refresh_token', data.refreshToken || '');
-        localStorage.setItem('userRole', data.role);
-        localStorage.setItem('username', data.username);
-        localStorage.setItem('userId', data.userId.toString());
-        localStorage.setItem('userGroupID', data.userGroupID?.toString() || '');
-        localStorage.setItem('groupName', data.groupName || '');
-        
-        // Set up tokens with expiry
-        this.setTokens(data.accessToken, data.refreshToken, data.expiresIn || 3600);
+        // Debug: Show what was received from the server
+        console.log('[DEBUG] Login response data:', data);
+        // Store authentication data using setTokens
+        const tokenToStore = data.token || data.accessToken;
+        const refreshTokenToStore = data.refreshToken;
+        const expiresInToStore = data.expiresIn || 3600;
+        const usernameToStore = data.username || username;
+        const userIdToStore = data.userId;
+        const userGroupIDToStore = data.userGroupID;
+        const groupNameToStore = data.groupName;
+        // Explicitly log the refreshToken value for debugging
+        console.log('[DEBUG] Login response refreshToken:', data.refreshToken, '| typeof:', typeof data.refreshToken);
+        console.log('[DEBUG] Storing tokens and user info:', {
+            token: tokenToStore,
+            refreshToken: refreshTokenToStore,
+            expiresIn: expiresInToStore,
+            username: usernameToStore,
+            userId: userIdToStore,
+            userGroupID: userGroupIDToStore,
+            groupName: groupNameToStore
+        });
+        this.setTokens(
+            tokenToStore,
+            refreshTokenToStore,
+            expiresInToStore,
+            usernameToStore,
+            userIdToStore,
+            userGroupIDToStore,
+            groupNameToStore
+        );
+
+        // Log all localStorage values after login and before redirect (for debugging refresh token presence)
+        if (typeof window !== 'undefined' && window.localStorage) {
+            const allLocalStorage = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                allLocalStorage[key] = localStorage.getItem(key);
+            }
+            console.log('[DEBUG] localStorage after login, before redirect:', allLocalStorage);
+        }
     }
 
     // Enhanced authenticatedFetch (token refresh disabled)
@@ -490,6 +626,11 @@ window.AuthManager = class {
             return { status: 'active', timeLeft: minutesLeft };
         }
     }
+    // TEMPORARY: Allow manual refresh from the console for debugging
+    forceRefreshToken() {
+        console.log('[DEBUG] Forcing refresh token via forceRefreshToken()');
+        return this.refreshAccessToken();
+    }
 }
 
 // Helper functions for authentication
@@ -509,7 +650,7 @@ function getCurrentUser(authManager) {
 
 function getAccessLevel(authManager) {
     const user = getCurrentUser(authManager);
-    if (user.role === 'Admin') return 'admin';
+    if (user.role && user.role.toLowerCase() === 'admin') return 'admin';
     if (user.isAuthenticated) return 'user';
     return 'guest';
 }

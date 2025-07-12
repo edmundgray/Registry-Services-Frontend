@@ -26,7 +26,8 @@ document.addEventListener("DOMContentLoaded", function () {
             const apiUrl = `${AUTH_CONFIG.baseUrl}/coreinvoicemodels?pageSize=250`; // Use backend base URL
             console.log(`Attempting to fetch Core Invoice Models from API: ${apiUrl}`);
 
-            const response = await fetch(apiUrl, {
+            // Use centralized authentication for API calls
+            const response = await window.authManager.authenticatedFetch(apiUrl, {
                 method: 'GET'
             });
 
@@ -55,7 +56,8 @@ document.addEventListener("DOMContentLoaded", function () {
             console.log(`Attempting to fetch data from: ${apiUrl}`);
 
             // Make the GET request using authenticatedFetch
-            const response = await authenticatedFetch(apiUrl, {
+            // Use centralized authentication for API calls
+            const response = await window.authManager.authenticatedFetch(apiUrl, {
                 method: 'GET'
             });
 

@@ -16,18 +16,18 @@ async function initializeDataManager() {
         
         if (dataManager.isEditMode() && dataManager.currentSpecId) {
             console.log('AdditionalRequirements: Loading specification for editing. ID:', dataManager.currentSpecId);
-            
+
             // Load data from API if not already loaded
             if (!dataManager.isDataLoaded) {
-                await dataManager.loadSpecificationFromAPI(dataManager.currentSpecId);
+                await window.authManager.authenticatedFetch(dataManager.loadAdditionalRequirementsFromAPI(dataManager.currentSpecId));
             }
-            
+
             // Load additional requirements from API
             try {
                 console.log('AdditionalRequirements: Loading additional requirements from API...');
                 const apiRequirements = await dataManager.loadAdditionalRequirementsFromAPI(dataManager.currentSpecId);
                 console.log('AdditionalRequirements: Loaded from API:', apiRequirements);
-                
+
                 // Transform API data to table format
                 const tableRequirements = apiRequirements.map(req => ({
                     ID: req.businessTermID || '',
@@ -38,25 +38,20 @@ async function initializeDataManager() {
                     UsageNote: req.usageNote || '',
                     TypeOfChange: req.typeOfChange || ''
                 }));
-                
+
                 if (tableRequirements.length > 0) {
                     loadSavedRequirements(tableRequirements);
                 }
-                
-                // Update working data with loaded requirements
+
+                // Update working data with loaded requirements (even if empty)
                 if (!dataManager.workingData) {
                     dataManager.workingData = dataManager.loadWorkingDataFromLocalStorage() || {};
                 }
                 dataManager.workingData.additionalRequirements = tableRequirements;
-                
+
             } catch (error) {
                 console.error('AdditionalRequirements: Error loading from API:', error);
-                // Fall back to working data if API fails
-                const workingData = dataManager.workingData || dataManager.loadWorkingDataFromLocalStorage();
-                if (workingData && workingData.additionalRequirements) {
-                    console.log('AdditionalRequirements: Falling back to working data');
-                    loadSavedRequirements(workingData.additionalRequirements);
-                }
+                // Do not fall back to working data; fail silently or show error
             }
         } else {
             console.log('AdditionalRequirements: Creating new specification or missing spec ID');

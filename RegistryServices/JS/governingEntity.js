@@ -100,8 +100,8 @@ class GoverningEntityList {
             const apiUrl = `${AUTH_CONFIG.baseUrl}/usergroups`;
             console.log(`GoverningEntityList: Attempting to fetch from API: ${apiUrl}`);
 
-            // Use authenticatedFetch for admin-only endpoint
-            const response = await authenticatedFetch(apiUrl, {
+            // Use centralized authenticatedFetch for admin-only endpoint
+            const response = await window.authManager.authenticatedFetch(apiUrl, {
                 method: 'GET',
                 forceAuth: true // Ensure authentication headers are sent
             });
@@ -345,7 +345,7 @@ class GoverningEntityView {
         console.log(`GoverningEntityView: Fetching details for user group ID: ${this.userGroupId}`);
         try {
             const apiUrl = `${AUTH_CONFIG.baseUrl}/usergroups/${this.userGroupId}`;
-            const response = await authenticatedFetch(apiUrl, { method: 'GET', forceAuth: true });
+            const response = await window.authManager.authenticatedFetch(apiUrl, { method: 'GET', forceAuth: true });
 
             if (!response.ok) {
                 if (response.status === 404) {
@@ -451,7 +451,7 @@ class GoverningEntityView {
             const apiUrl = `${AUTH_CONFIG.baseUrl}/specifications/by-user-group?PageSize=1000`; // Assuming PageSize is a parameter
             console.log(`GoverningEntityView: Attempting to fetch specifications from API: ${apiUrl}`);
 
-            const response = await authenticatedFetch(apiUrl, {
+            const response = await window.authManager.authenticatedFetch(apiUrl, {
                 method: 'GET',
                 forceAuth: true 
             });
