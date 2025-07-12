@@ -323,16 +323,23 @@ showMessage('Error: Something went wrong', 'error');
 3. **Warning**: 5 minutes before expiration, user gets warning
 4. **Expiration**: Token expires, user automatically logged out
 
-### Session Warnings
 
+### Session Expiry, Refresh, and User Control
+
+#### Session Warnings
 ```javascript
 // User sees these messages automatically:
 "Your session will expire in 3 minute(s). Please save your work."
 "Your session has expired. Please log in again."
 ```
 
-### Manual Session Control
+#### Refresh Flow (User-Driven)
+- When your session is about to expire, a modal dialog will appear asking if you want to extend your session.
+- If you click "Extend Session", your refresh token will be used to obtain a new access token.
+- If you decline or close the modal, you will be logged out and redirected to the main registry page.
+- There is **no automatic/silent refresh**—the user must confirm via the modal.
 
+#### Manual Session Control & Debugging
 ```javascript
 // Check if session is valid
 if (authManager.isAuthenticated) {
@@ -341,7 +348,27 @@ if (authManager.isAuthenticated) {
 
 // Force session validation
 authManager.validateTokens();
+
+// Manually trigger a token refresh (for debugging)
+window.authManager.forceRefreshToken();
+
+// View current token and expiry
+console.log(window.authManager.token);      // Raw JWT
+console.log(window.authManager.tokenData);  // Decoded payload
+console.log(new Date(window.authManager.tokenData.exp * 1000)); // Expiry
+
+// List all localStorage values
+Object.keys(localStorage).forEach(k => console.log(k, localStorage.getItem(k)));
+
+// Force logout
+window.authManager.logout();
 ```
+
+#### Logout Flow
+- Logging out clears all authentication/session data and redirects to the main registry page.
+
+#### Security Note
+- Never share JWT or refresh tokens in logs or screenshots. Debug tools are for development only.
 
 ---
 
