@@ -22,39 +22,155 @@
 
         <title>Registry Services</title>
         <style>
-            /* Style for the Edit button container */
-            .header-with-edit {
+            #sidebarContainer {
+                position: relative;
+                z-index: 1000;
+            }
+            /* Model count summary containers for Specification Model tab */
+            .model-count-summary {
+                display: flex;
+                gap: 24px;
+                margin-bottom: 24px;
+                margin-top: 0;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                flex-wrap: wrap;
+            }
+            .model-count-box {
+                min-width: 270px;
+                height: 90px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                border-radius: 8px;
+                color: #fff;
+                font-family: inherit;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                text-align: center;
+                margin-bottom: 16px;
+                cursor: pointer;
+                transition: box-shadow 0.2s, transform 0.2s, background 0.2s;
+            }
+            .model-count-box:hover {
+                box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+                transform: scale(1.03);
+                filter: brightness(1.08);
+            }
+            @media (max-width: 900px) {
+                .model-count-box {
+                    min-width: 180px;
+                    height: 80px;
+                    font-size: 0.95em;
+                }
+                .model-count-summary {
+                    gap: 12px;
+                }
+            }
+            @media (max-width: 600px) {
+                .model-count-box {
+                    min-width: 100px;
+                    height: auto;
+                    font-size: 0.9em;
+                    padding: 10px 0;
+                }
+                .model-count-summary {
+                    gap: 8px;
+                }
+            }
+            .model-count-core {
+                background: #0a9c1a;
+            }
+            .model-count-extension {
+                background: #2576e6;
+            }
+            .model-count-additional {
+                background: #d3a1b7;
+            }
+            .model-count-title {
+                font-size: 1em;
+                font-weight: 500;
+                margin-bottom: 8px;
+                text-align: center;
+            }
+            .model-count-value {
+                font-size: 1.4em;
+                font-weight: 600;
+                text-align: center;
+            }
+
+/*********************************************************
+ * Styling for the Edit button container        
+ *********************************************************/
+            .header-with-edit 
+            {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                margin-bottom: 10px; /* Adjust as needed */
+                margin-bottom: 10px;
             }
-            .edit-button-top-right { /* You can reuse .view-button or define new styles */
+            .edit-button-top-right 
+            {
                 padding: 5px 10px;
                 font-size: 12px;
                 color: #fff;
-                background-color: #28a745; /* Green color for Edit */
+                background-color: #28a745;
                 border: none;
                 border-radius: 4px;
                 cursor: pointer;
                 transition: background-color 0.3s ease;
             }
-            .edit-button-top-right:hover {
+            .edit-button-top-right:hover 
+            {
                 background-color: #218838;
             }
 
-            .action-buttons-container {
+            .action-buttons-container 
+            {
                 display: flex;
                 align-items: center;
-                gap: 10px; /* Space between the dropdown group and the Edit button */
+                gap: 10px;
             }
-
+            .tabs 
+            {
+                display: flex;
+                gap: 0;
+                margin-bottom: 16px;
+                z-index: 10;
+                position: relative;
+            }
+            .tab-button 
+            {
+                background: #f5f5f5;
+                border: 1px solid #ccc;
+                border-radius: 6px 6px 0 0;
+                padding: 8px 24px;
+                font-size: 1em;
+                cursor: pointer;
+                position: relative;
+                z-index: 1;
+                margin-right: -1px;
+                transition: box-shadow 0.2s;
+            }
+            .tab-button.active 
+            {
+                background: #fff;
+                border-bottom: 2px solid #0074d9;
+                font-weight: bold;
+                z-index: 2;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            }
         </style>
     </head>
     <body>
         <div id="sidebarContainer">
             <!-- Sidebar will be dynamically generated by sidebarManager.js -->
         </div>
+        <!-- Return to Top Button -->
+        <button id="returnToTopBtn" style="position: fixed; right: 32px; bottom: 32px; z-index: 9999; background: #2576e6; color: #fff; border: none; border-radius: 50px; padding: 12px 28px; font-size: 1.1em; box-shadow: 0 2px 8px rgba(0,0,0,0.12); cursor: pointer; opacity: 0.92; transition: background 0.2s, opacity 0.2s;">
+            <i class="fa-solid fa-arrow-up"></i> Return to Top
+        </button>
 
         <div class="page-Content">
             <div id="breadcrumbContainer" class="breadcrumb-container">
@@ -162,14 +278,26 @@
         2/3 Specification Model tab
   ------------------------------------------------------------------------------>
             <div id="specificationModel" class="tab-content">
-                <div class="info-section">
-
-<!----------------------------------------------------------------------------
-        Selected Core Invoice Model elements
-  ------------------------------------------------------------------------------>
-                    <div class="info-table">
+                <!-- Model count summary containers -->
+                <div class="model-count-summary" id="modelCountSummary">
+                    <div class="model-count-box model-count-core" id="coreModelCountBox">
+                        <div class="model-count-title">Core Invoice Data Model</div>
+                        <div class="model-count-value" id="coreModelCount">0 elements</div>
+                    </div>
+                    <div class="model-count-box model-count-extension" id="extensionModelCountBox">
+                        <div class="model-count-title">Extension Component Data Model</div>
+                        <div class="model-count-value" id="extensionModelCount">0 elements</div>
+                    </div>
+                    <div class="model-count-box model-count-additional" id="additionalModelCountBox">
+                        <div class="model-count-title">Additional Requirements</div>
+                        <div class="model-count-value" id="additionalModelCount">0 elements</div>
+                    </div>
+                </div>
+                <div class="info-section" style="display: flex; flex-direction: column; gap: 24px;">
+                    <!-- Selected Core Invoice Model elements (first, stacked) -->
+                    <div class="info-table" style="width: 100%;">
                         <h3>Selected Core Invoice Model elements</h3>
-                        <table id="coreInvoiceModelTable">
+                        <table id="coreInvoiceModelTable" style="width: 100%;">
                             <thead>
                                 <tr>
                                     <th>ID</th>
@@ -182,13 +310,10 @@
                             </tbody>
                         </table>
                     </div>
-
-<!----------------------------------------------------------------------------
-        Selected Extension Component Data Model elements
-  ------------------------------------------------------------------------------>
-                    <div class="info-table">
+                    <!-- Selected Extension Component Data Model elements (second, stacked) -->
+                    <div class="info-table" style="width: 100%;">
                         <h3>Selected Extension Component Data Model elements</h3>
-                        <table id="extensionComponentTable">
+                        <table id="extensionComponentTable" style="width: 100%;">
                             <thead>
                                 <tr>
                                     <th>ID</th>
@@ -201,13 +326,10 @@
                             </tbody>
                         </table>
                     </div>
-
-<!----------------------------------------------------------------------------
-        Additional Requirements
-  ------------------------------------------------------------------------------>
-                    <div class="info-table">
+                    <!-- Additional Requirements (third, stacked) -->
+                    <div class="info-table" style="width: 100%;">
                         <h3>Additional Requirements</h3>
-                        <table id="additionalRequirementsTable">
+                        <table id="additionalRequirementsTable" style="width: 100%;">
                             <thead>
                                 <tr>
                                     <th>ID</th>
@@ -494,11 +616,9 @@
                     
                     // Populate Core Invoice Model table
                     const coreTableBody = document.querySelector("#coreInvoiceModelTable tbody");
-                    coreTableBody.innerHTML = ''; // Clear existing rows
-                    
+                    coreTableBody.innerHTML = '';
                     const coreItems = spec.specificationCores || [];
-                    console.log('DEBUG: Core items found:', coreItems.length);
-                    
+                    let coreCount = 0;
                     if (coreItems.length > 0) {
                         coreItems.forEach(item => {
                             const row = coreTableBody.insertRow();
@@ -506,6 +626,7 @@
                             row.insertCell().textContent = item.coreBusinessTerm || 'N/A';
                             row.insertCell().textContent = item.typeOfChange || 'Core Element';
                         });
+                        coreCount = coreItems.length;
                     } else {
                         const row = coreTableBody.insertRow();
                         const cell = row.insertCell();
@@ -514,15 +635,15 @@
                         cell.style.textAlign = 'center';
                         cell.style.fontStyle = 'italic';
                         cell.style.color = '#666';
+                        coreCount = 0;
                     }
-                    
+                    document.getElementById('coreModelCount').textContent = `${coreCount} element${coreCount === 1 ? '' : 's'}`;
+
                     // Populate Extension Component table
                     const extensionTableBody = document.querySelector("#extensionComponentTable tbody");
-                    extensionTableBody.innerHTML = ''; // Clear existing rows
-                    
+                    extensionTableBody.innerHTML = '';
                     const extensionItems = spec.specificationExtensionComponents || [];
-                    console.log('DEBUG: Extension items found:', extensionItems.length);
-                    
+                    let extensionCount = 0;
                     if (extensionItems.length > 0) {
                         extensionItems.forEach(item => {
                             const row = extensionTableBody.insertRow();
@@ -530,6 +651,7 @@
                             row.insertCell().textContent = item.extBusinessTerm || 'N/A';
                             row.insertCell().textContent = item.extensionComponentID || 'Extension Component';
                         });
+                        extensionCount = extensionItems.length;
                     } else {
                         const row = extensionTableBody.insertRow();
                         const cell = row.insertCell();
@@ -538,15 +660,18 @@
                         cell.style.textAlign = 'center';
                         cell.style.fontStyle = 'italic';
                         cell.style.color = '#666';
+                        extensionCount = 0;
                     }
-                    
+                    document.getElementById('extensionModelCount').textContent = `${extensionCount} element${extensionCount === 1 ? '' : 's'}`;
+
                     // Populate Additional Requirements table
                     const additionalTableBody = document.querySelector("#additionalRequirementsTable tbody");
-                    additionalTableBody.innerHTML = ''; // Clear existing rows
-                    
-                    const additionalItems = spec.additionalRequirements || [];
-                    console.log('DEBUG: Additional requirements found:', additionalItems.length);
-                    
+                    additionalTableBody.innerHTML = '';
+                    const additionalItems = (spec.additionalRequirements || []).filter(item => {
+                        // Only count rows with at least one non-empty property
+                        return item && (item.businessTermID || item.businessTermName || item.typeOfChange);
+                    });
+                    let additionalCount = 0;
                     if (additionalItems.length > 0) {
                         additionalItems.forEach(item => {
                             const row = additionalTableBody.insertRow();
@@ -554,6 +679,7 @@
                             row.insertCell().textContent = item.businessTermName || 'N/A';
                             row.insertCell().textContent = item.typeOfChange || 'Additional Requirement';
                         });
+                        additionalCount = additionalItems.length;
                     } else {
                         const row = additionalTableBody.insertRow();
                         const cell = row.insertCell();
@@ -562,7 +688,9 @@
                         cell.style.textAlign = 'center';
                         cell.style.fontStyle = 'italic';
                         cell.style.color = '#666';
+                        additionalCount = 0;
                     }
+                    document.getElementById('additionalModelCount').textContent = `${additionalCount} element${additionalCount === 1 ? '' : 's'}`;
                     
                 } catch (error) {
                     console.error('Error populating specification model:', error);
@@ -768,6 +896,39 @@
                     console.warn('DEBUG: Could not set up Registry Status update listener (elements or spec.identityID missing).');
                 }
             }
+
+// Fast travel click handlers for model count boxes
+(function() {
+    document.addEventListener("DOMContentLoaded", function () {
+        const fastTravelMap = [
+            { boxId: "coreModelCountBox", tableId: "coreInvoiceModelTable" },
+            { boxId: "extensionModelCountBox", tableId: "extensionComponentTable" },
+            { boxId: "additionalModelCountBox", tableId: "additionalRequirementsTable" }
+        ];
+        fastTravelMap.forEach(({ boxId, tableId }) => {
+            const box = document.getElementById(boxId);
+            if (box) {
+                box.addEventListener("click", function () {
+                    const table = document.getElementById(tableId);
+                    if (table) {
+                        table.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }
+                });
+            }
+        });
+    });
+})();
+        </script>
+        <script>
+        // Return to Top button functionality
+        document.addEventListener("DOMContentLoaded", function () {
+            const btn = document.getElementById("returnToTopBtn");
+            if (btn) {
+                btn.addEventListener("click", function () {
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                });
+            }
+        });
         </script>
         
         <script>
