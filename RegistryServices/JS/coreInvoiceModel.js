@@ -106,7 +106,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 ReqID: item.reqId || item.ReqID || item['Req ID'] || 'N/A',
                 TypeOfChange: item.typeOfChange || item.TypeOfChange || 'No change',
                 rowPos: item.rowPos, // Keep rowPos for sorting
-                children: [] // Initialize children array for hierarchy
+                children: [], // Initialize children array for hierarchy
+                parent: null
             }));
 
             // Sort elements by rowPos to ensure correct processing order for hierarchy building
@@ -124,6 +125,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     roots.push(item);
                 } else if (directParent) {
                     directParent.children.push(item);
+                    item.parent = directParent; // Set parent reference for the item
                 } else {
                     // This case handles items with level > 1 but no direct parent at level-1
                     // This might indicate an issue with data, or they are also roots.
@@ -142,30 +144,32 @@ document.addEventListener("DOMContentLoaded", function () {
             });
             // --- END NEW HIERARCHY BUILDING LOGIC ---
 
-            // Helper function to find parent of an item in the hierarchy
-            function findParentInHierarchy(childItem, allElements) {
-                // Find the parent by looking for the item that contains this child in its children array
-                for (const element of allElements) {
-                    if (element.children && element.children.some(child => child.ID === childItem.ID)) {
-                        return element;
-                    }
-                }
-                return null;
-            }
+            
 
-            // Function to get all mandatory children of a BG parent
-            function getMandatoryChildren(bgParent, allElements) {
-                const mandatoryChildren = [];
-                if (bgParent.children) {
-                    bgParent.children.forEach(child => {
-                        if (child.Cardinality === '1..1' && child.LevelStr.startsWith('++')) {
-                            mandatoryChildren.push(child.ID);
-                        }
-                        // Recursively check deeper children if needed
-                        mandatoryChildren.push(...getMandatoryChildren(child, allElements));
-                    });
+            /**
+             * NEW: Recursively checks if an element is mandatory based on its cardinality
+             * and the cardinality of its entire parent chain.
+             * @param {object} item - The element to check.
+             * @returns {boolean} - True if the element is mandatory, false otherwise.
+             */
+            function isElementMandatory(item) {
+                // Rule 1: The element itself must have a cardinality starting with '1'.
+                if (!item.Cardinality || !item.Cardinality.startsWith('1')) {
+                    return false;
                 }
-                return mandatoryChildren;
+
+                // Rule 2: If it's a level 1 element and its cardinality starts with '1', it is mandatory.
+                if (item.NumericLevel === 1) {
+                    return true;
+                }
+
+                // Rule 3: If it's a nested element, its parent must also be mandatory.
+                if (item.parent) {
+                    return isElementMandatory(item.parent);
+                }
+                
+                // If it's not a level 1 element and has no parent, it's not part of a valid mandatory chain.
+                return false;
             }
 
             // Recursive row creation
@@ -176,9 +180,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 const isBT = item.ID && item.ID.startsWith('BT');
                 if (!isBT) {
                     tr.classList.add(item.NumericLevel === 1 ? 'parent-row' : 'child-row');
-                } else {
-                    // For BT rows, always use default row style (no child-row, no parent-row)
                 }
+
                 if (item.children.length > 0 && !isBT) tr.classList.add('has-children-parent-row');
                 // Hide all child rows (level > 1) by default, regardless of BT/BG
                 if (item.NumericLevel > 1) tr.style.display = 'none';
@@ -211,14 +214,15 @@ document.addEventListener("DOMContentLoaded", function () {
                     <td>${item.DataType || 'N/A'}</td>
                 `;
 
+                
                 const currentTextarea = tr.querySelector(`textarea.usage-note-textarea[data-id="${item.ID}"]`);
                 if (currentTextarea) {
                     currentTextarea.value = item.UsageNote || '';
-                    // Add event listener directly for robustness if not already handled by a general table listener
                     currentTextarea.addEventListener('input', () => {
                         updateSaveButtonAppearance();
                     });
                 }
+
                 // Add the appropriate columns based on whether this is read-only or editable
                 if (isReadOnly) {
                     // Read-only version: Add Actions cell (Show more button) as the last column
@@ -229,23 +233,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     const includedCell = document.createElement("td");
                     includedCell.className = "centered-cell";
                     
-                    // Auto-check if cardinality is '1..1' and level is '+', or if previously saved
-                    const shouldAutoCheck = (item.Cardinality === '1..1' && item.LevelStr === '+');
-                    
-                    // Also auto-check if this is a mandatory child of a BG parent
-                    let isMandatoryChild = false;
-                    if (item.Cardinality === '1..1' && item.LevelStr === '++') {
-                        // Find parent in the hierarchy - look through processedElements for parent
-                        const parentElement = findParentInHierarchy(item, processedElements);
-                        if (parentElement && parentElement.ID && parentElement.ID.startsWith('BG') && 
-                            parentElement.LevelStr === '+' && parentElement.Cardinality === '1..1') {
-                            isMandatoryChild = true;
-                        }
-                    }
-                    
-                    const isChecked = savedCoreIds.includes(item.ID) || shouldAutoCheck || isMandatoryChild;
-                    
-                    includedCell.innerHTML = `<input type="checkbox" class="row-selector" data-id="${item.ID}" ${isChecked ? 'checked' : ''} ${isChecked && !isReadOnly ? 'disabled' : ''}>`;
+                    const isMandatory = isElementMandatory(item);
+                    const isChecked = savedCoreIds.includes(item.ID) || isMandatory;
+                    const isDisabled = isMandatory && !isReadOnly;
+
+                    includedCell.innerHTML = `<input type="checkbox" class="row-selector" data-id="${item.ID}" ${isChecked ? 'checked' : ''} ${isDisabled ? 'disabled' : ''}>`;
                     tr.appendChild(includedCell);
 
                     const typeOfChangeCell = document.createElement("td");
@@ -308,15 +300,11 @@ document.addEventListener("DOMContentLoaded", function () {
             const checkChildrenRecursive = (currentElement) => {
                 currentElement.children.forEach(child => {
                     const childCheckbox = document.querySelector(`.row-selector[data-id="${child.ID}"]`);
-                    // Check only if not already checked or disabled (mandatory elements remain checked)
                     if (childCheckbox && !childCheckbox.checked) {
                         childCheckbox.checked = true;
                     }
-                    // If the child is mandatory (1..1 and '++' level, or primary mandatory), disable it
-                    const isMandatoryElement = (child.Cardinality === '1..1' && child.LevelStr === '+') ||
-                                               (child.Cardinality === '1..1' && child.LevelStr.startsWith('++'));
-                    if (isMandatoryElement && !window.isCoreInvoiceReadOnly) {
-                        childCheckbox.disabled = true;
+                    if (isElementMandatory(child) && !window.isCoreInvoiceReadOnly) {
+                        if (childCheckbox) childCheckbox.disabled = true;
                     }
                     if (child.children.length > 0) {
                         checkChildrenRecursive(child);
@@ -337,6 +325,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 });
             };
 
+            const findParentInHierarchy = (childItem) => {
+                return childItem.parent;
+            };
+
             window.handleCascadingSelection = function(changedCheckbox) {
                 const itemId = changedCheckbox.getAttribute('data-id');
                 const isChecked = changedCheckbox.checked;
@@ -355,7 +347,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 // B. Handle Child (BT or BG) selection -> cascading up
                 if (isChecked) {
                     let current = item;
-                    let parentItem = findParentInHierarchy(current, processedElements);
+                    let parentItem = findParentInHierarchy(current);
 
                     while (parentItem) {
                         const parentCheckbox = document.querySelector(`.row-selector[data-id="${parentItem.ID}"]`);
@@ -363,61 +355,18 @@ document.addEventListener("DOMContentLoaded", function () {
                             parentCheckbox.checked = true;
                         }
                         current = parentItem;
-                        parentItem = findParentInHierarchy(current, processedElements);
+                        parentItem = findParentInHierarchy(current);
                     }
                 }
             };
             
-            // Helper function to get all children (not just mandatory ones)
-            function getAllChildren(parent) {
-                const allChildren = [];
-                if (parent.children) {
-                    parent.children.forEach(child => {
-                        allChildren.push(child.ID);
-                        allChildren.push(...getAllChildren(child));
-                    });
-                }
-                return allChildren;
-            }
-            
-            // Auto-save mandatory selections (cardinality '1..1' and level '+') if in editable mode
-            if (!isReadOnly) {
-                const autoSelectedIds = [];
-                
-                // First, find primary mandatory items (level '+' with cardinality '1..1')
-                processedElements.forEach(item => {
-                    if (item.Cardinality === '1..1' && item.LevelStr === '+') {
-                        autoSelectedIds.push(item.ID);
-                        
-                        // If this is a BG item, also auto-select its mandatory children
-                        if (item.ID && item.ID.startsWith('BG')) {
-                            const mandatoryChildren = getMandatoryChildren(item, processedElements);
-                            autoSelectedIds.push(...mandatoryChildren);
-                        }
-                    }
-                });
-                
-                // Merge auto-selected with previously saved selections
-                const allSelectedIds = [...new Set([...savedCoreIds, ...autoSelectedIds])];
-                
-                // Update localStorage if there are new auto-selections
-                if (autoSelectedIds.length > 0 && editingSpecId) {
-                    const specifications = JSON.parse(localStorage.getItem("mySpecifications")) || [];
-                    const specIndex = specifications.findIndex(spec => spec.id === editingSpecId);
-                    if (specIndex > -1) {
-                        specifications[specIndex].coreInvoiceModelIds = allSelectedIds;
-                        localStorage.setItem('mySpecifications', JSON.stringify(specifications));
-                    }
-                }
-            }        })
+            })
         .catch(error => {
             console.error("Error loading core invoice model data from API:", error);
             const tableBody = document.querySelector('#coreInvoiceTable tbody');
             tableBody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:red;">Failed to load Core Invoice Model data from API. Please check your connection and try again later.</td></tr>`;
         });
 
-    // Note: Save functions are now handled in coreInvoiceModel.html
-    // This file only handles table population and UI interactions
     console.log("CoreInvoiceModel.js: Table population and UI setup complete");
 
 });
