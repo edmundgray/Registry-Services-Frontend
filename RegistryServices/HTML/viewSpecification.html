@@ -166,6 +166,9 @@
                 padding: 10px 15px;
                 color: #fff;
                 border-radius: 5px 5px 0 0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
             }
             .core-model-title {
                 background-color: #217a36;
@@ -314,8 +317,9 @@
                     <div style="width: 100%;">
                         <div class="table-title-container core-model-title">
                             <h3>Selected Core Invoice Model elements</h3>
+                            <button id="toggleCoreTableButton" class="show-more-btn" style="background-color: #fff; color: #217a36;">Show more</button>
                         </div>
-                        <table id="coreInvoiceModelTable" class="styled-table" style="width: 100%; margin-top: 0;">
+                        <table id="coreInvoiceModelTable" class="styled-table" style="width: 100%; margin-top: 0; display: none;">
                             <thead>
                                 <tr>
                                     <th>ID</th>
@@ -485,6 +489,8 @@
                     
                     setupRegistryStatusUpdateListener(currentSpecification);
 
+                    setupCoreTableToggle();
+
                     hideLoadingIndicator();
                     
                 } catch (error) {
@@ -494,6 +500,19 @@
                 }
             }
 
+            function setupCoreTableToggle() {
+                const toggleButton = document.getElementById('toggleCoreTableButton');
+                const coreTable = document.getElementById('coreInvoiceModelTable');
+
+                if (toggleButton && coreTable) {
+                    toggleButton.addEventListener('click', function() {
+                        const isHidden = coreTable.style.display === 'none';
+                        coreTable.style.display = isHidden ? 'table' : 'none';
+                        this.textContent = isHidden ? 'Show less' : 'Show more';
+                    });
+                }
+            }
+            
             function populateSummaryTable(spec) {
                 const detailsTableContainer = document.getElementById("detailsTableContainer");
                 if (!detailsTableContainer) return;
