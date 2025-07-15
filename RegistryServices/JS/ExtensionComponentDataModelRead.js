@@ -81,10 +81,11 @@ document.addEventListener("DOMContentLoaded", function () {
                         <th>ID</th><th>Level</th><th>Cardinality</th><th>Business Term</th><th>Usage Note</th>
                         <th>Justification</th><th>Data Type</th><th>Type of Extension</th>
                         <th>Core Conformant /Rules broken</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td colspan="9" style="text-align:center;">Please select a component to view its elements.</td></tr>
+                    <tr><td colspan="10" style="text-align:center;">Please select a component to view its elements.</td></tr>
                 </tbody>
             </table>
         `;
@@ -117,7 +118,7 @@ document.addEventListener("DOMContentLoaded", function () {
         console.log('ExtensionComponentDataModelRead: populateComponentTable called with:', { selectedComponentId, selectedIds });
 
         if (!selectedComponentId) {
-            tableBody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Please select a component to view its elements.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Please select a component to view its elements.</td></tr>';
             return;
         }
 
@@ -147,7 +148,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 console.log(`Fetched ${componentElements.length} elements for ${selectedComponentId}.`);
             } catch (error) {
                 console.error(`Error fetching elements for component ${selectedComponentId}:`, error);
-                tableBody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">Failed to load elements for this component. Please check your connection and try again.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:red;">Failed to load elements for this component. Please check your connection and try again.</td></tr>`;
                 return;
             }
         }
@@ -155,14 +156,35 @@ document.addEventListener("DOMContentLoaded", function () {
         tableBody.innerHTML = ''; // Clear previous elements
         
         if (componentElements.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="9" style="text-align:center;">No elements found for this component.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="10" style="text-align:center;">No elements found for this component.</td></tr>`;
             return;
         }
 
-        componentElements.forEach(el => {
+        const processedElements = componentElements.map(item => ({
+            ...item,
+            numericLevel: getNumericLevelFromDotNotation(item.level),
+            children: []
+        }));
+
+        const roots = [];
+        const parentTracker = {};
+
+        processedElements.forEach(item => {
+            const parent = parentTracker[item.numericLevel - 1];
+
+            if (item.numericLevel === 1) {
+                roots.push(item);
+            } else if (parent) {
+                parent.children.push(item);
+            } else {
+                roots.push(item);
+            }
+            parentTracker[item.numericLevel] = item;
+        });
+
+        function renderRowAndChildren(item, container) {
             const row = document.createElement('tr');
             
-            // Helper function to combine usage notes
             function combineUsageNotes(usageNoteCore, usageNoteExtension, semanticDescription) {
                 const notes = [usageNoteCore, usageNoteExtension, semanticDescription]
                     .filter(note => note && note.trim())
@@ -170,50 +192,43 @@ document.addEventListener("DOMContentLoaded", function () {
                 return notes.length > 0 ? notes.join(' | ') : 'N/A';
             }
             
-            // Map properties from API response
-            const businessTermID = el.businessTermID;
-            const isXG = businessTermID.startsWith('XG');
-            const isXT = businessTermID.startsWith('XT');
-            const isBG = businessTermID.startsWith('BG');
-            const numericLevel = getNumericLevelFromDotNotation(el.level || '');
-            
-            // Apply styling classes based on element type and level
+            const isXG = (item.businessTermID || '').startsWith('XG');
+            const isXT = (item.businessTermID || '').startsWith('XT');
+            const isBG = (item.businessTermID || '').startsWith('BG');
+
+            if (item.numericLevel > 1) { 
+                row.classList.add('child-row');
+            }
             if (isXG) {
-                if (numericLevel === 1) {
-                    row.classList.add('level-1-xg');
-                } else if (numericLevel === 2 || numericLevel === 3) {
+                if (item.numericLevel === 1) {
+                    row.classList.add('level-1-xg', 'parent-row');
+                } else {
                     row.classList.add('level-2-xg');
-                }
-                if (numericLevel === 1) {
-                    row.classList.add('parent-row');
-                } else if (numericLevel > 1) {
-                    row.classList.add('child-row');
                 }
             } else if (isXT) {
                 row.classList.add('level-xt');
-                if (numericLevel > 0) {
-                    row.classList.add('child-row');
-                }
             } else if (isBG) {
-                if (numericLevel === 1) {
-                    row.classList.add('level-1-bg');
-                    row.classList.add('parent-row');
-                } else if (numericLevel === 2 || numericLevel === 3) {
+                if (item.numericLevel === 1) {
+                    row.classList.add('level-1-bg', 'parent-row');
+                } else {
                     row.classList.add('level-2-bg');
-                    row.classList.add('child-row');
                 }
             }
 
+            if (item.children && item.children.length > 0) {
+                row.classList.add('has-children-parent-row');
+            }
+
             const mappedEl = {
-                ID: businessTermID,
-                Level: el.level || 'N/A',
-                Cardinality: el.cardinality || 'N/A',
-                "Business Term": el.businessTerm || 'N/A',
-                "Usage Note": combineUsageNotes(el.usageNoteCore, el.usageNoteExtension, el.semanticDescription),
-                Justification: el.justification || 'N/A',
-                "Data Type": el.dataType || 'N/A',
-                "Type of Extension": el.extensionType || 'N/A',
-                "Core Conformant/Rules broken": el.conformanceType || 'N/A'
+                ID: item.businessTermID,
+                Level: item.level || 'N/A',
+                Cardinality: item.cardinality || 'N/A',
+                "Business Term": item.businessTerm || 'N/A',
+                "Usage Note": combineUsageNotes(item.usageNoteCore, item.usageNoteExtension, item.semanticDescription),
+                Justification: item.justification || 'N/A',
+                "Data Type": item.dataType || 'N/A',
+                "Type of Extension": item.extensionType || 'N/A',
+                "Core Conformant/Rules broken": item.conformanceType || 'N/A'
             };
 
             row.innerHTML = `
@@ -226,11 +241,48 @@ document.addEventListener("DOMContentLoaded", function () {
                 <td>${mappedEl['Data Type']}</td>
                 <td>${mappedEl['Type of Extension']}</td>
                 <td>${mappedEl['Core Conformant/Rules broken']}</td>
+                <td class="actions-cell"></td>
             `;
             
-            tableBody.appendChild(row);
-        });
+            container.appendChild(row);
+
+            if (item.numericLevel > 1) {
+                row.style.display = 'none';
+            }
+
+            const immediateChildTrs = [];
+
+            if (item.children.length > 0) {
+                const showMoreBtn = document.createElement('button');
+                showMoreBtn.className = 'show-more-btn';
+                showMoreBtn.textContent = 'Show more';
+                showMoreBtn.style.fontSize = '12px';
+                
+                const buttonCell = row.querySelector('.actions-cell');
+                if (buttonCell) {
+                    buttonCell.appendChild(showMoreBtn);
+                }
+
+                item.children.forEach(child => {
+                    const childTr = renderRowAndChildren(child, container);
+                    immediateChildTrs.push(childTr);
+                });
+                
+                showMoreBtn.addEventListener('click', function() {
+                    const isHidden = immediateChildTrs[0].style.display === 'none';
+                    immediateChildTrs.forEach(childTr => {
+                        childTr.style.display = isHidden ? '' : 'none';
+                    });
+                    this.textContent = isHidden ? 'Show less' : 'Show more';
+                    this.blur();
+                });
+            }
+
+            return row;
+        }
         
+        roots.forEach(root => renderRowAndChildren(root, tableBody));
+
         console.log('ExtensionComponentDataModelRead: Table populated with', componentElements.length, 'elements');
     }
 
@@ -250,7 +302,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // Hide any remove section buttons
         document.querySelectorAll('.remove-section-btn').forEach(btn => btn.style.display = 'none');
         
-        console.log("ExtensionComponentDataModelRead: Read-only mode applied");
+        console.log("ExtensionComponentDataModelRead.js: Read-only mode applied");
     }
 
     // Initialize the page
