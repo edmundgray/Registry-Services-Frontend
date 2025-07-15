@@ -161,6 +161,21 @@
                 z-index: 2;
                 box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             }
+
+            .table-title-container{
+                padding: 10px 15px;
+                color: #fff;
+                border-radius: 5px 5px 0 0;
+            }
+            .core-model-title {
+                background-color: #217a36;
+            }
+            .table-title-container h3 {
+                margin: 0;
+                font-size: 1.1em;
+                font-weight: 500;
+                text-align: left;
+            }
         </style>
     </head>
     <body>
@@ -280,29 +295,39 @@
             <div id="specificationModel" class="tab-content">
                 <!-- Model count summary containers -->
                 <div class="model-count-summary" id="modelCountSummary">
-                    <div class="model-count-box model-count-core" id="coreModelCountBox">
+                    
+                    <div class="model-count-box model-count-core" id="coreModelCountBox" onclick="document.getElementById('coreInvoiceModelTable').scrollIntoView({ behavior: 'smooth' });">
                         <div class="model-count-title">Core Invoice Data Model</div>
                         <div class="model-count-value" id="coreModelCount">0 elements</div>
                     </div>
-                    <div class="model-count-box model-count-extension" id="extensionModelCountBox">
+                    <div class="model-count-box model-count-extension" id="extensionModelCountBox" onclick="document.getElementById('extensionComponentTable').scrollIntoView({ behavior: 'smooth' });">
                         <div class="model-count-title">Extension Component Data Model</div>
                         <div class="model-count-value" id="extensionModelCount">0 elements</div>
                     </div>
-                    <div class="model-count-box model-count-additional" id="additionalModelCountBox">
+                    <div class="model-count-box model-count-additional" id="additionalModelCountBox" onclick="document.getElementById('additionalRequirementsTable').scrollIntoView({ behavior: 'smooth' });">
                         <div class="model-count-title">Additional Requirements</div>
                         <div class="model-count-value" id="additionalModelCount">0 elements</div>
                     </div>
                 </div>
                 <div class="info-section" style="display: flex; flex-direction: column; gap: 24px;">
                     <!-- Selected Core Invoice Model elements (first, stacked) -->
-                    <div class="info-table" style="width: 100%;">
-                        <h3>Selected Core Invoice Model elements</h3>
-                        <table id="coreInvoiceModelTable" style="width: 100%;">
+                    <div style="width: 100%;">
+                        <div class="table-title-container core-model-title">
+                            <h3>Selected Core Invoice Model elements</h3>
+                        </div>
+                        <table id="coreInvoiceModelTable" class="styled-table" style="width: 100%; margin-top: 0;">
                             <thead>
                                 <tr>
                                     <th>ID</th>
+                                    <th>Level</th>
+                                    <th>Cardinality</th>
                                     <th>Business Term</th>
+                                    <th>Usage Note</th>
+                                    <th>Business Rules</th>
+                                    <th>Data Type</th>
                                     <th>Type of Change</th>
+                                    <th>Actions</th>
+                                    
                                 </tr>
                             </thead>
                             <tbody>
@@ -614,31 +639,14 @@
                         additionalRequirements: spec.additionalRequirements
                     });
                     
-                    // Populate Core Invoice Model table
-                    const coreTableBody = document.querySelector("#coreInvoiceModelTable tbody");
-                    coreTableBody.innerHTML = '';
-                    const coreItems = spec.specificationCores || [];
-                    let coreCount = 0;
-                    if (coreItems.length > 0) {
-                        coreItems.forEach(item => {
-                            const row = coreTableBody.insertRow();
-                            row.insertCell().textContent = item.businessTermID || 'N/A';
-                            row.insertCell().textContent = item.coreBusinessTerm || 'N/A';
-                            row.insertCell().textContent = item.typeOfChange || 'Core Element';
-                        });
-                        coreCount = coreItems.length;
-                    } else {
-                        const row = coreTableBody.insertRow();
-                        const cell = row.insertCell();
-                        cell.colSpan = 3;
-                        cell.textContent = 'No Core Invoice Model elements selected';
-                        cell.style.textAlign = 'center';
-                        cell.style.fontStyle = 'italic';
-                        cell.style.color = '#666';
-                        coreCount = 0;
-                    }
-                    document.getElementById('coreModelCount').textContent = `${coreCount} element${coreCount === 1 ? '' : 's'}`;
+                    const allCoreModelElements = await fetchCoreInvoiceModelsFromAPI();
+                    const selectedCoreDataMap = new Map((spec.specificationCores || []).map(item => [item.businessTermID, item]));
+                    const selectedElements = allCoreModelElements.filter(el => selectedCoreDataMap.has(el.id));
 
+                    populateCoreInvoiceTable(selectedElements, selectedCoreDataMap);
+                        let coreCount = selectedElements.length;
+                        document.getElementById('coreModelCount').textContent = `${coreCount} element${coreCount === 1 ? '' : 's'}`;
+                  
                     // Populate Extension Component table
                     const extensionTableBody = document.querySelector("#extensionComponentTable tbody");
                     extensionTableBody.innerHTML = '';
@@ -696,6 +704,80 @@
                     console.error('Error populating specification model:', error);
                     showErrorMessage('Error loading specification model data');
                 }
+            }
+
+            async function fetchCoreInvoiceModelsFromAPI() {
+                try {
+                    const response = await window.authManager.authenticatedFetch(`${AUTH_CONFIG.baseUrl}/coreinvoicemodels?pageSize=1000`, { method: 'GET' });
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    const data = await response.json();
+                    return Array.isArray(data) ? data : (data.items || []);
+                } catch (error) {
+                    console.error("Error fetching Core Invoice Model data from API:", error);
+                    return [];
+                }
+            }
+
+            function populateCoreInvoiceTable(selectedElements, selectedDataMap) {
+                const tableBody = document.querySelector("#coreInvoiceModelTable tbody");
+                tableBody.innerHTML = '';
+
+                if (selectedElements.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="9" style="text-align:center;font-style:italic;color:#666;">No Core Invoice Model elements selected.</td></tr>';
+                    return;
+                }
+
+                function getNumericLevel(levelStr) { return (levelStr || '').split('+').length - 1; }
+
+                const processedElements = selectedElements.map(item => ({
+                    ...item,
+                    NumericLevel: getNumericLevel(item.level),
+                    typeOfChange: selectedDataMap.get(item.id)?.typeOfChange || 'N/A',
+                    children: []
+                })).sort((a, b) => a.rowPos - b.rowPos);
+
+                const roots = [];
+                const parentTracker = {};
+                processedElements.forEach(item => {
+                    const directParent = parentTracker[item.NumericLevel - 1];
+                    if (item.NumericLevel === 1) roots.push(item);
+                    else if (directParent) directParent.children.push(item);
+                    else roots.push(item);
+                    parentTracker[item.NumericLevel] = item;
+                    for (let i = item.NumericLevel + 1; i <= 5; i++) delete parentTracker[i];
+                });
+
+                function renderRowAndChildren(item, container) {
+                    const tr = document.createElement('tr');
+                    if (item.id.startsWith('BG')) tr.classList.add(item.NumericLevel === 1 ? 'level-1-bg' : 'level-2-bg');
+                    if (item.NumericLevel > 1) tr.classList.add('child-row');
+                    if (item.children.length > 0 && item.id.startsWith('BG')) tr.classList.add('has-children-parent-row');
+                    if (item.NumericLevel > 1) tr.style.display = 'none';
+                    
+                    tr.innerHTML = `
+                        <td>${item.id || 'N/A'}</td> <td>${item.level || 'N/A'}</td> <td>${item.cardinality || 'N/A'}</td>
+                        <td><i class="fa-solid fa-circle-question semantic-tooltip" title="${item.semanticDescription || ''}"></i> ${item.businessTerm || 'N/A'}</td>
+                        <td>${item.usageNote || 'N/A'}</td> <td>${item.coreBusinessRules || 'N/A'}</td> <td>${item.coreDataType || 'N/A'}</td>
+                        <td>${item.typeOfChange}</td> <td class="actions-cell"></td>
+                    `;
+                    container.appendChild(tr);
+
+                    if (item.children.length > 0) {
+                        const immediateChildTrs = item.children.map(child => renderRowAndChildren(child, container));
+                        const showMoreBtn = document.createElement('button');
+                        showMoreBtn.className = 'show-more-btn';
+                        showMoreBtn.textContent = 'Show more';
+                        showMoreBtn.onclick = () => {
+                            const isHidden = immediateChildTrs[0].style.display === 'none';
+                            immediateChildTrs.forEach(childTr => childTr.style.display = isHidden ? '' : 'none');
+                            showMoreBtn.textContent = isHidden ? 'Show less' : 'Show more';
+                        };
+                        tr.querySelector('.actions-cell').appendChild(showMoreBtn);
+                    }
+                    return tr;
+                }
+
+                roots.forEach(root => renderRowAndChildren(root, tableBody));
             }
 
             function populateSupportingArtefacts(spec) {
