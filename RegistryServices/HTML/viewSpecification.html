@@ -176,12 +176,16 @@
             .extension-model-title {
                 background-color: #000080;
             }
+            .additional-reqs-title {
+                background-color: #d3a1b7;
+            }
             .table-title-container h3 {
                 margin: 0;
                 font-size: 1.1em;
                 font-weight: 500;
                 text-align: left;
             }
+            
         </style>
     </head>
     <body>
@@ -370,13 +374,20 @@
                         </table>
                     </div>
                     <!-- Additional Requirements (third, stacked) -->
-                    <div class="info-table" style="width: 100%;">
-                        <h3>Additional Requirements</h3>
-                        <table id="additionalRequirementsTable" style="width: 100%;">
+                    <div style="width: 100%;">
+                        <div class="table-title-container additional-reqs-title">
+                            <h3>Additional Requirements</h3>
+                            <button id="toggleAdditionalTableButton" class="show-more-btn" style="background-color: #fff; color: #d3a1b7;">Show more</button>
+                        </div>
+                        <table id="additionalRequirementsTable" class="styled-table" style="width: 100%; margin-top: 0; display: none;">
                             <thead>
                                 <tr>
                                     <th>ID</th>
+                                    <th>Level</th>
+                                    <th>Cardinality</th>
                                     <th>Business Term</th>
+                                    <th>Description</th>
+                                    <th>Usage Note</th>
                                     <th>Type of Change</th>
                                 </tr>
                             </thead>
@@ -686,31 +697,49 @@
 
                     // Populate Additional Requirements table
                     const additionalTableBody = document.querySelector("#additionalRequirementsTable tbody");
+                    const additionalTable = document.getElementById("additionalRequirementsTable");
+                    const toggleAdditionalButton = document.getElementById("toggleAdditionalTableButton");
+                    
                     additionalTableBody.innerHTML = '';
+
                     const additionalItems = (spec.additionalRequirements || []).filter(item => {
-                        // Only count rows with at least one non-empty property
                         return item && (item.businessTermID || item.businessTermName || item.typeOfChange);
                     });
-                    let additionalCount = 0;
-                    if (additionalItems.length > 0) {
+
+                    let additionalCount = additionalItems.length;
+                    document.getElementById('additionalModelCount').textContent = `${additionalCount} element${additionalCount === 1 ? '' : 's'}`;
+
+                    if (additionalCount > 0) {
+                        if (toggleAdditionalButton) toggleAdditionalButton.style.display = 'block';
+
                         additionalItems.forEach(item => {
                             const row = additionalTableBody.insertRow();
                             row.insertCell().textContent = item.businessTermID || 'N/A';
+                            row.insertCell().textContent = item.level || 'N/A';
+                            row.insertCell().textContent = item.cardinality || 'N/A';
                             row.insertCell().textContent = item.businessTermName || 'N/A';
+                            row.insertCell().textContent = item.semanticDescription || 'N/A';
+                            row.insertCell().textContent = item.usageNote || 'N/A';
                             row.insertCell().textContent = item.typeOfChange || 'Additional Requirement';
                         });
-                        additionalCount = additionalItems.length;
                     } else {
+                        if (toggleAdditionalButton) toggleAdditionalButton.style.display = 'none';
                         const row = additionalTableBody.insertRow();
                         const cell = row.insertCell();
-                        cell.colSpan = 3;
+                        cell.colSpan = 7; // Updated colspan
                         cell.textContent = 'No Additional Requirements specified';
                         cell.style.textAlign = 'center';
                         cell.style.fontStyle = 'italic';
                         cell.style.color = '#666';
-                        additionalCount = 0;
                     }
-                    document.getElementById('additionalModelCount').textContent = `${additionalCount} element${additionalCount === 1 ? '' : 's'}`;
+
+                    if (toggleAdditionalButton && additionalTable) {
+                        toggleAdditionalButton.addEventListener('click', function() {
+                            const isHidden = additionalTable.style.display === 'none';
+                            additionalTable.style.display = isHidden ? 'table' : 'none';
+                            this.textContent = isHidden ? 'Show less' : 'Show more';
+                        });
+                    }
                     
                 } catch (error) {
                     console.error('Error populating specification model:', error);
