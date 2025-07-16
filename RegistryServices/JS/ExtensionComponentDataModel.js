@@ -1067,17 +1067,20 @@ function updateSaveButtonAppearance() {
     const saveButton = document.querySelector('button[onclick="handleSave()"]');
     const hasChanges = hasActualChanges();
     
+   
     if (saveButton) {
-        if (hasChanges) {
-            saveButton.style.background = '#28a745'; // Green when changes exist
-            saveButton.style.fontWeight = 'bold';
-            saveButton.style.boxShadow = '0 2px 4px rgba(40, 167, 69, 0.3)';
-        } else {
-            saveButton.style.background = '#6c757d'; // Gray when no changes
-            saveButton.style.fontWeight = 'normal';
-            saveButton.style.boxShadow = 'none';
+            if (hasChanges) {
+                saveButton.style.setProperty('background-color', '#28a745', 'important');
+                saveButton.style.color = '#fff';
+                saveButton.style.fontWeight = 'normal';
+                
+            } else {
+                saveButton.style.setProperty('background-color', '#6c757d', 'important');
+                saveButton.style.color = '#fff';
+                saveButton.style.fontWeight = 'normal';
+                saveButton.style.boxShadow = 'none';
+            }
         }
-    }
 }
 
 async function handleSave(showAlert = true, allowNavigationWithoutChanges = false) {

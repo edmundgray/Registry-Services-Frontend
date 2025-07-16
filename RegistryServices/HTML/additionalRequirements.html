@@ -111,12 +111,12 @@
 <div class="button-row">
     <div class="button-group">
         <button onclick="addRow()" class="view-button" style="background:#007bff; color:#fff; font-size:14px; border-radius:4px; padding:10px 20px;">Add another row</button>
-        <button onclick="saveTable().catch(e => console.error('Save error:', e))" class="view-button" style="background:#ccc; color:#333; font-size:14px; border-radius:4px; padding:10px 20px;">Save</button>
-        <button onclick="refreshFromAPI().catch(e => console.error('Refresh error:', e))" title="Reload data from server" class="view-button" style="background:#F4A261; color:#fff; font-size:14px; border-radius:4px; padding:8px 16px;">Clear</button>
-        <button onclick="cancelAction()" class="view-button" style="background:#ccc; color:#333; font-size:14px; border-radius:4px; padding:10px 20px;">Cancel</button>
+        <button onclick="saveTable().catch(e => console.error('Save error:', e))" style="background:#6c757d;  ">Save</button>
+   
+        <button onclick="cancelAction()" class="view-button" style="background:#6c757d; ">Cancel</button>
     </div>
 
-    <button onclick="goToSpecificationPreview().catch(e => console.error('Navigation error:', e))" class="view-button" style="background:#007bff; color:#fff; font-size:14px; border-radius:4px; padding:10px 20px;">Specification Preview</button>
+    <button onclick="goToSpecificationPreview().catch(e => console.error('Navigation error:', e))">Specification Preview</button>
 </div>
 
         
