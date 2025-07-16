@@ -816,9 +816,8 @@ button[onclick*="deleteRow"]:active {
 }
 #additionalRequirementsTable th,
 #additionalRequirementsTable td {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    word-wrap: normal;
+    word-wrap: break-word;
 }
 
 /******************************************************************************
