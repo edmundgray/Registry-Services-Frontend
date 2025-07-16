@@ -681,7 +681,7 @@
                         document.getElementById('coreModelCount').textContent = `${coreCount} element${coreCount === 1 ? '' : 's'}`;
                   
                     // Populate Extension Component table
-                    await populateExtensionComponentTable(spec)
+                    await populateExtensionTable(spec)
                     
 
                     // Populate Additional Requirements table
@@ -867,7 +867,7 @@
                 return row;
             }
 
-            async function populateExtensionComponentTable(spec) {
+            async function populateExtensionTable(spec) {
                 const tableBody = document.querySelector("#extensionComponentDataTable tbody");
                 const table = document.getElementById("extensionComponentDataTable");
                 const toggleButton = document.getElementById("toggleExtensionTableButton");
