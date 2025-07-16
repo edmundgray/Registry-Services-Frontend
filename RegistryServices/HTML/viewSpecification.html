@@ -789,6 +789,16 @@
                 });
 
                 function renderRowAndChildren(item, container) {
+                    console.log(
+                    'renderRowAndChildren debug:',
+                    {
+                        itemId: item.id,
+                        selectedDataMapKeys: Array.from(selectedDataMap.keys()),
+                        specCoreData: selectedDataMap.get(item.id),
+                        coreBusinessRules: selectedDataMap.get(item.id)?.coreBusinessRules,
+                        itemObj: item
+                    }
+                    );
                     const tr = document.createElement('tr');
                     if (item.id.startsWith('BG')) tr.classList.add(item.NumericLevel === 1 ? 'level-1-bg' : 'level-2-bg');
                     if (item.NumericLevel > 1) tr.classList.add('child-row');
@@ -796,10 +806,10 @@
                     if (item.NumericLevel > 1) tr.style.display = 'none';
                     
                     tr.innerHTML = `
-                        <td>${item.id || 'N/A'}</td> <td>${item.level || 'N/A'}</td> <td>${item.cardinality || 'N/A'}</td>
+                        <td>${item.id || 'N/A'}</td> <td>${item.level || 'N/A'}</td> <td>${selectedDataMap.get(item.id)?.cardinality || 'N/A'}</td>
                         <td><i class="fa-solid fa-circle-question semantic-tooltip" title="${item.semanticDescription || ''}"></i> ${item.businessTerm || 'N/A'}</td>
-                        <td>${item.usageNote || 'N/A'}</td> <td>${item.coreBusinessRules || 'N/A'}</td> <td>${item.coreDataType || 'N/A'}</td>
-                        <td>${item.typeOfChange}</td> <td class="actions-cell"></td>
+                        <td>${selectedDataMap.get(item.id)?.usageNote || 'N/A'}</td> <td>${selectedDataMap.get(item.id)?.coreBusinessRules || 'N/A'}</td> <td>${item.dataType || 'N/A'}</td>
+                        <td>${selectedDataMap.get(item.id)?.typeOfChange || 'N/A'}</td> <td class="actions-cell"></td>
                     `;
                     container.appendChild(tr);
 
