@@ -173,6 +173,9 @@
             .core-model-title {
                 background-color: #217a36;
             }
+            .extension-model-title {
+                background-color: #000080;
+            }
             .table-title-container h3 {
                 margin: 0;
                 font-size: 1.1em;
@@ -340,14 +343,25 @@
                         </table>
                     </div>
                     <!-- Selected Extension Component Data Model elements (second, stacked) -->
-                    <div class="info-table" style="width: 100%;">
-                        <h3>Selected Extension Component Data Model elements</h3>
-                        <table id="extensionComponentTable" style="width: 100%;">
+                    <div style="width: 100%;">
+                        <div class="table-title-container extension-model-title">
+                            <h3>Selected Extension Component Data Model elements</h3>
+                            <button id="toggleExtensionTableButton" class="show-more-btn" style="background-color: #fff; color:#000080;">Show more</button>
+                        </div>
+                        <table id="extensionComponentDataTable" class="styled-table" style="width: 100%; margin-top: 0; display: none;">
                             <thead>
                                 <tr>
-                                    <th>ID</th>
-                                    <th>Business Term</th>
                                     <th>Extension Component</th>
+                                    <th>ID</th>
+                                    <th>Level</th>
+                                    <th>Cardinality</th>
+                                    <th>Business Term</th>
+                                    <th>Usage Note</th>
+                                    <th>Justification</th>
+                                    <th>Data Type</th>
+                                    <th>Type of Extension</th>
+                                    <th>Core Conformant/Rules broken</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -667,29 +681,8 @@
                         document.getElementById('coreModelCount').textContent = `${coreCount} element${coreCount === 1 ? '' : 's'}`;
                   
                     // Populate Extension Component table
-                    const extensionTableBody = document.querySelector("#extensionComponentTable tbody");
-                    extensionTableBody.innerHTML = '';
-                    const extensionItems = spec.specificationExtensionComponents || [];
-                    let extensionCount = 0;
-                    if (extensionItems.length > 0) {
-                        extensionItems.forEach(item => {
-                            const row = extensionTableBody.insertRow();
-                            row.insertCell().textContent = item.businessTermID || 'N/A';
-                            row.insertCell().textContent = item.extBusinessTerm || 'N/A';
-                            row.insertCell().textContent = item.extensionComponentID || 'Extension Component';
-                        });
-                        extensionCount = extensionItems.length;
-                    } else {
-                        const row = extensionTableBody.insertRow();
-                        const cell = row.insertCell();
-                        cell.colSpan = 3;
-                        cell.textContent = 'No Extension Component Data Model elements selected';
-                        cell.style.textAlign = 'center';
-                        cell.style.fontStyle = 'italic';
-                        cell.style.color = '#666';
-                        extensionCount = 0;
-                    }
-                    document.getElementById('extensionModelCount').textContent = `${extensionCount} element${extensionCount === 1 ? '' : 's'}`;
+                    await populateExtensionTable(spec)
+                    
 
                     // Populate Additional Requirements table
                     const additionalTableBody = document.querySelector("#additionalRequirementsTable tbody");
@@ -798,6 +791,168 @@
 
                 roots.forEach(root => renderRowAndChildren(root, tableBody));
             }
+            
+            function getNumericDepthFromLevel(levelStr) {
+                if (!levelStr) return 0;
+                if (levelStr.includes('+')) {
+                    return levelStr.split('+').length - 1; 
+                }
+                const parts = levelStr.split('.');
+                if (parts.length > 0 && parts.every(part => !isNaN(parseInt(part)) && String(parseInt(part)) === part)) {
+                    return parts.length; 
+                }
+                return 0;
+            }
+
+            function renderExtensionRowAndChildren(item, container, componentName) {
+                const row = document.createElement('tr');
+                
+                const isXG = (item.businessTermID || '').startsWith('XG');
+                const isXT = (item.businessTermID || '').startsWith('XT');
+                const isBG = (item.businessTermID || '').startsWith('BG');
+                
+                if (item.NumericDepth > 1) { 
+                    row.classList.add('child-row');
+                    row.style.display = 'none';
+                }
+                
+                if (isXG) {
+                    row.classList.add(item.NumericDepth === 1 ? 'level-1-xg' : 'level-2-xg');
+                    if (item.NumericDepth === 1) row.classList.add('parent-row');
+                } else if (isXT) {
+                    row.classList.add('level-xt');
+                } else if (isBG) {
+                    row.classList.add(item.NumericDepth === 1 ? 'level-1-bg' : 'level-2-bg');
+                    if (item.NumericDepth === 1) row.classList.add('parent-row');
+                }
+
+                if (item.children && item.children.length > 0) {
+                    row.classList.add('has-children-parent-row');
+                }
+                
+                const usageNoteCombined = [item.usageNoteCore, item.usageNoteExtension, item.semanticDescription]
+                    .filter(Boolean).join(' | ');
+
+                row.innerHTML = `
+                    <td>${componentName || 'N/A'}</td>
+                    <td>${item.businessTermID || 'N/A'}</td>
+                    <td>${item.level || 'N/A'}</td>
+                    <td>${item.cardinality || 'N/A'}</td>
+                    <td><i class="fa-solid fa-circle-question semantic-tooltip" title="${usageNoteCombined}"></i> ${item.businessTerm || 'N/A'}</td>
+                    <td>${usageNoteCombined}</td>
+                    <td>${item.justification || 'N/A'}</td>
+                    <td>${item.dataType || 'N/A'}</td>
+                    <td>${item.extensionType || 'N/A'}</td>
+                    <td>${item.conformanceType || 'N/A'}</td>
+                    <td class="actions-cell"></td>
+                `;
+                container.appendChild(row);
+
+                if (item.children && item.children.length > 0) {
+                    const immediateChildTrs = item.children.map(child => renderExtensionRowAndChildren(child, container, componentName));
+                    
+                    const showMoreBtn = document.createElement('button');
+                    showMoreBtn.className = 'show-more-btn';
+                    showMoreBtn.textContent = 'Show more';
+                    
+                    showMoreBtn.onclick = () => {
+                        const isHidden = immediateChildTrs[0].style.display === 'none';
+                        immediateChildTrs.forEach(childTr => childTr.style.display = isHidden ? '' : 'none');
+                        showMoreBtn.textContent = isHidden ? 'Show less' : 'Show more';
+                    };
+                    
+                    row.querySelector('.actions-cell').appendChild(showMoreBtn);
+                }
+                
+                return row;
+            }
+
+            async function populateExtensionTable(spec) {
+                const tableBody = document.querySelector("#extensionComponentDataTable tbody");
+                const table = document.getElementById("extensionComponentDataTable");
+                const toggleButton = document.getElementById("toggleExtensionTableButton");
+                const countElement = document.getElementById('extensionModelCount');
+
+                let totalSelectedElements = spec.specificationExtensionComponents?.length || 0;
+                countElement.textContent = `${totalSelectedElements} element${totalSelectedElements === 1 ? '' : 's'}`;
+                
+                tableBody.innerHTML = '';
+
+                if (totalSelectedElements === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="11" style="text-align:center;font-style:italic;color:#666;">No Extension Component Data Model elements selected.</td></tr>';
+                    if (toggleButton) toggleButton.style.display = 'none';
+                    return;
+                }
+
+                if (toggleButton) toggleButton.style.display = 'block';
+
+                if (toggleButton && table) {
+                    toggleButton.addEventListener('click', function() {
+                        const isHidden = table.style.display === 'none';
+                        table.style.display = isHidden ? 'table' : 'none';
+                        this.textContent = isHidden ? 'Show less' : 'Show more';
+                    });
+                }
+
+                try {
+                    const headersResponse = await window.authManager.authenticatedFetch(`${AUTH_CONFIG.baseUrl}/extensionmodels/headers`);
+                    if (!headersResponse.ok) throw new Error('Failed to load extension component headers.');
+                    const headers = await headersResponse.json();
+                    const componentNames = new Map(headers.map(h => [h.id, h.name]));
+
+                    const selectedByComponent = spec.specificationExtensionComponents.reduce((acc, el) => {
+                        const id = el.extensionComponentID;
+                        if (!acc[id]) acc[id] = [];
+                        acc[id].push(el.businessTermID);
+                        return acc;
+                    }, {});
+
+                    const componentIds = Object.keys(selectedByComponent);
+                    const componentElementPromises = componentIds.map(id =>
+                        window.authManager.authenticatedFetch(`${AUTH_CONFIG.baseUrl}/extensionmodels/elements/${id}`).then(res => res.json())
+                    );
+
+                    const allComponentElementsResponses = await Promise.all(componentElementPromises);
+
+                    allComponentElementsResponses.forEach((componentAllElements, index) => {
+                        const componentId = componentIds[index];
+                        const selectedIdsForComponent = new Set(selectedByComponent[componentId]);
+
+                        const elementsToRender = componentAllElements.filter(el => selectedIdsForComponent.has(el.businessTermID));
+                        const componentName = componentNames.get(componentId) || componentId;
+                        
+                        const processedElements = elementsToRender.map(item => ({
+                            ...item,
+                            NumericDepth: getNumericDepthFromLevel(item.level || ''),
+                            children: []
+                        })).sort((a, b) => {
+                             const levelA = (a.level || '').split('.').map(Number);
+                             const levelB = (b.level || '').split('.').map(Number);
+                             for (let i = 0; i < Math.min(levelA.length, levelB.length); i++) {
+                                 if (levelA[i] !== levelB[i]) return levelA[i] - levelB[i];
+                             }
+                             return levelA.length - levelB.length;
+                        });
+
+                        const roots = [];
+                        const parentTracker = {};
+                        processedElements.forEach(item => {
+                            const parent = parentTracker[item.NumericDepth - 1];
+                            if (item.NumericDepth === 1) roots.push(item);
+                            else if (parent) parent.children.push(item);
+                            else roots.push(item);
+                            parentTracker[item.NumericDepth] = item;
+                            for (let i = item.NumericDepth + 1; i <= 10; i++) delete parentTracker[i];
+                        });
+
+                        roots.forEach(root => renderExtensionRowAndChildren(root, tableBody, componentName));
+                    });
+
+                } catch (error) {
+                    console.error("Error populating extension component table:", error);
+                    tableBody.innerHTML = `<tr><td colspan="11" style="text-align:center;font-style:italic;color:red;">Error loading extension elements: ${error.message}</td></tr>`;
+                }
+            }
 
             function populateSupportingArtefacts(spec) {
                 // Update the links in the Supporting Artefacts tab
@@ -898,7 +1053,7 @@
                 
                 // Clear tables
                 const coreTableBody = document.querySelector("#coreInvoiceModelTable tbody");
-                const extensionTableBody = document.querySelector("#extensionComponentTable tbody");
+                const extensionTableBody = document.querySelector("#extensionComponentDataTable tbody");
                 const additionalTableBody = document.querySelector("#additionalRequirementsTable tbody");
                 
                 if (coreTableBody) coreTableBody.innerHTML = '';
@@ -1013,7 +1168,7 @@
     document.addEventListener("DOMContentLoaded", function () {
         const fastTravelMap = [
             { boxId: "coreModelCountBox", tableId: "coreInvoiceModelTable" },
-            { boxId: "extensionModelCountBox", tableId: "extensionComponentTable" },
+            { boxId: "extensionModelCountBox", tableId: "extensionComponentDataTable" },
             { boxId: "additionalModelCountBox", tableId: "additionalRequirementsTable" }
         ];
         fastTravelMap.forEach(({ boxId, tableId }) => {
