@@ -59,11 +59,7 @@
             {
                 margin-bottom: 7.6px;
             }
-            .view-button 
-            {
-                padding: 4.75px 12.35px !important;
-                font-size: 0.741rem !important;
-            }
+           
             .page-Content 
             {
                 padding: 9.5px 1.52vw 1.52vw 1.52vw !important;
@@ -301,12 +297,12 @@
                 <!-- Save, Cancel & Core Invoice Model Buttons -->
                 <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 30px;">
                     <div>
-                        <button type="button" onclick="handleSave()" class="view-button">Save</button>
-                        <button type="button" onclick="handleCancel()" class="view-button" style="background:#6c757d; color:#fff; padding: 4.75px 12.35px;">Cancel</button>
+                        <button type="button" onclick="handleSave()" >Save</button>
+                        <button type="button" onclick="handleCancel()" style="background:#6c757d; color:#fff;">Cancel</button>
                     </div>
                     
                     <div>
-                        <button type="button" onclick="saveAndGoToCoreInvoiceModel()" class="view-button" style="background:#007bff; color:#fff;">Core Invoice Model</button>
+                        <button type="button" onclick="saveAndGoToCoreInvoiceModel()" >Core Invoice Model</button>
                     </div>
                 </div>
             </form>
@@ -777,29 +773,7 @@
                 };
             }
 
-            function updateSaveButtonAppearance() {
-                try {
-                    const saveButton = document.querySelector('button[onclick="handleSave()"]');
-                    const hasChanges = hasActualChanges();
-
-                    if (saveButton) {
-                        if (hasChanges) {
-                            saveButton.style.background = 'green'; // Green when changes exist
-                            saveButton.style.color = '#fff';
-                            saveButton.style.fontWeight = 'bold';
-                            saveButton.style.boxShadow = '0 2px 4px rgba(40, 167, 69, 0.3)';
-                        } else {
-                            saveButton.style.background = '#6c757d'; // Grey when no changes
-                            saveButton.style.color = '#fff';
-                            saveButton.style.fontWeight = 'normal';
-                            saveButton.style.boxShadow = 'none';
-                        }
-                    }
-                } catch (error) {
-                    console.error('DEBUG: IdentifyingInformation - Error in updateSaveButtonAppearance():', error);
-                }
-            }
-
+            
             async function handleSave() {
                 const form = document.getElementById('identifyingForm');
                 if (!form.reportValidity()) return;
