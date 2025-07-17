@@ -123,6 +123,12 @@ class BreadcrumbManager {
         const path = [];
         const currentPage = context.currentPage || this.getCurrentPageName();
         const workflowInfo = this.workflowSteps[currentPage];
+        
+        if (context.source === 'govEntity') {
+            path.push({ label: 'Gov Entity', page: 'governingEntityList.html', clickable: true, workflowStep: true, status: 'completed', fullName: 'Governing Entity List' });
+            path.push({ label: 'View Entity', clickable: false, workflowStep: true, status: 'current', fullName: 'View Governing Entity' });
+            return path;
+        }
 
         // Add source
         if (context.source === 'registry') {
