@@ -513,7 +513,7 @@ class GoverningEntityView {
             const currentStatus = spec.implementationStatus || spec.registrationStatus;
 
             if (currentStatus === 'In Progress' || currentStatus === 'Draft') {
-            actionButtonHtml = `<button class="view-button" onclick="editSpecification(${spec.identityID})">Edit</button>`;
+             actionButtonHtml = `<button class="view-button" onclick="editSpecification(${spec.identityID}, 'govEntity')">Edit</button>`;
             } else { // Covers 'Submitted', 'Under Review', 'Verified', 'Published' etc.
                 actionButtonHtml = `<button class="view-button" onclick="viewSpecification(${spec.identityID})">View</button>`;
             }
@@ -615,19 +615,22 @@ class GoverningEntityView {
         }
     }
 
+    /** * Starts a new specification for the governing entity.
+     * Clears any existing working data and sets the governing entity for the new specification.
+     */
+
     startNewSpecification() {
         console.log('GoverningEntityView: Starting new specification for entity:', this.entity.groupName);
-        
+
         try {
-            // Use SpecificationDataManager if available
             if (window.SpecificationDataManager && typeof window.createNewSpecification === 'function') {
                 const dataManager = new SpecificationDataManager();
-                 dataManager.clearEditingState(); 
-                 dataManager.workingData = { governingEntity: this.entity.groupName }; // Use groupName
-                 dataManager.saveWorkingDataToLocalStorage();
+                dataManager.clearEditingState(); 
+                dataManager.workingData = { governingEntity: this.entity.groupName };
+                dataManager.saveWorkingDataToLocalStorage();
 
-                window.createNewSpecification(); 
-                
+                window.createNewSpecification('govEntity'); // Pass 'govEntity' as the source
+
             } else {
                 console.error('GoverningEntityView: Required functions for new specification not found.');
                 alert("Error starting new specification.");

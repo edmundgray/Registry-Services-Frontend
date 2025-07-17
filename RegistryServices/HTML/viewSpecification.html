@@ -310,7 +310,7 @@
                         <div class="model-count-title">Core Invoice Data Model</div>
                         <div class="model-count-value" id="coreModelCount">0 elements</div>
                     </div>
-                    <div class="model-count-box model-count-extension" id="extensionModelCountBox" onclick="document.getElementById('extensionComponentTable').scrollIntoView({ behavior: 'smooth' });">
+                    <div class="model-count-box model-count-extension" id="extensionModelCountBox" onclick="document.getElementById('extensionComponentDataTable').scrollIntoView({ behavior: 'smooth' });">
                         <div class="model-count-title">Extension Component Data Model</div>
                         <div class="model-count-value" id="extensionModelCount">0 elements</div>
                     </div>
@@ -1023,28 +1023,19 @@
                         {
                             console.log('DEBUG: viewSpecification - Spec data for editing:', spec);
                             console.log('DEBUG: viewSpecification - Identity ID:', spec.identityID);
+                            
+                            // Get the current breadcrumb context to determine the source
+                            const breadcrumbContext = window.breadcrumbManager.getContext();
+                            const source = breadcrumbContext ? breadcrumbContext.source : 'mySpecs'; // Default to mySpecs if context is missing
+                            console.log(`DEBUG: viewSpecification - Starting edit from source: ${source}`);
+                            
                             console.log('DEBUG: viewSpecification - Navigating to edit mode for specification:', spec.specificationName);
                             
                             // Set return page to viewSpecification
-                            localStorage.setItem("returnToPage", "viewSpecification.html?id=" + spec.identityID);
+                            localStorage.setItem("returnToPage", `viewSpecification.html?id=${spec.identityID}`);
                             
-                            // Set breadcrumb context for edit workflow from view page
-                            if (window.breadcrumbManager) 
-                            {
-                                const currentContext = window.breadcrumbManager.getContext();
-                                const editContext = 
-                                {
-                                    source: currentContext ? currentContext.source : 'registry',
-                                    action: 'edit',
-                                    currentPage: 'IdentifyingInformation.html',
-                                    specId: spec.identityID,
-                                    specIdentityId: spec.identityID
-                                };
-                                window.breadcrumbManager.setContext(editContext);
-                            }
-                            
-                            // Call the global editSpecification function
-                            editSpecification(spec.identityID);
+                            // Call the global editSpecification function with the correct source
+                            editSpecification(spec.identityID, source);
                         } 
                         else 
                         {
@@ -1269,7 +1260,9 @@
                 
                 if (referrer.includes('eInvoicingSpecificationRegistry.html')) {
                     context.source = 'registry';
-                } else if (referrer.includes('mySpecifications.html')) {
+                } else if (referrer.includes('governingEntityView.html')) {
+                    context.source = 'govEntity';
+                    } else if (referrer.includes('mySpecifications.html')) {
                     context.source = 'mySpecs';
                 } else {
                     context.source = 'registry'; // Default to registry for view pages

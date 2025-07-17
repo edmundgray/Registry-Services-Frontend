@@ -119,22 +119,19 @@ class BreadcrumbManager {
      * @param {Object} context - Navigation context
      * @returns {Array} Array of breadcrumb items
      */
+   
     buildBreadcrumbPath(context) {
         const path = [];
         const currentPage = context.currentPage || this.getCurrentPageName();
         const workflowInfo = this.workflowSteps[currentPage];
-        
-        if (context.source === 'govEntity') {
-            path.push({ label: 'Gov Entity', page: 'governingEntityList.html', clickable: true, workflowStep: true, status: 'completed', fullName: 'Governing Entity List' });
-            path.push({ label: 'View Entity', clickable: false, workflowStep: true, status: 'current', fullName: 'View Governing Entity' });
-            return path;
-        }
 
-        // Add source
+        // Add source based on the context
         if (context.source === 'registry') {
             path.push({ label: 'Registry', page: 'eInvoicingSpecificationRegistry.html', clickable: true });
         } else if (context.source === 'mySpecs') {
             path.push({ label: 'My Specs', page: 'mySpecifications.html', clickable: true });
+        } else if (context.source === 'govEntity') {
+            path.push({ label: 'Gov Entity', page: 'governingEntityList.html', clickable: true });
         }
 
         // Check if this is a workflow page
@@ -171,6 +168,7 @@ class BreadcrumbManager {
 
         return path;
     }
+
 
     /**
      * Build workflow steps for breadcrumb
