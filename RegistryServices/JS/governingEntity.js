@@ -172,11 +172,6 @@ class GoverningEntityList {
                 (entry.numberUnderReview || 0) + 
                 (entry.numberVerified || 0);
 
-            // Create URLSearchParams for view page
-            const params = new URLSearchParams({
-                id: entry.userGroupID
-            }).toString();
-
             row.innerHTML = `
                 <td>${entry.createdDate ? new Date(entry.createdDate).toLocaleDateString('en-GB') : 'N/A'}</td>
                 <td>${entry.groupName || 'N/A'}</td>
@@ -187,7 +182,7 @@ class GoverningEntityList {
                 <td>${entry.numberVerified || '0'}</td>
                 <td>${totalSpecifications}</td>
                 <td>
-                    <button class="view-button" onclick="window.location.href='governingEntityView.html?${params}'">View</button>
+                    <button class="view-button" onclick="viewGoverningEntity(${entry.userGroupID})">View</button>
                 </td>
             `;
             this.tableBody.appendChild(row);
@@ -315,6 +310,9 @@ class GoverningEntityView {
 
     async initializeView() {
         console.log('GoverningEntityView: Setting up view...');
+        
+        // Initialize breadcrumb manager
+        window.breadcrumbManager.init();
         
         // Parse URL parameters
         this.parseUrlParameters();
@@ -600,7 +598,7 @@ class GoverningEntityView {
         if (adminContainerElement) {
             // Add a class for styling
             adminContainerElement.innerHTML = `
-                <button class="view-button" id="newSpecBtn" style="float: right; margin-bottom: 10px;">New Specification</button>
+                <button class="view-button" id="newSpecBtn" style="float: right; margin-bottom: 10px; padding: 10px 20px; font-size: 14px;">New Specification</button>
                 <div style="clear: both;"></div> `;
 
             const newSpecBtn = document.getElementById("newSpecBtn");
@@ -640,6 +638,20 @@ class GoverningEntityView {
         }
     }
 }
+
+// New global function to handle navigation
+function viewGoverningEntity(userGroupId) {
+    console.log(`Setting breadcrumb context for viewing entity ID: ${userGroupId}`);
+    const context = {
+        source: 'govEntity',
+        action: 'view',
+        entityId: userGroupId
+    };
+    window.breadcrumbManager.setContext(context);
+    window.location.href = `governingEntityView.html?id=${userGroupId}`;
+}
+window.viewGoverningEntity = viewGoverningEntity;
+
 
 // Initialize based on current page
 function initializeGoverningEntityPage() {
