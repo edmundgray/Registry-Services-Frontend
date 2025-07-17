@@ -4,14 +4,15 @@
 window.AUTH_CONFIG = {
     baseUrl: 'https://registryservices-staging.azurewebsites.net/api',
     endpoints: {
-        login: '/auth/login'
+        login: '/auth/login',
+        refresh: '/auth/refresh'  // Added refresh endpoint
     },
     tokenKeys: {
         access: 'access_token'
     },
     session: {
-        duration: 60 * 60 * 1000,      // 🔧 Set to 1 minute for testing
-        warningTime:5 * 30 * 1000        // 🔧 Show warning after 30 seconds
+        duration: 60 * 60 * 1000,      // 1 hour
+        warningTime: 5 * 60 * 1000     // Show warning 5 minutes before expiry
     }
 };
 
@@ -32,7 +33,7 @@ window.AuthManager = class {
         this.isRefreshing = false;
         this.warningShown = false;
         // Configuration - use AUTH_CONFIG for consistency
-        this.WARNING_SECONDS_BEFORE_EXPIRY = 30; // Warn 30 seconds before expiry
+        this.WARNING_SECONDS_BEFORE_EXPIRY = 5 * 60; // Warn 5 minutes before expiry
         // Expose JWT and decoded payload for debugging/inspection
         this.token = undefined;
         this.tokenData = undefined;
@@ -43,7 +44,7 @@ window.AuthManager = class {
     getLoginTokenDebugInfo(data, username) {
         const tokenToStore = data.token || data.accessToken;
         const refreshTokenToStore = data.refreshToken;
-        const expiresInToStore = data.expiresIn || 60; // Default to 1 minute for testing
+        const expiresInToStore = data.expiresIn || 3600; // Default to 1 hour
         const usernameToStore = data.username || username;
         return {
             token: tokenToStore,
@@ -107,7 +108,7 @@ window.AuthManager = class {
             if (this.tokenExpiryTime) {
                 this.setupTokenRefreshTimers();
             } else {
-                // If no expiry time, assume 1 minute from now for testing
+                // If no expiry time, assume 1 hour from now
                 this.setTokens(token, refreshToken, window.AUTH_CONFIG.session.duration / 1000);
             }
             
@@ -183,7 +184,7 @@ window.AuthManager = class {
         window.dispatchEvent(new CustomEvent('authenticationChanged', { detail: { isAuthenticated: true } }));
     }
 
-    // Set up timers for warning (auto-refresh disabled)
+    // Set up timers for warning and auto-refresh
     setupTokenRefreshTimers() {
         this.clearTokenTimers();
         if (!this.tokenExpiryTime) return;
@@ -191,14 +192,14 @@ window.AuthManager = class {
         const timeToExpiry = this.tokenExpiryTime - Date.now();
         const warningTime = timeToExpiry - (this.WARNING_SECONDS_BEFORE_EXPIRY * 1000);
         
-        console.log('DEBUG: Setting up token timers (auto-refresh disabled):', {
+        console.log('DEBUG: Setting up token timers:', {
             timeToExpiry: Math.floor(timeToExpiry / 1000),
             warningIn: Math.floor(warningTime / 1000),
             tokenExpiryTime: this.tokenExpiryTime,
             currentTime: Date.now()
         });
         
-        // Set warning timer only (auto-refresh disabled)
+        // Set warning timer
         if (warningTime > 0) {
             this.warningTimer = setTimeout(() => {
                 console.log('DEBUG: Warning timer fired, showing session warning');
@@ -236,35 +237,94 @@ window.AuthManager = class {
         return Date.now() >= this.tokenExpiryTime;
     }
 
-    // Show session timeout warning (inform-only mode)
+    // Show session timeout warning with refresh option
     showSessionWarning() {
         if (this.warningShown) return;
         this.warningShown = true;
 
-        console.log('DEBUG: showSessionWarning called - logging out and showing modal');
+        console.log('DEBUG: showSessionWarning called - showing refresh option modal');
         
-        this.logout(); // Immediately logout first
-
-        this.showSessionWarningModal().then(() => {
-            // After user sees message and clicks OK, nothing else needed
+        this.showSessionWarningModal().then((userChoice) => {
+            if (userChoice === 'refresh') {
+                this.forceRefreshToken();
+            }
+            // If user chooses to continue or ignores, they'll get the expiry modal when token expires
         });
     }
 
-    // Handle refresh failure - simplified
+    // Handle refresh failure - show expiry modal
     handleRefreshFailure() {
         console.warn('Token refresh failed - user will need to re-authenticate');
         this.logout(); // Logout immediately
-        this.showSessionWarningModal(); // Show simple expiry notice
+        this.showSessionExpiryModal(); // Show simple expiry notice
         
         // Dispatch event for other components
         window.dispatchEvent(new CustomEvent('authenticationFailed'));
     }
 
-    // Simplified session warning modal with OK button
+    // Session warning modal with refresh option
     showSessionWarningModal() {
         return new Promise((resolve) => {
+            const timeLeft = Math.max(0, this.tokenExpiryTime - Date.now());
+            const minutesLeft = Math.ceil(timeLeft / (60 * 1000));
+            
             const modalHtml = `
                 <div id="sessionWarningModal" class="modal" style="display: block; z-index: 10000; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);">
+                    <div class="modal-content" style="background: white; margin: 15% auto; padding: 20px; border-radius: 5px; width: 80%; max-width: 500px;">
+                        <div class="modal-header">
+                            <h3>Session Expiring Soon</h3>
+                        </div>
+                        <div class="modal-body">
+                            <p>Your session will expire in approximately ${minutesLeft} minute(s).</p>
+                            <p>Would you like to refresh your session to continue working?</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button id="refreshSessionBtn" class="btn btn-primary" style="background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-right: 10px;">Refresh Session</button>
+                            <button id="continueBtn" class="btn btn-secondary" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Continue</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+            const modal = document.getElementById('sessionWarningModal');
+            const refreshBtn = document.getElementById('refreshSessionBtn');
+            const continueBtn = document.getElementById('continueBtn');
+
+            const cleanup = () => {
+                if (modal && modal.parentNode) {
+                    modal.parentNode.removeChild(modal);
+                }
+            };
+
+            refreshBtn.onclick = () => {
+                cleanup();
+                resolve('refresh');
+            };
+
+            continueBtn.onclick = () => {
+                cleanup();
+                resolve('continue');
+            };
+
+            // Allow ESC key to close modal (same as continue)
+            const handleKeydown = (e) => {
+                if (e.key === 'Escape') {
+                    cleanup();
+                    resolve('continue');
+                    document.removeEventListener('keydown', handleKeydown);
+                }
+            };
+            document.addEventListener('keydown', handleKeydown);
+        });
+    }
+
+    // Simple session expiry modal (shown when token actually expires)
+    showSessionExpiryModal() {
+        return new Promise((resolve) => {
+            const modalHtml = `
+                <div id="sessionExpiryModal" class="modal" style="display: block; z-index: 10000; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);">
                     <div class="modal-content" style="background: white; margin: 15% auto; padding: 20px; border-radius: 5px; width: 80%; max-width: 500px;">
                         <div class="modal-header">
                             <h3>Session Expired</h3>
@@ -282,7 +342,7 @@ window.AuthManager = class {
 
             document.body.insertAdjacentHTML('beforeend', modalHtml);
 
-            const modal = document.getElementById('sessionWarningModal');
+            const modal = document.getElementById('sessionExpiryModal');
             const okBtn = document.getElementById('sessionOkBtn');
 
             const cleanup = () => {
@@ -293,7 +353,7 @@ window.AuthManager = class {
 
             okBtn.onclick = () => {
                 cleanup();
-                resolve(); // No automatic redirect
+                resolve();
             };
 
             // Allow ESC key to close modal
@@ -308,7 +368,7 @@ window.AuthManager = class {
         });
     }
 
-    // Enhanced authenticatedFetch (token refresh disabled)
+    // Enhanced authenticatedFetch with token refresh
     async authenticatedFetch(url, options = {}) {
         // Check if token is expired before making request
         if (this.isTokenExpired()) {
@@ -331,11 +391,27 @@ window.AuthManager = class {
         try {
             const response = await fetch(url, fetchOptions);
             
-            // If 401 or 403, immediately handle as session expiry (no retry)
+            // If 401 or 403, try to refresh token first
             if (response.status === 401 || response.status === 403) {
-                console.log('Received 401/403 - token refresh disabled, showing session expiry modal');
-                this.handleRefreshFailure();
-                throw new Error('Authentication failed - session expired');
+                console.log('Received 401/403 - attempting token refresh');
+                const refreshSuccess = await this.attemptBackgroundRefresh();
+                
+                if (refreshSuccess) {
+                    // Retry the original request with new token
+                    const newHeaders = {
+                        ...options.headers,
+                        ...this.getAuthHeaders()
+                    };
+                    const retryOptions = {
+                        ...options,
+                        headers: newHeaders
+                    };
+                    return await fetch(url, retryOptions);
+                } else {
+                    // Refresh failed, handle as session expiry
+                    this.handleRefreshFailure();
+                    throw new Error('Authentication failed - session expired');
+                }
             }
             
             return response;
@@ -343,6 +419,81 @@ window.AuthManager = class {
         } catch (error) {
             console.error('Authenticated fetch failed:', error);
             throw error;
+        }
+    }
+
+    // Attempt background token refresh
+    async attemptBackgroundRefresh() {
+        if (this.isRefreshing || !this.refreshToken) {
+            console.log('Already refreshing or no refresh token available');
+            return false;
+        }
+
+        this.isRefreshing = true;
+        console.log('DEBUG: Attempting background token refresh');
+
+        try {
+            const response = await fetch(`${window.AUTH_CONFIG.baseUrl}${window.AUTH_CONFIG.endpoints.refresh}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    refreshToken: this.refreshToken
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('DEBUG: Token refresh successful');
+                
+                // Update tokens
+                this.setTokens(
+                    data.accessToken || data.token,
+                    data.refreshToken || this.refreshToken, // Keep existing refresh token if new one not provided
+                    data.expiresIn || 3600
+                );
+                
+                return true;
+            } else {
+                console.log('DEBUG: Token refresh failed with status:', response.status);
+                return false;
+            }
+        } catch (error) {
+            console.error('Token refresh error:', error);
+            return false;
+        } finally {
+            this.isRefreshing = false;
+        }
+    }
+
+    // Force refresh token (user-initiated)
+    async forceRefreshToken() {
+        console.log('DEBUG: Force refresh token requested');
+        const success = await this.attemptBackgroundRefresh();
+        
+        if (success) {
+            console.log('DEBUG: Token refresh successful');
+            // Reset warning shown flag so user can get warned again for the new token
+            this.warningShown = false;
+            
+            // Show success message briefly
+            const successMsg = document.createElement('div');
+            successMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #28a745; color: white; padding: 10px 20px; border-radius: 4px; z-index: 10001;';
+            successMsg.textContent = 'Session refreshed successfully';
+            document.body.appendChild(successMsg);
+            
+            setTimeout(() => {
+                if (successMsg.parentNode) {
+                    successMsg.parentNode.removeChild(successMsg);
+                }
+            }, 3000);
+            
+            return true;
+        } else {
+            console.log('DEBUG: Token refresh failed - showing expiry modal');
+            this.handleRefreshFailure();
+            return false;
         }
     }
 
@@ -421,26 +572,12 @@ window.AuthManager = class {
         }
     }
 
-    // For testing - simulate login with 1-minute expiry
+    // For testing - simulate login with 1-hour expiry
     simulateLogin(username = 'testuser', role = 'user') {
         console.log('DEBUG: Simulating login for testing');
         this.userRole = role;
-        this.setTokens('fake-jwt-token-for-testing', null, 60, username, 1, 1, 'Test Group');
-        console.log('DEBUG: Login simulated - token will expire in 60 seconds, warning at 30 seconds');
-    }
-
-    // REMOVED: showReauthenticationModal() - no longer needed for simplified flow
-    // REMOVED: performLogin() - should only be used on login page  
-    // REMOVED: attemptBackgroundRefresh() - already disabled
-    // REMOVED: refreshAccessToken() - already disabled
-    // REMOVED: validateAndExtendSession() - already disabled
-    
-    // Disabled for simplified session expiry
-    forceRefreshToken() {
-        console.log('[DEBUG] Token refresh is disabled - use login page instead');
-        this.logout();
-        this.showSessionWarningModal();
-        return Promise.resolve(false);
+        this.setTokens('fake-jwt-token-for-testing', 'fake-refresh-token', 3600, username, 1, 1, 'Test Group');
+        console.log('DEBUG: Login simulated - token will expire in 1 hour, warning at 5 minutes');
     }
 }
 
