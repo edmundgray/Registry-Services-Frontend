@@ -714,9 +714,8 @@ function debounce(func, wait) {
  ******************************************************************************/
 
 // Function to initiate editing of an existing specification
-function editSpecification(identityID) {
-    console.log('DEBUG: editSpecification called with ID:', identityID);
-    console.log('DEBUG: editSpecification - ID type:', typeof identityID);
+function editSpecification(identityID, source = 'mySpecs') {
+    console.log(`DEBUG: editSpecification called with ID: ${identityID} and source: ${source}`);
     
     // Use the data manager to set up edit mode
     const dataManager = SpecificationDataManager.initializeForEdit(identityID);
@@ -732,23 +731,6 @@ function editSpecification(identityID) {
     
     // Set breadcrumb context for edit workflow
     if (window.breadcrumbManager) {
-        // Determine source based on current page
-        const currentPage = window.location.pathname.split('/').pop();
-        let source = 'mySpecs'; // Default
-        
-        if (currentPage === 'eInvoicingSpecificationRegistry.html' || 
-            currentPage === 'viewSpecification.html') {
-            // Check if we came from registry or have registry context
-            const existingContext = window.breadcrumbManager.getContext();
-            if (existingContext && existingContext.source === 'registry') {
-                source = 'registry';
-            } else if (document.referrer.includes('eInvoicingSpecificationRegistry.html')) {
-                source = 'registry';
-            } else if (currentPage === 'eInvoicingSpecificationRegistry.html') {
-                source = 'registry';
-            }
-        }
-        
         const editContext = {
             source: source,
             action: 'edit',
@@ -807,14 +789,25 @@ function viewSpecification(identityID) {
 }
 
 // Function to initiate creation of a new specification
-function createNewSpecification() {
-    console.log('Initiating creation of new specification');
+function createNewSpecification(source = 'mySpecs') {
+    console.log(`Initiating creation of new specification from source: ${source}`);
     
     // Use the data manager to set up create mode
     SpecificationDataManager.initializeForCreate();
     
     // Store the return page so cancel can navigate back
     localStorage.setItem("returnToPage", "mySpecifications.html");
+
+    // Set breadcrumb context for the new workflow
+    if (window.breadcrumbManager) {
+        const context = {
+            source: source,
+            action: 'new',
+            currentPage: 'IdentifyingInformation.html'
+        };
+        console.log('DEBUG: createNewSpecification - Setting breadcrumb context:', context);
+        window.breadcrumbManager.setContext(context);
+    }
     
     // Navigate to IdentifyingInformation.html
     window.location.href = 'IdentifyingInformation.html';
