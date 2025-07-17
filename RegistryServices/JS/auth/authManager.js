@@ -9,10 +9,10 @@ window.AUTH_CONFIG = {
     tokenKeys: {
         access: 'access_token'
     },
-session: {
-    duration: 60 * 60 * 1000,      // 1 hour in milliseconds
-    warningTime: 5 * 60 * 1000     // Show warning at 5 minutes before expiry
-}
+    session: {
+        duration: 60 * 60 * 1000,      // 🔧 Set to 1 minute for testing
+        warningTime:5 * 30 * 1000        // 🔧 Show warning after 30 seconds
+    }
 };
 
 window.AuthManager = class {
@@ -32,8 +32,7 @@ window.AuthManager = class {
         this.isRefreshing = false;
         this.warningShown = false;
         // Configuration - use AUTH_CONFIG for consistency
-        this.WARNING_SECONDS_BEFORE_EXPIRY = window.AUTH_CONFIG.session.warningTime / 1000;
- // Warn 30 seconds before expiry
+        this.WARNING_SECONDS_BEFORE_EXPIRY = 30; // Warn 30 seconds before expiry
         // Expose JWT and decoded payload for debugging/inspection
         this.token = undefined;
         this.tokenData = undefined;
@@ -109,7 +108,7 @@ window.AuthManager = class {
                 this.setupTokenRefreshTimers();
             } else {
                 // If no expiry time, assume 1 minute from now for testing
-                this.setTokens(token, refreshToken, 60);
+                this.setTokens(token, refreshToken, window.AUTH_CONFIG.session.duration / 1000);
             }
             
             console.log('DEBUG: AuthManager initialized with stored credentials');
