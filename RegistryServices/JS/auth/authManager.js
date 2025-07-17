@@ -32,7 +32,8 @@ window.AuthManager = class {
         this.isRefreshing = false;
         this.warningShown = false;
         // Configuration - use AUTH_CONFIG for consistency
-        this.WARNING_SECONDS_BEFORE_EXPIRY = 30; // Warn 30 seconds before expiry
+        this.WARNING_SECONDS_BEFORE_EXPIRY = window.AUTH_CONFIG.session.warningTime / 1000;
+ // Warn 30 seconds before expiry
         // Expose JWT and decoded payload for debugging/inspection
         this.token = undefined;
         this.tokenData = undefined;
