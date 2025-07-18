@@ -561,7 +561,8 @@ body {
     font-size: 1em;
     font-family: inherit;
     box-shadow: 0 0 10px rgba(0,0,0,0.05);
-    width: auto; /* Change from 100% to auto */
+    width: 100%; 
+    table-layout: fixed;
     background-color: #fff;
 }
 
@@ -679,6 +680,24 @@ body {
     padding-top: 0;
     padding-bottom: 0;
 }
+
+.styled-table input[type="text"],
+.styled-table textarea,
+.styled-table select {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#coreInvoiceTable th:nth-child(1), #coreInvoiceTable td:nth-child(1) { width: 4%; }  /* ID */
+#coreInvoiceTable th:nth-child(2), #coreInvoiceTable td:nth-child(2) { width: 5%; }  /* Level */
+#coreInvoiceTable th:nth-child(3), #coreInvoiceTable td:nth-child(3) { width: 8%; }  /* Cardinality */
+#coreInvoiceTable th:nth-child(4), #coreInvoiceTable td:nth-child(4) { width: 11%; } /* Business Term (Reduced) */
+#coreInvoiceTable th:nth-child(5), #coreInvoiceTable td:nth-child(5) { width: 23%; } /* Usage Note */
+#coreInvoiceTable th:nth-child(6), #coreInvoiceTable td:nth-child(6) { width: 8%; }  /* Business Rules */
+#coreInvoiceTable th:nth-child(7), #coreInvoiceTable td:nth-child(7) { width: 8%; }  /* Data Type */
+#coreInvoiceTable th:nth-child(8), #coreInvoiceTable td:nth-child(8) { width: 7%; text-align: center; }  /* Included in Spec */
+#coreInvoiceTable th:nth-child(9), #coreInvoiceTable td:nth-child(9) { width: 16%; } /* Type of Change */
+#coreInvoiceTable th:nth-child(10),#coreInvoiceTable td:nth-child(10){ width: 10%; text-align: center; } /* Actions (Increased) */
 
 /******************************************************************************
     Styling for the Data Table in coreInvoiceModel.html
