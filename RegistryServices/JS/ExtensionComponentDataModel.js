@@ -60,6 +60,9 @@ async function initializeDataManager() {
             throw new Error('No specification ID found. Please complete Step 1 (Identifying Information) first.');
         }
         
+        if (!dataManager.isDataLoaded) {
+            await dataManager.loadSpecificationFromAPI(dataManager.currentSpecId);
+        }
         // Load saved extension elements from API
         let savedExtensions = [];
         try {
@@ -1179,12 +1182,21 @@ async function handleSave(showAlert = true, allowNavigationWithoutChanges = fals
     console.log('DEBUG: ExtensionComponentDataModel - Saving to API with spec ID:', dataManager.currentSpecId);
 
     try {
+
+        const previouslySaved = dataManager.workingData?.extensionComponentData?.savedElements || [];
+        if (!dataManager.workingData) dataManager.workingData = {};
+        dataManager.workingData.extensionComponentData = apiExtensionElements;
+
         // Save extension elements to API
         const apiResults = await dataManager.saveExtensionElementsSimplified(
             dataManager.currentSpecId, 
-            apiExtensionElements
+            apiExtensionElements,
+            previouslySaved
         );
         
+        console.log('DEBUG: ExtensionComponentDataModel - Resaving main specification to update Type...');
+        await dataManager.saveSpecificationToAPI(dataManager.workingData);
+
         console.log('DEBUG: ExtensionComponentDataModel - API save results:', apiResults);
         
         if (showAlert) {

@@ -17,10 +17,10 @@ async function initializeDataManager() {
         if (dataManager.isEditMode() && dataManager.currentSpecId) {
             console.log('AdditionalRequirements: Loading specification for editing. ID:', dataManager.currentSpecId);
 
-            // Load data from API if not already loaded
             if (!dataManager.isDataLoaded) {
-                await window.authManager.authenticatedFetch(dataManager.loadAdditionalRequirementsFromAPI(dataManager.currentSpecId));
+                await dataManager.loadSpecificationFromAPI(dataManager.currentSpecId);
             }
+            
 
             // Load additional requirements from API
             try {
@@ -47,7 +47,7 @@ async function initializeDataManager() {
                 if (!dataManager.workingData) {
                     dataManager.workingData = dataManager.loadWorkingDataFromLocalStorage() || {};
                 }
-                dataManager.workingData.additionalRequirements = tableRequirements;
+                dataManager.workingData.additionalRequirementsData = tableRequirements;
 
             } catch (error) {
                 console.error('AdditionalRequirements: Error loading from API:', error);
@@ -329,7 +329,7 @@ async function saveTable()
                     dataManager.workingData = dataManager.loadWorkingDataFromLocalStorage() || {};
                 }
                 
-                dataManager.workingData.additionalRequirements = data;
+                dataManager.workingData.additionalRequirementsData = data;
                 
                 // Save to localStorage (working data)
                 dataManager.saveWorkingDataToLocalStorage();
@@ -341,6 +341,11 @@ async function saveTable()
                     console.log('AdditionalRequirements: Successfully saved to API');
                 }
                 
+                console.log('DEBUG: AdditionalRequirements - Resaving main specification to update Type...');
+                if (dataManager.workingData) {
+                    await dataManager.saveSpecificationToAPI(dataManager.workingData);
+                }
+
                 console.log('AdditionalRequirements: Additional requirements saved successfully');
                 
                 // Clear any validation highlights since save was successful
@@ -505,7 +510,7 @@ async function refreshFromAPI()
         if (!dataManager.workingData) {
             dataManager.workingData = dataManager.loadWorkingDataFromLocalStorage() || {};
         }
-        dataManager.workingData.additionalRequirements = tableRequirements;
+        dataManager.workingData.additionalRequirementsData = tableRequirements;
         dataManager.saveWorkingDataToLocalStorage();
         
         console.log('AdditionalRequirements: Successfully refreshed from API');
