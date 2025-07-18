@@ -210,19 +210,32 @@ document.addEventListener("DOMContentLoaded", function () {
                     ${item.BusinessTerm || 'N/A'}
                     </td>
                     <td>
-                        <textarea class="usage-note-textarea" data-id="${item.ID}" style="min-height: 32px; resize: vertical; ">${item.UsageNote || ''}</textarea>
+                        <textarea class="usage-note-textarea" data-id="${item.ID}">${item.UsageNote || ''}</textarea>
                     </td>
                     <td>${item.BusinessRules || 'N/A'}</td>
                     <td>${item.DataType || 'N/A'}</td>
                 `;
 
                 
+                function autoResizeTextarea(textarea) {
+                    textarea.style.height = 'auto';
+                    const computedStyle = getComputedStyle(textarea);
+                    
+                    const borderTop = parseInt(computedStyle.borderTopWidth, 10) || 0;
+                    const borderBottom = parseInt(computedStyle.borderBottomWidth, 10) || 0;
+                    const borderHeight = borderTop + borderBottom;
+                    textarea.style.height = (textarea.scrollHeight + borderHeight) + 'px';
+                }
+
                 const currentTextarea = tr.querySelector(`textarea.usage-note-textarea[data-id="${item.ID}"]`);
                 if (currentTextarea) {
-                    currentTextarea.value = item.UsageNote || '';
+                    
                     currentTextarea.addEventListener('input', () => {
+                        autoResizeTextarea(currentTextarea);
                         updateSaveButtonAppearance();
                     });
+
+                    setTimeout(() => autoResizeTextarea(currentTextarea), 0);
                 }
 
                 // Add the appropriate columns based on whether this is read-only or editable
