@@ -23,23 +23,59 @@
         <title>Registry Services</title>
 
         <style>
-            /* Additional styles for the table */
+            /* Normalized styles for all tables */
             table {
                 width: 100%;
                 border-collapse: collapse;
+                table-layout: fixed; /* Ensures consistent column widths */
             }
             th, td {
                 border: 1px solid #ddd;
                 padding: 8px;
                 text-align: left;
                 font-size: 0.741rem;
+                word-wrap: break-word; /* Prevents text overflow */
             }
             th {
                 background-color: #F4A261;
                 font-size: 0.741rem;
                 color: white;
             }
-           
+            th:nth-child(2), td:nth-child(2) { /* Purpose column */
+                width: 25%;
+            }
+            th:nth-child(3), td:nth-child(3) { /* Type column */
+                width: 5%;
+            }
+            th:nth-child(5), td:nth-child(5) { /* Country column */
+                width: 4%;
+            }
+            th:nth-child(6), td:nth-child(6) { /* Implementation Date column */
+                width: 8%;
+            }
+            th:nth-child(7), td:nth-child(7) { /* Preferred Syntax column */
+                width: 7%;
+            }
+            th:nth-child(8), td:nth-child(8) { /* Governing Entity column */
+                width: 7%;
+            }
+            th:nth-child(11), td:nth-child(11) { /* Actions column */
+                width: 5%;
+                text-align: center; /* Center-align buttons */
+            }
+            .view-button, .edit-button {
+                padding: 5px 10px;
+                margin-right: 5px;
+                cursor: pointer;
+            }
+            .view-button {
+                background-color: #4CAF50; /* Green */
+                color: white;
+            }
+            .edit-button {
+                background-color: #FF9800; /* Orange */
+                color: white;
+            }
         </style>
     </head>
     <body>
@@ -64,7 +100,7 @@
             
             <br/>
 
-            <div style="text-align: right"><button id="newSpecBtn" onclick="createNewSpecification();" >Add New Specification</button></div>
+            <div style="text-align: right"><button id="newSpec" onclick="createNewSpecification();" >Add New Specification</button></div>
 
             <br/>
 <!----------------------------------------------------------------------------
@@ -122,10 +158,10 @@
 
             <br/><br/>
 <!----------------------------------------------------------------------------
-        3/3 Other Status Specifications
+        3/4 Under Review Specifications
   ------------------------------------------------------------------------------>
-            <h2>Other</h2>
-            <table id="otherTable">
+            <h2>Under Review</h2>
+            <table id="underReviewTable">
                 <!-- 1st row is for the column names -->
                 <thead>
                 <tr>
@@ -139,17 +175,42 @@
                     <th>Governing Entity</th>
                     <th>Extension Component</th>
                     <th>Conformance Level</th>
-                    <th>Registration Status</th>
                     <th>Actions</th>
                 </tr>
                 </thead>
-                <tbody id="otherTableBody">
+                <tbody id="underReviewTableBody">
                 <!-- This will be populated dynamically with API data -->
                 </tbody>
             </table>
-        </div>
-        </div>
-        
+
+            <br/><br/>
+<!----------------------------------------------------------------------------
+        4/4 Verified Specifications
+  ------------------------------------------------------------------------------>
+            <h2>Verified</h2>
+            <table id="verifiedTable">
+                <!-- 1st row is for the column names -->
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Purpose</th>
+                    <th>Type</th>
+                    <th>Sector</th>
+                    <th>Country</th>
+                    <th>Implementation Date</th>
+                    <th>Preferred Syntax</th>
+                    <th>Governing Entity</th>
+                    <th>Extension Component</th>
+                    <th>Conformance Level</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="verifiedTableBody">
+                <!-- This will be populated dynamically with API data -->
+                </tbody>
+            </table>
+
+            <br/><br/>
 <!----------------------------------------------------------------------------
         JavaScript for Specification Management
   ------------------------------------------------------------------------------>
@@ -257,47 +318,30 @@
 
             // Render specification tables with real data
             function renderSpecificationTables() {
-                // Filter by registrationStatus only (case insensitive, exact match)
                 const inProgressSpecs = mySpecifications.filter(spec => {
                     const regStatus = (spec.registrationStatus || '').toLowerCase();
                     return regStatus === 'in progress';
                 });
-                
+
                 const submittedSpecs = mySpecifications.filter(spec => {
                     const regStatus = (spec.registrationStatus || '').toLowerCase();
                     return regStatus === 'submitted';
                 });
 
-                // All other specifications (including null/undefined/empty registrationStatus)
-                const otherSpecs = mySpecifications.filter(spec => {
+                const underReviewSpecs = mySpecifications.filter(spec => {
                     const regStatus = (spec.registrationStatus || '').toLowerCase();
-                    return regStatus !== 'in progress' && regStatus !== 'submitted';
+                    return regStatus === 'under review';
                 });
 
-                console.log('DEBUG: Filtered In Progress specifications:', inProgressSpecs.length);
-                console.log('DEBUG: In Progress specs:', inProgressSpecs.map(s => ({
-                    name: s.specificationName,
-                    regStatus: s.registrationStatus,
-                    identityID: s.identityID
-                })));
-                
-                console.log('DEBUG: Filtered Submitted specifications:', submittedSpecs.length);
-                console.log('DEBUG: Submitted specs:', submittedSpecs.map(s => ({
-                    name: s.specificationName,
-                    regStatus: s.registrationStatus,
-                    identityID: s.identityID
-                })));
-
-                console.log('DEBUG: Filtered Other specifications:', otherSpecs.length);
-                console.log('DEBUG: Other specs:', otherSpecs.map(s => ({
-                    name: s.specificationName,
-                    regStatus: s.registrationStatus,
-                    identityID: s.identityID
-                })));
+                const verifiedSpecs = mySpecifications.filter(spec => {
+                    const regStatus = (spec.registrationStatus || '').toLowerCase();
+                    return regStatus === 'verified';
+                });
 
                 renderInProgressTable(inProgressSpecs);
                 renderSubmittedTable(submittedSpecs);
-                renderOtherTable(otherSpecs);
+                renderUnderReviewTable(underReviewSpecs);
+                renderVerifiedTable(verifiedSpecs);
             }
 
             // Render In Progress specifications table
@@ -376,56 +420,80 @@
                 console.log('DEBUG: Submitted table HTML updated');
             }
 
-            // Render Other status specifications table
-            function renderOtherTable(specifications) {
-                console.log('DEBUG: Rendering Other table with', specifications.length, 'specifications');
+            // Render Under Review specifications table
+            function renderUnderReviewTable(specifications) {
+                console.log('DEBUG: Rendering Under Review table with', specifications.length, 'specifications');
                 
-                const tableBody = document.getElementById('otherTableBody');
+                const tableBody = document.getElementById('underReviewTableBody');
                 if (!tableBody) {
-                    console.error('Other table body not found');
+                    console.error('Under Review table body not found');
                     return;
                 }
 
                 if (specifications.length === 0) {
-                    console.log('DEBUG: No Other specifications, showing empty message');
-                    tableBody.innerHTML = '<tr><td colspan="12" style="text-align: center; color: #666;">No other specifications</td></tr>';
+                    console.log('DEBUG: No Under Review specifications, showing empty message');
+                    tableBody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: #666;">No specifications under review</td></tr>';
                     return;
                 }
 
-                console.log('DEBUG: Rendering', specifications.length, 'Other specifications to table');
-                tableBody.innerHTML = specifications.map(spec => {
-                    // Determine action button based on registration status
-                    let actionButton = '';
-                    const regStatus = (spec.registrationStatus || '').toLowerCase();
-                    
-                    if (regStatus === 'under review') {
-                        actionButton = `<button type="button" onclick="editSpecification(${spec.identityID})" class="view-button">Edit</button>`;
-                    } else if (regStatus === 'verified') {
-                        actionButton = `<button type="button" onclick="viewSpecification(${spec.identityID})" class="view-button">View</button>`;
-                    } else {
-                        // Fallback for all other statuses (including null/undefined/empty)
-                        actionButton = `<button type="button" onclick="viewSpecification(${spec.identityID})" class="view-button">View</button>`;
-                    }
-                    
-                    return `
-                        <tr>
-                            <td>${spec.specificationName || 'N/A'}</td>
-                            <td>${spec.purpose || 'N/A'}</td>
-                            <td>${spec.specificationType || 'N/A'}</td>
-                            <td>${spec.sector || 'N/A'}</td>
-                            <td>${spec.country || 'N/A'}</td>
-                            <td>${formatDate(spec.dateOfImplementation)}</td>
-                            <td>${spec.preferredSyntax || 'N/A'}</td>
-                            <td>${spec.governingEntity || 'N/A'}</td>
-                            <td>${hasExtensionComponents(spec) ? 'Yes' : 'No'}</td>
-                            <td>${spec.conformanceLevel || 'N/A'}</td>
-                            <td>${spec.registrationStatus || 'N/A'}</td>
-                            <td>${actionButton}</td>
-                        </tr>
-                    `;
-                }).join('');
+                console.log('DEBUG: Rendering', specifications.length, 'Under Review specifications to table');
+                tableBody.innerHTML = specifications.map(spec => `
+                    <tr>
+                        <td>${spec.specificationName || 'N/A'}</td>
+                        <td>${spec.purpose || 'N/A'}</td>
+                        <td>${spec.specificationType || 'N/A'}</td>
+                        <td>${spec.sector || 'N/A'}</td>
+                        <td>${spec.country || 'N/A'}</td>
+                        <td>${formatDate(spec.dateOfImplementation)}</td>
+                        <td>${spec.preferredSyntax || 'N/A'}</td>
+                        <td>${spec.governingEntity || 'N/A'}</td>
+                        <td>${hasExtensionComponents(spec) ? 'Yes' : 'No'}</td>
+                        <td>${spec.conformanceLevel || 'N/A'}</td>
+                        <td>
+                            <button type="button" onclick="viewSpecification(${spec.identityID})" class="view-button">View</button>
+                        </td>
+                    </tr>
+                `).join('');
                 
-                console.log('DEBUG: Other table HTML updated with conditional action buttons');
+                console.log('DEBUG: Under Review table HTML updated');
+            }
+
+            // Render Verified specifications table
+            function renderVerifiedTable(specifications) {
+                console.log('DEBUG: Rendering Verified table with', specifications.length, 'specifications');
+                
+                const tableBody = document.getElementById('verifiedTableBody');
+                if (!tableBody) {
+                    console.error('Verified table body not found');
+                    return;
+                }
+
+                if (specifications.length === 0) {
+                    console.log('DEBUG: No Verified specifications, showing empty message');
+                    tableBody.innerHTML = '<tr><td colspan="11" style="text-align: center; color: #666;">No verified specifications</td></tr>';
+                    return;
+                }
+
+                console.log('DEBUG: Rendering', specifications.length, 'Verified specifications to table');
+                tableBody.innerHTML = specifications.map(spec => `
+                    <tr>
+                        <td>${spec.specificationName || 'N/A'}</td>
+                        <td>${spec.purpose || 'N/A'}</td>
+                        <td>${spec.specificationType || 'N/A'}</td>
+                        <td>${spec.sector || 'N/A'}</td>
+                        <td>${spec.country || 'N/A'}</td>
+                        <td>${formatDate(spec.dateOfImplementation)}</td>
+                        <td>${spec.preferredSyntax || 'N/A'}</td>
+                        <td>${spec.governingEntity || 'N/A'}</td>
+                        <td>${hasExtensionComponents(spec) ? 'Yes' : 'No'}</td>
+                        <td>${spec.conformanceLevel || 'N/A'}</td>
+                        <td>
+                            <button type="button" onclick="viewSpecification(${spec.identityID})" class="view-button">View</button>
+                        </td>
+                    </tr>
+                `).join('');
+                
+                console.log('DEBUG: Verified table HTML updated');
             }
 
             // Utility functions
@@ -557,7 +625,8 @@
             function clearTables() {
                 const draftTableBody = document.getElementById('draftTableBody');
                 const submittedTableBody = document.getElementById('submittedTableBody');
-                const otherTableBody = document.getElementById('otherTableBody');
+                const underReviewTableBody = document.getElementById('underReviewTableBody');
+                const verifiedTableBody = document.getElementById('verifiedTableBody');
                 
                 if (draftTableBody) {
                     draftTableBody.innerHTML = '';
@@ -567,8 +636,12 @@
                     submittedTableBody.innerHTML = '';
                 }
 
-                if (otherTableBody) {
-                    otherTableBody.innerHTML = '';
+                if (underReviewTableBody) {
+                    underReviewTableBody.innerHTML = '';
+                }
+
+                if (verifiedTableBody) {
+                    verifiedTableBody.innerHTML = '';
                 }
             }
 

@@ -172,6 +172,11 @@ class GoverningEntityList {
                 (entry.numberUnderReview || 0) + 
                 (entry.numberVerified || 0);
 
+            // Create URLSearchParams for view page
+            const params = new URLSearchParams({
+                id: entry.userGroupID
+            }).toString();
+
             row.innerHTML = `
                 <td>${entry.createdDate ? new Date(entry.createdDate).toLocaleDateString('en-GB') : 'N/A'}</td>
                 <td>${entry.groupName || 'N/A'}</td>
@@ -182,7 +187,7 @@ class GoverningEntityList {
                 <td>${entry.numberVerified || '0'}</td>
                 <td>${totalSpecifications}</td>
                 <td>
-                    <button class="view-button" onclick="viewGoverningEntity(${entry.userGroupID})">View</button>
+                    <button class="view-button" onclick="window.location.href='governingEntityView.html?${params}'">View</button>
                 </td>
             `;
             this.tableBody.appendChild(row);
@@ -310,9 +315,6 @@ class GoverningEntityView {
 
     async initializeView() {
         console.log('GoverningEntityView: Setting up view...');
-        
-        // Initialize breadcrumb manager
-        window.breadcrumbManager.init();
         
         // Parse URL parameters
         this.parseUrlParameters();
@@ -513,7 +515,7 @@ class GoverningEntityView {
             const currentStatus = spec.implementationStatus || spec.registrationStatus;
 
             if (currentStatus === 'In Progress' || currentStatus === 'Draft') {
-             actionButtonHtml = `<button class="view-button" onclick="editSpecification(${spec.identityID}, 'govEntity')">Edit</button>`;
+            actionButtonHtml = `<button class="view-button" onclick="editSpecification(${spec.identityID})">Edit</button>`;
             } else { // Covers 'Submitted', 'Under Review', 'Verified', 'Published' etc.
                 actionButtonHtml = `<button class="view-button" onclick="viewSpecification(${spec.identityID})">View</button>`;
             }
@@ -598,7 +600,7 @@ class GoverningEntityView {
         if (adminContainerElement) {
             // Add a class for styling
             adminContainerElement.innerHTML = `
-                <button class="view-button" id="newSpecBtn" style="float: right; margin-bottom: 10px; padding: 10px 20px; font-size: 14px;">New Specification</button>
+                <button class="view-button" id="newSpecBtn" style="float: right; margin-bottom: 10px;">New Specification</button>
                 <div style="clear: both;"></div> `;
 
             const newSpecBtn = document.getElementById("newSpecBtn");
@@ -615,22 +617,19 @@ class GoverningEntityView {
         }
     }
 
-    /** * Starts a new specification for the governing entity.
-     * Clears any existing working data and sets the governing entity for the new specification.
-     */
-
     startNewSpecification() {
         console.log('GoverningEntityView: Starting new specification for entity:', this.entity.groupName);
-
+        
         try {
+            // Use SpecificationDataManager if available
             if (window.SpecificationDataManager && typeof window.createNewSpecification === 'function') {
                 const dataManager = new SpecificationDataManager();
-                dataManager.clearEditingState(); 
-                dataManager.workingData = { governingEntity: this.entity.groupName };
-                dataManager.saveWorkingDataToLocalStorage();
+                 dataManager.clearEditingState(); 
+                 dataManager.workingData = { governingEntity: this.entity.groupName }; // Use groupName
+                 dataManager.saveWorkingDataToLocalStorage();
 
-                window.createNewSpecification('govEntity'); // Pass 'govEntity' as the source
-
+                window.createNewSpecification(); 
+                
             } else {
                 console.error('GoverningEntityView: Required functions for new specification not found.');
                 alert("Error starting new specification.");
@@ -641,20 +640,6 @@ class GoverningEntityView {
         }
     }
 }
-
-// New global function to handle navigation
-function viewGoverningEntity(userGroupId) {
-    console.log(`Setting breadcrumb context for viewing entity ID: ${userGroupId}`);
-    const context = {
-        source: 'govEntity',
-        action: 'view',
-        entityId: userGroupId
-    };
-    window.breadcrumbManager.setContext(context);
-    window.location.href = `governingEntityView.html?id=${userGroupId}`;
-}
-window.viewGoverningEntity = viewGoverningEntity;
-
 
 // Initialize based on current page
 function initializeGoverningEntityPage() {

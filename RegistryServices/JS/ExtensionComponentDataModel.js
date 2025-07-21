@@ -60,9 +60,6 @@ async function initializeDataManager() {
             throw new Error('No specification ID found. Please complete Step 1 (Identifying Information) first.');
         }
         
-        if (!dataManager.isDataLoaded) {
-            await dataManager.loadSpecificationFromAPI(dataManager.currentSpecId);
-        }
         // Load saved extension elements from API
         let savedExtensions = [];
         try {
@@ -1070,20 +1067,17 @@ function updateSaveButtonAppearance() {
     const saveButton = document.querySelector('button[onclick="handleSave()"]');
     const hasChanges = hasActualChanges();
     
-   
     if (saveButton) {
-            if (hasChanges) {
-                saveButton.style.setProperty('background-color', '#28a745', 'important');
-                saveButton.style.color = '#fff';
-                saveButton.style.fontWeight = 'normal';
-                
-            } else {
-                saveButton.style.setProperty('background-color', '#6c757d', 'important');
-                saveButton.style.color = '#fff';
-                saveButton.style.fontWeight = 'normal';
-                saveButton.style.boxShadow = 'none';
-            }
+        if (hasChanges) {
+            saveButton.style.background = '#28a745'; // Green when changes exist
+            saveButton.style.fontWeight = 'bold';
+            saveButton.style.boxShadow = '0 2px 4px rgba(40, 167, 69, 0.3)';
+        } else {
+            saveButton.style.background = '#6c757d'; // Gray when no changes
+            saveButton.style.fontWeight = 'normal';
+            saveButton.style.boxShadow = 'none';
         }
+    }
 }
 
 async function handleSave(showAlert = true, allowNavigationWithoutChanges = false) {
@@ -1182,21 +1176,12 @@ async function handleSave(showAlert = true, allowNavigationWithoutChanges = fals
     console.log('DEBUG: ExtensionComponentDataModel - Saving to API with spec ID:', dataManager.currentSpecId);
 
     try {
-
-        const previouslySaved = dataManager.workingData?.extensionComponentData?.savedElements || [];
-        if (!dataManager.workingData) dataManager.workingData = {};
-        dataManager.workingData.extensionComponentData = apiExtensionElements;
-
         // Save extension elements to API
         const apiResults = await dataManager.saveExtensionElementsSimplified(
             dataManager.currentSpecId, 
-            apiExtensionElements,
-            previouslySaved
+            apiExtensionElements
         );
         
-        console.log('DEBUG: ExtensionComponentDataModel - Resaving main specification to update Type...');
-        await dataManager.saveSpecificationToAPI(dataManager.workingData);
-
         console.log('DEBUG: ExtensionComponentDataModel - API save results:', apiResults);
         
         if (showAlert) {
