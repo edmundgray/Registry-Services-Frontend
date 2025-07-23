@@ -505,7 +505,7 @@ class SpecificationPreview {
     cancelPreview() {
         console.log('SpecificationPreview: Canceling preview...');
         
-        const confirmed = confirm("Are you sure you want to cancel and return to My Specifications? This will not delete the specification, but it will remain in its current saved state.");
+        const confirmed = confirm("Are you sure you want to cancel and return to the previous page? The specification will remain in its current saved state.");
         
         if (confirmed) {
             this.cleanupAndRedirect();
@@ -518,7 +518,7 @@ class SpecificationPreview {
         try {
             // Clean up data manager state if available
             if (this.dataManager) {
-                this.dataManager.clearWorkingDataFromLocalStorage();
+                this.dataManager.clearEditingState();
             }
             
             // Clean up old localStorage items for backward compatibility
@@ -526,9 +526,29 @@ class SpecificationPreview {
             localStorage.removeItem("editSpecData");
             
             // Determine return page
-            const returnPage = localStorage.getItem("returnToPage") || "mySpecifications.html";
-            localStorage.removeItem("returnToPage");
+            let returnPage = "mySpecifications.html"; // Default return page
+            if (window.breadcrumbManager) {
+                const context = window.breadcrumbManager.getContext();
+                if (context && context.source) {
+                     console.log('SpecificationPreview: Using breadcrumb source for redirection:', context.source);
+                     const sourceMap = {
+                        'mySpecs': 'mySpecifications.html',
+                        'registry': 'eInvoicingSpecificationRegistry.html',
+                        'govEntity': 'governingEntityList.html'
+                    };
+                    if (sourceMap[context.source]) {
+                        returnPage = sourceMap[context.source];
+                    } else {
+                        console.warn('SpecificationPreview: Unknown breadcrumb source:', context.source);
+                    }
+
+                } else {
+                    console.warn('SpecificationPreview: Breadcrumb context or source not found, using default fallback.');
+                }
+                window.breadcrumbManager.clearContext();
+            }
             
+            localStorage.removeItem("returnToPage");
             console.log('SpecificationPreview: Redirecting to:', returnPage);
             window.location.href = returnPage;
             
