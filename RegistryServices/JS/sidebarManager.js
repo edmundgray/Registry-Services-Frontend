@@ -22,6 +22,13 @@ class SidebarManager {
                     href: 'ExtensionComponentDataModelRead.html',
                     icon: 'fa-solid fa-trailer',
                     text: 'Extension Component Data Model'
+                },
+                {
+                    id: 'signUp',
+                    href: '#',
+                    icon: 'fa-solid fa-user-plus',
+                    text: 'Sign Up',
+                    onclick: 'showSignUpModal()'
                 }
             ],
             user: [
@@ -114,9 +121,10 @@ class SidebarManager {
 
         // Add menu items
         menuItems.forEach(item => {
+            const onclickAttr = item.onclick ? `onclick="${item.onclick}"` : '';
             sidebarHTML += `
                     <li>
-                        <a href="${item.href}">
+                        <a href="${item.href}" ${onclickAttr}>
                             <span class="icon"><i class="${item.icon}"></i></span>
                             <span class="text">${item.text}</span>
                         </a>

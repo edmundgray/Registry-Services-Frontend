@@ -550,6 +550,16 @@ window.AuthManager = class {
         window.dispatchEvent(new CustomEvent('userLoggedOut'));
     }
 
+    async registerUser(firstName, lastName, email) {
+        console.log('Attempting to register user:', { firstName, lastName, email });
+
+        await new Promise(resolve => setTimeout(resolve, 500));
+        console.log('Simulated registration successful for:', email);
+
+        return { success: true, message: 'Registration submitted for approval.'};
+
+    }
+
     // Get session status for UI indicators
     getSessionStatus() {
         if (!this.isAuthenticated) {
