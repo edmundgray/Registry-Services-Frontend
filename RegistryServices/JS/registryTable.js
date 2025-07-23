@@ -428,33 +428,10 @@ function populateTable(allFilteredData) {
                         cell.textContent = "N/A";
                     }
                 } else if (header === "Sector") {
-                    // Map sector codes to full names
-                    const sectorMapping = {
-                        "A": "Agriculture, Forestry and Fishing",
-                        "B": "Mining and Quarrying",
-                        "C": "Manufacturing",
-                        "D": "Electricity, Gas, Steam and Air Conditioning Supply",
-                        "E": "Water Supply; Sewerage, Waste Management and Remediation Activities",
-                        "F": "Construction",
-                        "G": "Wholesale and Retail Trade; Repair of Motor Vehicles and Motorcycles",
-                        "H": "Transportation and Storage",
-                        "I": "Accommodation and Food Service Activities",
-                        "J": "Information and Communication",
-                        "K": "Financial and Insurance Activities",
-                        "L": "Real Estate Activities",
-                        "M": "Professional, Scientific and Technical Activities",
-                        "N": "Administrative and Support Service Activities",
-                        "O": "Public Administration and Defence; Compulsory Social Security",
-                        "P": "Education",
-                        "Q": "Human Health and Social Work Activities",
-                        "R": "Arts, Entertainment and Recreation",
-                        "S": "Other Service Activities",
-                        "T": "Activities of Households as Employers; Undifferentiated Goods- and Services-Producing Activities of Households for Own Use",
-                        "U": "Activities of Extraterritorial Organisations and Bodies"
-                    };
-
+                    
                     const sectorValue = getPropertyValue(entry, header);
-                    cell.textContent = sectorMapping[sectorValue] || sectorValue || "N/A";
+                    cell.textContent = sectorValue || "N/A";
+                    
                 } else if (header === "View") {
                     const button = document.createElement("button");
 
@@ -812,12 +789,12 @@ function setupFilterEventListeners() {
         });
     }
     if (sectorFilter) {
-        sectorFilter.addEventListener("change", () => {
+        sectorFilter.addEventListener("input", debounce(() => {
             // Clear business term search when using other filters
             if (businessTermSearch) businessTermSearch.value = "";
             isBusinessTermSearchActive = false;
             applyFilters();
-        });
+        }, 300));
     }
     if (countryFilter) {
         countryFilter.addEventListener("change", () => {
