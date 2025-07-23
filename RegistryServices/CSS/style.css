@@ -1479,3 +1479,68 @@ button[onclick*="deleteRow"]:active {
         forced-color-adjust: none;
     }
 }
+
+/* Column widths for tables on the View Specification page */
+#specificationModel .styled-table {
+    table-layout: auto; 
+}
+
+/* Core Invoice Model Table  */
+#specificationModel #coreInvoiceModelTable th:nth-child(1),
+#specificationModel #coreInvoiceModelTable td:nth-child(1) { width: 6%; }
+#specificationModel #coreInvoiceModelTable th:nth-child(2),
+#specificationModel #coreInvoiceModelTable td:nth-child(2) { width: 6%; }
+#specificationModel #coreInvoiceModelTable th:nth-child(3),
+#specificationModel #coreInvoiceModelTable td:nth-child(3) { width: 8%; } 
+#specificationModel #coreInvoiceModelTable th:nth-child(4),
+#specificationModel #coreInvoiceModelTable td:nth-child(4) { width: 15%; } 
+#specificationModel #coreInvoiceModelTable th:nth-child(5),
+#specificationModel #coreInvoiceModelTable td:nth-child(5) { width: 25%; } 
+#specificationModel #coreInvoiceModelTable th:nth-child(6),
+#specificationModel #coreInvoiceModelTable td:nth-child(6) { width: 10%; } 
+#specificationModel #coreInvoiceModelTable th:nth-child(7),
+#specificationModel #coreInvoiceModelTable td:nth-child(7) { width: 8%; } 
+#specificationModel #coreInvoiceModelTable th:nth-child(8),
+#specificationModel #coreInvoiceModelTable td:nth-child(8) { width: 12%; } 
+#specificationModel #coreInvoiceModelTable th:nth-child(9),
+#specificationModel #coreInvoiceModelTable td:nth-child(9) { width: 10%; } 
+
+/* Extension Component Data Model Table */
+#specificationModel #extensionComponentDataTable th:nth-child(1),
+#specificationModel #extensionComponentDataTable td:nth-child(1) { width: 7%; } 
+#specificationModel #extensionComponentDataTable th:nth-child(2),
+#specificationModel #extensionComponentDataTable td:nth-child(2) { width: 4%; }  
+#specificationModel #extensionComponentDataTable th:nth-child(3),
+#specificationModel #extensionComponentDataTable td:nth-child(3) { width: 4%; }  
+#specificationModel #extensionComponentDataTable th:nth-child(4),
+#specificationModel #extensionComponentDataTable td:nth-child(4) { width: 5%; }  
+#specificationModel #extensionComponentDataTable th:nth-child(5),
+#specificationModel #extensionComponentDataTable td:nth-child(5) { width: 7%; } 
+#specificationModel #extensionComponentDataTable th:nth-child(6),
+#specificationModel #extensionComponentDataTable td:nth-child(6) { width: 25%; } 
+#specificationModel #extensionComponentDataTable th:nth-child(7),
+#specificationModel #extensionComponentDataTable td:nth-child(7) { width: 20%; } 
+#specificationModel #extensionComponentDataTable th:nth-child(8),
+#specificationModel #extensionComponentDataTable td:nth-child(8) { width: 6%; }  
+#specificationModel #extensionComponentDataTable th:nth-child(9),
+#specificationModel #extensionComponentDataTable td:nth-child(9) { width: 6%; } 
+#specificationModel #extensionComponentDataTable th:nth-child(10),
+#specificationModel #extensionComponentDataTable td:nth-child(10){ width: 6%; }  
+#specificationModel #extensionComponentDataTable th:nth-child(11),
+#specificationModel #extensionComponentDataTable td:nth-child(11){ width: 10%; }  
+
+/* Additional Requirements Table */
+#specificationModel #additionalRequirementsTable th:nth-child(1),
+#specificationModel #additionalRequirementsTable td:nth-child(1) { width: 8%; }  
+#specificationModel #additionalRequirementsTable th:nth-child(2),
+#specificationModel #additionalRequirementsTable td:nth-child(2) { width: 8%; }  
+#specificationModel #additionalRequirementsTable th:nth-child(3),
+#specificationModel #additionalRequirementsTable td:nth-child(3) { width: 10%; } 
+#specificationModel #additionalRequirementsTable th:nth-child(4),
+#specificationModel #additionalRequirementsTable td:nth-child(4) { width: 15%; } 
+#specificationModel #additionalRequirementsTable th:nth-child(5),
+#specificationModel #additionalRequirementsTable td:nth-child(5) { width: 24%; } 
+#specificationModel #additionalRequirementsTable th:nth-child(6),
+#specificationModel #additionalRequirementsTable td:nth-child(6) { width: 20%; } 
+#specificationModel #additionalRequirementsTable th:nth-child(7),
+#specificationModel #additionalRequirementsTable td:nth-child(7) { width: 15%; } 
