@@ -2,9 +2,31 @@ document.addEventListener("DOMContentLoaded", function () {
     console.log("CoreInvoiceModel.js: DOM Content Loaded");
     console.log("CoreInvoiceModel.js: Read-only mode:", window.isCoreInvoiceReadOnly);
     
+    function autoResizeTextarea(textarea) {
+    textarea.style.height = 'auto';
+    const computedStyle = getComputedStyle(textarea);
+
+    const borderTop = parseInt(computedStyle.borderTopWidth, 10) || 0;
+    const borderBottom = parseInt(computedStyle.borderBottomWidth, 10) || 0;
+    const borderHeight = borderTop + borderBottom;
+    textarea.style.height = (textarea.scrollHeight + borderHeight) + 'px';
+    }
+
+    // Function to resize all textareas on the page
+    function autoResizeAllTextareas() {
+        document.querySelectorAll('textarea.usage-note-textarea').forEach(textarea => {
+            autoResizeTextarea(textarea);
+        });
+    }
+
+    // Add a resize event listener to the window
+    // The 'debounce' function prevents the resize from firing too often, improving performance.
+    window.addEventListener('resize', debounce(autoResizeAllTextareas, 150));
+
     const editingSpecId = localStorage.getItem("selectedSpecification");
     console.log("CoreInvoiceModel.js: Editing spec ID:", editingSpecId);
     
+
     let savedCoreIds = [];
     let savedTypeOfChange = {};
 
@@ -217,15 +239,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 `;
 
                 
-                function autoResizeTextarea(textarea) {
-                    textarea.style.height = 'auto';
-                    const computedStyle = getComputedStyle(textarea);
-                    
-                    const borderTop = parseInt(computedStyle.borderTopWidth, 10) || 0;
-                    const borderBottom = parseInt(computedStyle.borderBottomWidth, 10) || 0;
-                    const borderHeight = borderTop + borderBottom;
-                    textarea.style.height = (textarea.scrollHeight + borderHeight) + 'px';
-                }
+                
 
                 const currentTextarea = tr.querySelector(`textarea.usage-note-textarea[data-id="${item.ID}"]`);
                 if (currentTextarea) {
@@ -306,6 +320,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 return tr;
             }
+
+            // Add this inside the "DOMContentLoaded" event listener in coreInvoiceModel.js
+
+// Function to resize all textareas on the page
+function autoResizeAllTextareas() {
+    document.querySelectorAll('textarea.usage-note-textarea').forEach(textarea => {
+        // Re-use the existing auto-resize logic from the file
+        autoResizeTextarea(textarea);
+    });
+}
+
+// Add a resize event listener to the window
+// The 'debounce' function prevents the resize from firing too often, improving performance.
+window.addEventListener('resize', debounce(autoResizeAllTextareas, 150));
 
             roots.forEach(root => renderRowAndChildren(root, tableBody));
             
