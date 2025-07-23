@@ -149,11 +149,11 @@
             </div>
              <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 30px;">
                 <div>
-                    <button type="button" onclick="handleCoreInvoiceSave()" style="background-color: #6c757d;">Save</button>
-                    <button type="button" onclick="handleCancel()" style="background:#6c757d; color:#fff;">Cancel</button>
+                    <button type="button" onclick="handleCoreInvoiceSave()" class="view-button" style="background:#ccc; color:#333;">Save</button>
+                    <button type="button" onclick="handleCancel()" class="view-button" style="background:#6c757d; color:#fff;">Cancel</button>
                 </div>
                 <div>
-                    <button type="button" onclick="saveAndGoToExtensionModel()" >Extension Component Data Model</button>
+                    <button type="button" onclick="saveAndGoToExtensionModel()" class="view-button" style="background:#007bff; color:#fff;">Extension Component Data Model</button>
                 </div>
             </div>
         </div>
@@ -166,8 +166,7 @@
 
             // Initialize data manager and load data
             async function initializeDataManager() {
-                try {                       
-                     
+                try {
                     console.log('DEBUG: CoreInvoiceModel - Starting initializeDataManager');
                     console.log('DEBUG: CoreInvoiceModel - LocalStorage state:');
                     console.log('  - editMode:', localStorage.getItem('editMode'));
@@ -722,12 +721,10 @@
                         saveButton.style.background = '#28a745'; // Green when changes exist
                         saveButton.style.fontWeight = 'bold';
                         saveButton.style.boxShadow = '0 2px 4px rgba(40, 167, 69, 0.3)';
-                    } 
-                    else {
+                    } else {
                         saveButton.style.background = '#6c757d'; // Gray when no changes
                         saveButton.style.fontWeight = 'normal';
                         saveButton.style.boxShadow = 'none';
-                         console.log('DEBUG: CoreInvoiceModel - No changes detected, updated save button appearance to grey');
                     }
                 }
             }
@@ -834,9 +831,7 @@
                         );
                         
                         console.log('DEBUG: CoreInvoiceModel - Simplified save completed:', saveResults);
-                        if (dataManager.workingData) {
-                            await dataManager.saveSpecificationToAPI(dataManager.workingData);
-                        }
+                        
                         let successMessage = "Core Invoice Model selections saved successfully!";
                         
                         if (saveResults.deletedCount > 0) {

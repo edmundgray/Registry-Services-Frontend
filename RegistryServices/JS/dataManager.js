@@ -229,12 +229,7 @@ class SpecificationDataManager {
     // Save specification to API
     async saveSpecificationToAPI(formData) {
         try {
-            const existingData = this.loadWorkingDataFromLocalStorage() || {};
-            const completeFormData = { ...existingData, ...formData };
-            console.log('DEBUG: Merged form data for API submission:', completeFormData);
-
-
-            const apiData = this.transformFormToApiData(completeFormData);
+            const apiData = this.transformFormToApiData(formData);
             
             // Validate userGroupID before sending to API
             if (!apiData.userGroupID || apiData.userGroupID === 0) {
@@ -789,7 +784,7 @@ class SpecificationDataManager {
         }
     }
 
-    async saveExtensionElementsSimplified(specificationId, extensionElementsData, previouslySelectedElements = []) {
+    async saveExtensionElementsSimplified(specificationId, extensionElementsData) {
         try {
             if (!specificationId) {
                 throw new Error('Specification ID is required');
@@ -800,7 +795,9 @@ class SpecificationDataManager {
                 addedCount: 0
             };
 
-            // Step 1: Delete previously saved extension elements (if any exist)y
+            // Step 1: Delete previously saved extension elements (if any exist)
+            const previouslySelectedElements = this.workingData?.extensionComponentData?.savedElements || [];
+            
             if (previouslySelectedElements.length > 0) {
                 for (const element of previouslySelectedElements) {
                     if (element.entityID) {
