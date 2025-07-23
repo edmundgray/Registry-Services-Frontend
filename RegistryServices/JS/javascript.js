@@ -234,7 +234,88 @@ function createLoginModal() {
     });
 }
 
-// getPropertyValue function moved to registryTable.js where it's used
+//Creates the sign-up modal HTML and appends it to the body
+function createSignUpModal() {
+    const modalHTML = `
+        <div id="signUpModal" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 400px;">
+                <div class="modal-header">
+                    <h2>Sign Up</h2>
+                    <span class="close" onclick="closeSignUpModal()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <form id="signUpForm">
+                        <div class="form-group">
+                            <label for="firstName">First Name:</label>
+                            <input type="text" id="firstName" name="firstName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="lastName">Last Name:</label>
+                            <input type="text" id="lastName" name="lastName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email:</label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+                        <div id="signUpMessage" style="margin-top: 15px; font-weight: bold; text-align: center;"></div>
+                        <div class="form-group" style="text-align: right; margin-top: 20px;">
+                            <button type="submit" style="background-color: #28a745;">Sign Up</button>
+                            <button type="button" class="cancel-button" onclick="closeSignUpModal()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    document.getElementById('signUpForm').addEventListener('submit', handleSignUp);
+}
+
+function showSignUpModal() {
+    let modal = document.getElementById('signUpModal');
+    if (!modal){
+        createSignUpModal();
+        modal = document.getElementById('signUpModal');
+    }
+    document.getElementById('signUpMessage').textContent = '';
+    modal.style.display = 'block';
+}
+
+function closeSignUpModal() {
+    const modal = document.getElementById('signUpModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+async function handleSignUp(event) {
+    event.preventDefault();
+    const messageEl = document.getElementById('signUpMessage');
+    const firstName = document.getElementById('firstName').value.trim();
+    const lastName = document.getElementById('lastName').value.trim();
+    const email = document.getElementById('email').value.trim();
+
+    if (!firstName || !lastName || !email) {
+        messageEl.textContent = 'Please enter all requested information before proceeding.';
+        messageEl.style.color = '#dc3545';
+        return;
+    }
+
+    try {
+        const result = await window.authManager.registerUser(firstName, lastName, email);
+        if (result.success) {
+            messageEl.textContent = 'Sign up successful! Admin will notify by email when your account is accessible.';
+            messageEl.style.color = '#28a745';
+            // Optionally, close the modal after a short delay
+            setTimeout(closeSignUpModal, 4000);
+        } 
+        
+    } catch(error) {
+            messageEl.textContent = `Sign up failed: ${error.message}`;
+            messageEl.style.color = '#dc3545';
+    }
+}
 
 // Authentication functions for testing
 async function loginUser(username, password) {
