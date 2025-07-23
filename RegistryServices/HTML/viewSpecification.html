@@ -165,6 +165,31 @@
                 z-index: 2;
                 box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             }
+
+            .table-title-container{
+                padding: 10px 15px;
+                color: #fff;
+                border-radius: 5px 5px 0 0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .core-model-title {
+                background-color: #0a9c1a;
+            }
+            .extension-model-title {
+                background-color: #2576e6;
+            }
+            .additional-reqs-title {
+                background-color: #d3a1b7;
+            }
+            .table-title-container h3 {
+                margin: 0;
+                font-size: 1.1em;
+                font-weight: 500;
+                text-align: left;
+            }
+            
         </style>
     </head>
     <body>
@@ -284,29 +309,40 @@
             <div id="specificationModel" class="tab-content">
                 <!-- Model count summary containers -->
                 <div class="model-count-summary" id="modelCountSummary">
-                    <div class="model-count-box model-count-core" id="coreModelCountBox">
+                    
+                    <div class="model-count-box model-count-core" id="coreModelCountBox" onclick="document.getElementById('coreInvoiceModelTable').scrollIntoView({ behavior: 'smooth' });">
                         <div class="model-count-title">Core Invoice Data Model</div>
                         <div class="model-count-value" id="coreModelCount">0 elements</div>
                     </div>
-                    <div class="model-count-box model-count-extension" id="extensionModelCountBox">
+                    <div class="model-count-box model-count-extension" id="extensionModelCountBox" onclick="document.getElementById('extensionComponentDataTable').scrollIntoView({ behavior: 'smooth' });">
                         <div class="model-count-title">Extension Component Data Model</div>
                         <div class="model-count-value" id="extensionModelCount">0 elements</div>
                     </div>
-                    <div class="model-count-box model-count-additional" id="additionalModelCountBox">
+                    <div class="model-count-box model-count-additional" id="additionalModelCountBox" onclick="document.getElementById('additionalRequirementsTable').scrollIntoView({ behavior: 'smooth' });">
                         <div class="model-count-title">Additional Requirements</div>
                         <div class="model-count-value" id="additionalModelCount">0 elements</div>
                     </div>
                 </div>
                 <div class="info-section" style="display: flex; flex-direction: column; gap: 24px;">
                     <!-- Selected Core Invoice Model elements (first, stacked) -->
-                    <div class="info-table" style="width: 100%;">
-                        <h3>Selected Core Invoice Model elements</h3>
-                        <table id="coreInvoiceModelTable" style="width: 100%;">
+                    <div style="width: 100%;">
+                        <div class="table-title-container core-model-title">
+                            <h3>Selected Core Invoice Model elements</h3>
+                            <button id="toggleCoreTableButton" class="show-more-btn" style="background-color: #fff; color: #217a36;">Show more</button>
+                        </div>
+                        <table id="coreInvoiceModelTable" class="styled-table" style="width: 100%; margin-top: 0; display: none;">
                             <thead>
                                 <tr>
                                     <th>ID</th>
+                                    <th>Level</th>
+                                    <th>Cardinality</th>
                                     <th>Business Term</th>
+                                    <th>Usage Note</th>
+                                    <th>Business Rules</th>
+                                    <th>Data Type</th>
                                     <th>Type of Change</th>
+                                    <th>Actions</th>
+                                    
                                 </tr>
                             </thead>
                             <tbody>
@@ -315,14 +351,25 @@
                         </table>
                     </div>
                     <!-- Selected Extension Component Data Model elements (second, stacked) -->
-                    <div class="info-table" style="width: 100%;">
-                        <h3>Selected Extension Component Data Model elements</h3>
-                        <table id="extensionComponentTable" style="width: 100%;">
+                    <div style="width: 100%;">
+                        <div class="table-title-container extension-model-title">
+                            <h3>Selected Extension Component Data Model elements</h3>
+                            <button id="toggleExtensionTableButton" class="show-more-btn" style="background-color: #fff; color:#000080;">Show more</button>
+                        </div>
+                        <table id="extensionComponentDataTable" class="styled-table" style="width: 100%; margin-top: 0; display: none;">
                             <thead>
                                 <tr>
-                                    <th>ID</th>
-                                    <th>Business Term</th>
                                     <th>Extension Component</th>
+                                    <th>ID</th>
+                                    <th>Level</th>
+                                    <th>Cardinality</th>
+                                    <th>Business Term</th>
+                                    <th>Usage Note</th>
+                                    <th>Justification</th>
+                                    <th>Data Type</th>
+                                    <th>Type of Extension</th>
+                                    <th>Core Conformant/Rules broken</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -331,13 +378,20 @@
                         </table>
                     </div>
                     <!-- Additional Requirements (third, stacked) -->
-                    <div class="info-table" style="width: 100%;">
-                        <h3>Additional Requirements</h3>
-                        <table id="additionalRequirementsTable" style="width: 100%;">
+                    <div style="width: 100%;">
+                        <div class="table-title-container additional-reqs-title">
+                            <h3>Additional Requirements</h3>
+                            <button id="toggleAdditionalTableButton" class="show-more-btn" style="background-color: #fff; color: #d3a1b7;">Show more</button>
+                        </div>
+                        <table id="additionalRequirementsTable" class="styled-table" style="width: 100%; margin-top: 0; display: none;">
                             <thead>
                                 <tr>
                                     <th>ID</th>
+                                    <th>Level</th>
+                                    <th>Cardinality</th>
                                     <th>Business Term</th>
+                                    <th>Description</th>
+                                    <th>Usage Note</th>
                                     <th>Type of Change</th>
                                 </tr>
                             </thead>
@@ -464,6 +518,8 @@
                     
                     setupRegistryStatusUpdateListener(currentSpecification);
 
+                    setupCoreTableToggle();
+
                     hideLoadingIndicator();
                     
                 } catch (error) {
@@ -473,6 +529,19 @@
                 }
             }
 
+            function setupCoreTableToggle() {
+                const toggleButton = document.getElementById('toggleCoreTableButton');
+                const coreTable = document.getElementById('coreInvoiceModelTable');
+
+                if (toggleButton && coreTable) {
+                    toggleButton.addEventListener('click', function() {
+                        const isHidden = coreTable.style.display === 'none';
+                        coreTable.style.display = isHidden ? 'table' : 'none';
+                        this.textContent = isHidden ? 'Show less' : 'Show more';
+                    });
+                }
+            }
+            
             function populateSummaryTable(spec) {
                 const detailsTableContainer = document.getElementById("detailsTableContainer");
                 if (!detailsTableContainer) return;
@@ -618,87 +687,313 @@
                         additionalRequirements: spec.additionalRequirements
                     });
                     
-                    // Populate Core Invoice Model table
-                    const coreTableBody = document.querySelector("#coreInvoiceModelTable tbody");
-                    coreTableBody.innerHTML = '';
-                    const coreItems = spec.specificationCores || [];
-                    let coreCount = 0;
-                    if (coreItems.length > 0) {
-                        coreItems.forEach(item => {
-                            const row = coreTableBody.insertRow();
-                            row.insertCell().textContent = item.businessTermID || 'N/A';
-                            row.insertCell().textContent = item.coreBusinessTerm || 'N/A';
-                            row.insertCell().textContent = item.typeOfChange || 'Core Element';
-                        });
-                        coreCount = coreItems.length;
-                    } else {
-                        const row = coreTableBody.insertRow();
-                        const cell = row.insertCell();
-                        cell.colSpan = 3;
-                        cell.textContent = 'No Core Invoice Model elements selected';
-                        cell.style.textAlign = 'center';
-                        cell.style.fontStyle = 'italic';
-                        cell.style.color = '#666';
-                        coreCount = 0;
-                    }
-                    document.getElementById('coreModelCount').textContent = `${coreCount} element${coreCount === 1 ? '' : 's'}`;
+                    const allCoreModelElements = await fetchCoreInvoiceModelsFromAPI();
+                    const selectedCoreDataMap = new Map((spec.specificationCores || []).map(item => [item.businessTermID, item]));
+                    const selectedElements = allCoreModelElements.filter(el => selectedCoreDataMap.has(el.id));
 
+                    populateCoreInvoiceTable(selectedElements, selectedCoreDataMap);
+                        let coreCount = selectedElements.length;
+                        document.getElementById('coreModelCount').textContent = `${coreCount} element${coreCount === 1 ? '' : 's'}`;
+                  
                     // Populate Extension Component table
-                    const extensionTableBody = document.querySelector("#extensionComponentTable tbody");
-                    extensionTableBody.innerHTML = '';
-                    const extensionItems = spec.specificationExtensionComponents || [];
-                    let extensionCount = 0;
-                    if (extensionItems.length > 0) {
-                        extensionItems.forEach(item => {
-                            const row = extensionTableBody.insertRow();
-                            row.insertCell().textContent = item.businessTermID || 'N/A';
-                            row.insertCell().textContent = item.extBusinessTerm || 'N/A';
-                            row.insertCell().textContent = item.extensionComponentID || 'Extension Component';
-                        });
-                        extensionCount = extensionItems.length;
-                    } else {
-                        const row = extensionTableBody.insertRow();
-                        const cell = row.insertCell();
-                        cell.colSpan = 3;
-                        cell.textContent = 'No Extension Component Data Model elements selected';
-                        cell.style.textAlign = 'center';
-                        cell.style.fontStyle = 'italic';
-                        cell.style.color = '#666';
-                        extensionCount = 0;
-                    }
-                    document.getElementById('extensionModelCount').textContent = `${extensionCount} element${extensionCount === 1 ? '' : 's'}`;
+                    await populateExtensionTable(spec)
+                    
 
                     // Populate Additional Requirements table
                     const additionalTableBody = document.querySelector("#additionalRequirementsTable tbody");
+                    const additionalTable = document.getElementById("additionalRequirementsTable");
+                    const toggleAdditionalButton = document.getElementById("toggleAdditionalTableButton");
+                    
                     additionalTableBody.innerHTML = '';
+
                     const additionalItems = (spec.additionalRequirements || []).filter(item => {
-                        // Only count rows with at least one non-empty property
                         return item && (item.businessTermID || item.businessTermName || item.typeOfChange);
                     });
-                    let additionalCount = 0;
-                    if (additionalItems.length > 0) {
+
+                    let additionalCount = additionalItems.length;
+                    document.getElementById('additionalModelCount').textContent = `${additionalCount} element${additionalCount === 1 ? '' : 's'}`;
+
+                    if (additionalCount > 0) {
+                        if (toggleAdditionalButton) toggleAdditionalButton.style.display = 'block';
+
                         additionalItems.forEach(item => {
                             const row = additionalTableBody.insertRow();
                             row.insertCell().textContent = item.businessTermID || 'N/A';
+                            row.insertCell().textContent = item.level || 'N/A';
+                            row.insertCell().textContent = item.cardinality || 'N/A';
                             row.insertCell().textContent = item.businessTermName || 'N/A';
+                            row.insertCell().textContent = item.semanticDescription || 'N/A';
+                            row.insertCell().textContent = item.usageNote || 'N/A';
                             row.insertCell().textContent = item.typeOfChange || 'Additional Requirement';
                         });
-                        additionalCount = additionalItems.length;
                     } else {
+                        if (toggleAdditionalButton) toggleAdditionalButton.style.display = 'none';
                         const row = additionalTableBody.insertRow();
                         const cell = row.insertCell();
-                        cell.colSpan = 3;
+                        cell.colSpan = 7; // Updated colspan
                         cell.textContent = 'No Additional Requirements specified';
                         cell.style.textAlign = 'center';
                         cell.style.fontStyle = 'italic';
                         cell.style.color = '#666';
-                        additionalCount = 0;
                     }
-                    document.getElementById('additionalModelCount').textContent = `${additionalCount} element${additionalCount === 1 ? '' : 's'}`;
+
+                    if (toggleAdditionalButton && additionalTable) {
+                        toggleAdditionalButton.addEventListener('click', function() {
+                            const isHidden = additionalTable.style.display === 'none';
+                            additionalTable.style.display = isHidden ? 'table' : 'none';
+                            this.textContent = isHidden ? 'Show less' : 'Show more';
+                        });
+                    }
                     
                 } catch (error) {
                     console.error('Error populating specification model:', error);
                     showErrorMessage('Error loading specification model data');
+                }
+            }
+
+            async function fetchCoreInvoiceModelsFromAPI() {
+                try {
+                    const response = await window.authManager.authenticatedFetch(`${AUTH_CONFIG.baseUrl}/coreinvoicemodels?pageSize=1000`, { method: 'GET' });
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    const data = await response.json();
+                    return Array.isArray(data) ? data : (data.items || []);
+                } catch (error) {
+                    console.error("Error fetching Core Invoice Model data from API:", error);
+                    return [];
+                }
+            }
+
+            function populateCoreInvoiceTable(selectedElements, selectedDataMap) {
+                const tableBody = document.querySelector("#coreInvoiceModelTable tbody");
+                tableBody.innerHTML = '';
+
+                if (selectedElements.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="9" style="text-align:center;font-style:italic;color:#666;">No Core Invoice Model elements selected.</td></tr>';
+                    return;
+                }
+
+                function getNumericLevel(levelStr) { return (levelStr || '').split('+').length - 1; }
+
+                const processedElements = selectedElements.map(item => ({
+                    ...item,
+                    NumericLevel: getNumericLevel(item.level),
+                    typeOfChange: selectedDataMap.get(item.id)?.typeOfChange || 'N/A',
+                    children: []
+                })).sort((a, b) => a.rowPos - b.rowPos);
+
+                const roots = [];
+                const parentTracker = {};
+                processedElements.forEach(item => {
+                    const directParent = parentTracker[item.NumericLevel - 1];
+                    if (item.NumericLevel === 1) roots.push(item);
+                    else if (directParent) directParent.children.push(item);
+                    else roots.push(item);
+                    parentTracker[item.NumericLevel] = item;
+                    for (let i = item.NumericLevel + 1; i <= 5; i++) delete parentTracker[i];
+                });
+
+                function renderRowAndChildren(item, container) {
+                    console.log(
+                    'renderRowAndChildren debug:',
+                    {
+                        itemId: item.id,
+                        selectedDataMapKeys: Array.from(selectedDataMap.keys()),
+                        specCoreData: selectedDataMap.get(item.id),
+                        coreBusinessRules: selectedDataMap.get(item.id)?.coreBusinessRules,
+                        itemObj: item
+                    }
+                    );
+                    const tr = document.createElement('tr');
+                    if (item.id.startsWith('BG')) tr.classList.add(item.NumericLevel === 1 ? 'level-1-bg' : 'level-2-bg');
+                    if (item.NumericLevel > 1) tr.classList.add('child-row');
+                    if (item.children.length > 0 && item.id.startsWith('BG')) tr.classList.add('has-children-parent-row');
+                    if (item.NumericLevel > 1) tr.style.display = 'none';
+                    
+                    tr.innerHTML = `
+                        <td>${item.id || 'N/A'}</td> <td>${item.level || 'N/A'}</td> <td>${selectedDataMap.get(item.id)?.cardinality || 'N/A'}</td>
+                        <td><i class="fa-solid fa-circle-question semantic-tooltip" title="${item.semanticDescription || ''}"></i> ${item.businessTerm || 'N/A'}</td>
+                        <td>${selectedDataMap.get(item.id)?.usageNote || 'N/A'}</td> <td>${selectedDataMap.get(item.id)?.coreBusinessRules || 'N/A'}</td> <td>${item.dataType || 'N/A'}</td>
+                        <td>${selectedDataMap.get(item.id)?.typeOfChange || 'N/A'}</td> <td class="actions-cell"></td>
+                    `;
+                    container.appendChild(tr);
+
+                    if (item.children.length > 0) {
+                        const immediateChildTrs = item.children.map(child => renderRowAndChildren(child, container));
+                        const showMoreBtn = document.createElement('button');
+                        showMoreBtn.className = 'show-more-btn';
+                        showMoreBtn.textContent = 'Show more';
+                        showMoreBtn.onclick = () => {
+                            const isHidden = immediateChildTrs[0].style.display === 'none';
+                            immediateChildTrs.forEach(childTr => childTr.style.display = isHidden ? '' : 'none');
+                            showMoreBtn.textContent = isHidden ? 'Show less' : 'Show more';
+                        };
+                        tr.querySelector('.actions-cell').appendChild(showMoreBtn);
+                    }
+                    return tr;
+                }
+
+                roots.forEach(root => renderRowAndChildren(root, tableBody));
+            }
+            
+            function getNumericDepthFromLevel(levelStr) {
+                if (!levelStr) return 0;
+                if (levelStr.includes('+')) {
+                    return levelStr.split('+').length - 1; 
+                }
+                const parts = levelStr.split('.');
+                if (parts.length > 0 && parts.every(part => !isNaN(parseInt(part)) && String(parseInt(part)) === part)) {
+                    return parts.length; 
+                }
+                return 0;
+            }
+
+            function renderExtensionRowAndChildren(item, container, componentName) {
+                const row = document.createElement('tr');
+                
+                const isXG = (item.businessTermID || '').startsWith('XG');
+                const isXT = (item.businessTermID || '').startsWith('XT');
+                const isBG = (item.businessTermID || '').startsWith('BG');
+                
+                if (item.NumericDepth > 1) { 
+                    row.classList.add('child-row');
+                    row.style.display = 'none';
+                }
+                
+                if (isXG) {
+                    row.classList.add(item.NumericDepth === 1 ? 'level-1-xg' : 'level-2-xg');
+                    if (item.NumericDepth === 1) row.classList.add('parent-row');
+                } else if (isXT) {
+                    row.classList.add('level-xt');
+                } else if (isBG) {
+                    row.classList.add(item.NumericDepth === 1 ? 'level-1-bg' : 'level-2-bg');
+                    if (item.NumericDepth === 1) row.classList.add('parent-row');
+                }
+
+                if (item.children && item.children.length > 0) {
+                    row.classList.add('has-children-parent-row');
+                }
+                
+                const usageNoteCombined = [item.usageNoteCore, item.usageNoteExtension, item.semanticDescription]
+                    .filter(Boolean).join(' | ');
+
+                row.innerHTML = `
+                    <td>${componentName || 'N/A'}</td>
+                    <td>${item.businessTermID || 'N/A'}</td>
+                    <td>${item.level || 'N/A'}</td>
+                    <td>${item.cardinality || 'N/A'}</td>
+                    <td><i class="fa-solid fa-circle-question semantic-tooltip" title="${usageNoteCombined}"></i> ${item.businessTerm || 'N/A'}</td>
+                    <td>${usageNoteCombined}</td>
+                    <td>${item.justification || 'N/A'}</td>
+                    <td>${item.dataType || 'N/A'}</td>
+                    <td>${item.extensionType || 'N/A'}</td>
+                    <td>${item.conformanceType || 'N/A'}</td>
+                    <td class="actions-cell"></td>
+                `;
+                container.appendChild(row);
+
+                if (item.children && item.children.length > 0) {
+                    const immediateChildTrs = item.children.map(child => renderExtensionRowAndChildren(child, container, componentName));
+                    
+                    const showMoreBtn = document.createElement('button');
+                    showMoreBtn.className = 'show-more-btn';
+                    showMoreBtn.textContent = 'Show more';
+                    
+                    showMoreBtn.onclick = () => {
+                        const isHidden = immediateChildTrs[0].style.display === 'none';
+                        immediateChildTrs.forEach(childTr => childTr.style.display = isHidden ? '' : 'none');
+                        showMoreBtn.textContent = isHidden ? 'Show less' : 'Show more';
+                    };
+                    
+                    row.querySelector('.actions-cell').appendChild(showMoreBtn);
+                }
+                
+                return row;
+            }
+
+            async function populateExtensionTable(spec) {
+                const tableBody = document.querySelector("#extensionComponentDataTable tbody");
+                const table = document.getElementById("extensionComponentDataTable");
+                const toggleButton = document.getElementById("toggleExtensionTableButton");
+                const countElement = document.getElementById('extensionModelCount');
+
+                let totalSelectedElements = spec.specificationExtensionComponents?.length || 0;
+                countElement.textContent = `${totalSelectedElements} element${totalSelectedElements === 1 ? '' : 's'}`;
+                
+                tableBody.innerHTML = '';
+
+                if (totalSelectedElements === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="11" style="text-align:center;font-style:italic;color:#666;">No Extension Component Data Model elements selected.</td></tr>';
+                    if (toggleButton) toggleButton.style.display = 'none';
+                    return;
+                }
+
+                if (toggleButton) toggleButton.style.display = 'block';
+
+                if (toggleButton && table) {
+                    toggleButton.addEventListener('click', function() {
+                        const isHidden = table.style.display === 'none';
+                        table.style.display = isHidden ? 'table' : 'none';
+                        this.textContent = isHidden ? 'Show less' : 'Show more';
+                    });
+                }
+
+                try {
+                    const headersResponse = await window.authManager.authenticatedFetch(`${AUTH_CONFIG.baseUrl}/extensionmodels/headers`);
+                    if (!headersResponse.ok) throw new Error('Failed to load extension component headers.');
+                    const headers = await headersResponse.json();
+                    const componentNames = new Map(headers.map(h => [h.id, h.name]));
+
+                    const selectedByComponent = spec.specificationExtensionComponents.reduce((acc, el) => {
+                        const id = el.extensionComponentID;
+                        if (!acc[id]) acc[id] = [];
+                        acc[id].push(el.businessTermID);
+                        return acc;
+                    }, {});
+
+                    const componentIds = Object.keys(selectedByComponent);
+                    const componentElementPromises = componentIds.map(id =>
+                        window.authManager.authenticatedFetch(`${AUTH_CONFIG.baseUrl}/extensionmodels/elements/${id}`).then(res => res.json())
+                    );
+
+                    const allComponentElementsResponses = await Promise.all(componentElementPromises);
+
+                    allComponentElementsResponses.forEach((componentAllElements, index) => {
+                        const componentId = componentIds[index];
+                        const selectedIdsForComponent = new Set(selectedByComponent[componentId]);
+
+                        const elementsToRender = componentAllElements.filter(el => selectedIdsForComponent.has(el.businessTermID));
+                        const componentName = componentNames.get(componentId) || componentId;
+                        
+                        const processedElements = elementsToRender.map(item => ({
+                            ...item,
+                            NumericDepth: getNumericDepthFromLevel(item.level || ''),
+                            children: []
+                        })).sort((a, b) => {
+                             const levelA = (a.level || '').split('.').map(Number);
+                             const levelB = (b.level || '').split('.').map(Number);
+                             for (let i = 0; i < Math.min(levelA.length, levelB.length); i++) {
+                                 if (levelA[i] !== levelB[i]) return levelA[i] - levelB[i];
+                             }
+                             return levelA.length - levelB.length;
+                        });
+
+                        const roots = [];
+                        const parentTracker = {};
+                        processedElements.forEach(item => {
+                            const parent = parentTracker[item.NumericDepth - 1];
+                            if (item.NumericDepth === 1) roots.push(item);
+                            else if (parent) parent.children.push(item);
+                            else roots.push(item);
+                            parentTracker[item.NumericDepth] = item;
+                            for (let i = item.NumericDepth + 1; i <= 10; i++) delete parentTracker[i];
+                        });
+
+                        roots.forEach(root => renderExtensionRowAndChildren(root, tableBody, componentName));
+                    });
+
+                } catch (error) {
+                    console.error("Error populating extension component table:", error);
+                    tableBody.innerHTML = `<tr><td colspan="11" style="text-align:center;font-style:italic;color:red;">Error loading extension elements: ${error.message}</td></tr>`;
                 }
             }
 
@@ -756,28 +1051,19 @@
                         {
                             console.log('DEBUG: viewSpecification - Spec data for editing:', spec);
                             console.log('DEBUG: viewSpecification - Identity ID:', spec.identityID);
+                            
+                            // Get the current breadcrumb context to determine the source
+                            const breadcrumbContext = window.breadcrumbManager.getContext();
+                            const source = breadcrumbContext ? breadcrumbContext.source : 'mySpecs'; // Default to mySpecs if context is missing
+                            console.log(`DEBUG: viewSpecification - Starting edit from source: ${source}`);
+                            
                             console.log('DEBUG: viewSpecification - Navigating to edit mode for specification:', spec.specificationName);
                             
                             // Set return page to viewSpecification
-                            localStorage.setItem("returnToPage", "viewSpecification.html?id=" + spec.identityID);
+                            localStorage.setItem("returnToPage", `viewSpecification.html?id=${spec.identityID}`);
                             
-                            // Set breadcrumb context for edit workflow from view page
-                            if (window.breadcrumbManager) 
-                            {
-                                const currentContext = window.breadcrumbManager.getContext();
-                                const editContext = 
-                                {
-                                    source: currentContext ? currentContext.source : 'registry',
-                                    action: 'edit',
-                                    currentPage: 'IdentifyingInformation.html',
-                                    specId: spec.identityID,
-                                    specIdentityId: spec.identityID
-                                };
-                                window.breadcrumbManager.setContext(editContext);
-                            }
-                            
-                            // Call the global editSpecification function
-                            editSpecification(spec.identityID);
+                            // Call the global editSpecification function with the correct source
+                            editSpecification(spec.identityID, source);
                         } 
                         else 
                         {
@@ -825,7 +1111,7 @@
                 
                 // Clear tables
                 const coreTableBody = document.querySelector("#coreInvoiceModelTable tbody");
-                const extensionTableBody = document.querySelector("#extensionComponentTable tbody");
+                const extensionTableBody = document.querySelector("#extensionComponentDataTable tbody");
                 const additionalTableBody = document.querySelector("#additionalRequirementsTable tbody");
                 
                 if (coreTableBody) coreTableBody.innerHTML = '';
@@ -940,7 +1226,7 @@
     document.addEventListener("DOMContentLoaded", function () {
         const fastTravelMap = [
             { boxId: "coreModelCountBox", tableId: "coreInvoiceModelTable" },
-            { boxId: "extensionModelCountBox", tableId: "extensionComponentTable" },
+            { boxId: "extensionModelCountBox", tableId: "extensionComponentDataTable" },
             { boxId: "additionalModelCountBox", tableId: "additionalRequirementsTable" }
         ];
         fastTravelMap.forEach(({ boxId, tableId }) => {
@@ -1002,7 +1288,9 @@
                 
                 if (referrer.includes('eInvoicingSpecificationRegistry.html')) {
                     context.source = 'registry';
-                } else if (referrer.includes('mySpecifications.html')) {
+                } else if (referrer.includes('governingEntityView.html')) {
+                    context.source = 'govEntity';
+                    } else if (referrer.includes('mySpecifications.html')) {
                     context.source = 'mySpecs';
                 } else {
                     context.source = 'registry'; // Default to registry for view pages
