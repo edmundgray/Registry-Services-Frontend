@@ -688,11 +688,18 @@ body {
     box-sizing: border-box;
 }
 
+.styled-table textarea{
+    resize: none;
+    overflow: hidden;
+    min-height: 32px;
+    padding: 5px;
+}
+
 #coreInvoiceTable th:nth-child(1), #coreInvoiceTable td:nth-child(1) { width: 4%; }  /* ID */
 #coreInvoiceTable th:nth-child(2), #coreInvoiceTable td:nth-child(2) { width: 5%; }  /* Level */
 #coreInvoiceTable th:nth-child(3), #coreInvoiceTable td:nth-child(3) { width: 8%; }  /* Cardinality */
 #coreInvoiceTable th:nth-child(4), #coreInvoiceTable td:nth-child(4) { width: 11%; } /* Business Term (Reduced) */
-#coreInvoiceTable th:nth-child(5), #coreInvoiceTable td:nth-child(5) { width: 23%; } /* Usage Note */
+#coreInvoiceTable th:nth-child(5), #coreInvoiceTable td:nth-child(5) { width: 23%; min-width: 150px; } /* Usage Note */
 #coreInvoiceTable th:nth-child(6), #coreInvoiceTable td:nth-child(6) { width: 8%; }  /* Business Rules */
 #coreInvoiceTable th:nth-child(7), #coreInvoiceTable td:nth-child(7) { width: 8%; }  /* Data Type */
 #coreInvoiceTable th:nth-child(8), #coreInvoiceTable td:nth-child(8) { width: 7%; text-align: center; }  /* Included in Spec */
