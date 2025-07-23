@@ -71,13 +71,11 @@ function updateSaveButtonAppearance() {
 
         if (saveButton) {
             if (hasChanges) {
-                saveButton.style.setProperty('background', '#28a745', 'important'); // Green
                 saveButton.style.setProperty('background-color', '#28a745', 'important');
                 saveButton.style.color = '#fff';
-                saveButton.style.fontWeight = 'bold';
-                saveButton.style.boxShadow = '0 2px 4px rgba(40, 167, 69, 0.3)';
+                saveButton.style.fontWeight = 'normal';
+                
             } else {
-                saveButton.style.setProperty('background', '#6c757d', 'important'); // Grey
                 saveButton.style.setProperty('background-color', '#6c757d', 'important');
                 saveButton.style.color = '#fff';
                 saveButton.style.fontWeight = 'normal';

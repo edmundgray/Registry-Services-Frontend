@@ -42,7 +42,7 @@ body {
     left: 0;
     height: 100%;
     width: 75px;
-    z-index: 1000;
+    z-index: 2;
     background: #000033;
     overflow-x: hidden;
     padding-top: 10px;
@@ -173,12 +173,16 @@ body {
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    transition: background 0.3s, background-color 0.3s;
+    transition: background-color 0.3s ease;
+    background-color: #F4A261;
+    min-width: 50px;
+    min-height: 25px;
     /* DO NOT set background or background-color here! Let JS control it. */
 }
 
 .view-button:hover {
     filter: brightness(0.95);
+    background-color: #f75307cc;
     /* DO NOT set background or background-color here! */
 }
 
@@ -557,7 +561,8 @@ body {
     font-size: 1em;
     font-family: inherit;
     box-shadow: 0 0 10px rgba(0,0,0,0.05);
-    width: auto; /* Change from 100% to auto */
+    width: 100%; 
+    table-layout: fixed;
     background-color: #fff;
 }
 
@@ -676,7 +681,6 @@ body {
     padding-bottom: 0;
 }
 
-
 .styled-table input[type="text"],
 .styled-table textarea,
 .styled-table select {
@@ -701,7 +705,6 @@ body {
 #coreInvoiceTable th:nth-child(8), #coreInvoiceTable td:nth-child(8) { width: 7%; text-align: center; }  /* Included in Spec */
 #coreInvoiceTable th:nth-child(9), #coreInvoiceTable td:nth-child(9) { width: 16%; } /* Type of Change */
 #coreInvoiceTable th:nth-child(10),#coreInvoiceTable td:nth-child(10){ width: 10%; text-align: center; } /* Actions (Increased) */
-
 
 /******************************************************************************
     Styling for the Data Table in coreInvoiceModel.html
@@ -816,14 +819,7 @@ button[onclick*="deleteRow"]:active {
     background-color: #0056b3; 
 }
 
-#newSpec {
-    background-color: #4CAF50; 
-    color: #fff;               
-}
 
-#newSpec:hover {
-    background-color: #218838; 
-}
 
 /******************************************************************************
     Styling for the Additional Requirements Page
@@ -843,9 +839,8 @@ button[onclick*="deleteRow"]:active {
 }
 #additionalRequirementsTable th,
 #additionalRequirementsTable td {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    word-wrap: normal;
+    word-wrap: break-word;
 }
 
 /******************************************************************************

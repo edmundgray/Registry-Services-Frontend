@@ -32,8 +32,7 @@ class SpecificationPreview {
             this.updateTitle();
             await this.populatePreviewTables();
             
-            // Update button appearance
-            this.updateSubmitButtonAppearance();
+          
             
         } catch (error) {
             console.error('SpecificationPreview: Error during initialization:', error);
@@ -364,8 +363,7 @@ class SpecificationPreview {
             this.updateTitle();
             await this.populatePreviewTables();
             
-            // Update button appearance
-            this.updateSubmitButtonAppearance();
+          
 
             // NEW: Populate the dropdown and set up its listener
             this.populateRegistryStatusDropdown();
@@ -541,36 +539,11 @@ class SpecificationPreview {
         }
     }
 
-    updateSubmitButtonAppearance() {
-        const submitButton = document.querySelector('button[onclick="submitSpecificationPreview()"]');
-        if (submitButton) {
-            // Make submit button more prominent
-            submitButton.style.background = '#28a745';
-            submitButton.style.color = 'white';
-            submitButton.style.fontWeight = 'bold';
-            submitButton.style.boxShadow = '0 2px 4px rgba(40, 167, 69, 0.3)';
-            submitButton.style.border = 'none';
-            submitButton.style.borderRadius = '4px';
-        }
-    }
+   
 }
 
 // Global functions for backward compatibility
-function submitSpecificationPreview() {
-    if (window.specificationPreview) {
-        window.specificationPreview.submitSpecification();
-    } else {
-        console.error('SpecificationPreview: Preview instance not found');
-    }
-}
 
-function cancelSpecificationPreview() {
-    if (window.specificationPreview) {
-        window.specificationPreview.cancelPreview();
-    } else {
-        console.error('SpecificationPreview: Preview instance not found');
-    }
-}
 
 // Initialize when script loads
 console.log('SpecificationPreview: Initializing specification preview module...');
