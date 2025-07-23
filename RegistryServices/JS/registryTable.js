@@ -789,12 +789,12 @@ function setupFilterEventListeners() {
         });
     }
     if (sectorFilter) {
-        sectorFilter.addEventListener("change", () => {
+        sectorFilter.addEventListener("input", debounce(() => {
             // Clear business term search when using other filters
             if (businessTermSearch) businessTermSearch.value = "";
             isBusinessTermSearchActive = false;
             applyFilters();
-        });
+        }, 300));
     }
     if (countryFilter) {
         countryFilter.addEventListener("change", () => {
