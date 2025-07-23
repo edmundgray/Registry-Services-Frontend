@@ -132,10 +132,6 @@
                 align-items: center;
                 gap: 10px;
             }
-            .admin-only,
-            .edit-button-top-right {
-                display: none;
-            }
             .tabs 
             {
                 display: flex;
@@ -183,7 +179,7 @@
             <div class="header-with-edit">
                 <h1><i class="fa-solid fa-house"></i> View Specification</h1>
                 <div class="action-buttons-container">
-                <div class="admin-only">
+                <div class="admin-only" style="display: flex; align-items: center; gap: 5px;">
                     <label for="registryStatusDropdown" style="font-size: 0.8em;">Registry Status:</label>
                     <select id="registryStatusDropdown" style="padding: 5px; border-radius: 4px; font-size: 0.8em;">
                         <option value="Submitted">Submitted</option>
@@ -716,39 +712,15 @@
 
             function setupEditButton(spec) {
                 const editButton = document.getElementById("editSpecificationButton");
-                const adminOnlyElements = document.querySelectorAll('.admin-only');
-                
                 if (editButton) {
-                    if (window.authManager.isAuthenticated) {
-                        // Show edit button for authenticated users
-                        editButton.style.display = 'inline-block';
-                        
-                        // Check if user is admin to show admin-only controls
-                        if (window.authManager.userRole === 'Admin') {
-                            adminOnlyElements.forEach(element => {
-                                element.style.display = 'flex';
-                                element.style.alignItems = 'center';
-                                element.style.gap = '5px';
-                            });
-                            console.log('DEBUG: Admin controls shown - user is admin');
-                        } else {
-                            // Hide admin controls for non-admin users (submitters)
-                            adminOnlyElements.forEach(element => {
-                                element.style.display = 'none';
-                            });
-                            console.log('DEBUG: Admin controls hidden - user is not admin');
-                        }
-                        
-                        console.log('DEBUG: Edit button shown - user authenticated');
-                    } else {
-                        // Hide everything for unauthenticated users
+                    // SCRUM - 151: Hide Edit button for unauthenticated users
+                    if (!window.authManager.isAuthenticated) {
                         editButton.style.display = 'none';
-                        adminOnlyElements.forEach(element => {
-                            element.style.display = 'none';
-                        });
-                        console.log('DEBUG: Edit button and admin controls hidden - user not authenticated');
+                        console.log('DEBUG: Edit button hidden - user not authenticated');
                         return;
                     }
+                    
+                    editButton.style.display = 'inline-block';
                     
                     editButton.addEventListener("click", function() 
                     {
