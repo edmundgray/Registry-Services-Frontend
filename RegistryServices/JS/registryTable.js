@@ -274,70 +274,7 @@ async function fetchSpecifications() {
 }
 
 
-// Function to fetch specifications with filters
-async function fetchSpecificationsWithFilters() {
-    try {
-        const searchText = document.getElementById("searchInput").value;
-        const typeFilter = document.getElementById("typeFilter").value;
-        const sectorFilter = document.getElementById("sectorFilter").value;
-        const countryFilter = document.getElementById("countryFilter").value;
-        
-        // Build query parameters for the API call (still fetching potentially large set)
-        const params = new URLSearchParams({
-            PageNumber: 1, // Always fetch from page 1 when applying new filters
-            PageSize: 10000 // Increased PageSize
-        });
-        
-        if (searchText.trim()) params.append('SearchTerm', searchText.trim());
-        if (typeFilter) params.append('SpecificationType', typeFilter);
-        if (sectorFilter) params.append('Sector', sectorFilter);
-        if (countryFilter) params.append('Country', countryFilter);
-        
-        const url = `${API_BASE_URL}/specifications?${params.toString()}`;
-        console.log("Fetching with URL:", url);
-        
-        const response = await fetch(url);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log("Filtered API Response (raw):", data);
-        
-        let allApiData = [];
-        if (data.items && Array.isArray(data.items)) {
-            allApiData = data.items;
-        } else if (Array.isArray(data)) {
-            allApiData = data;
-        } else {
-            console.warn("Unexpected API response format for filtered fetch:", data);
-        }
 
-        // --- Proposed Change: Client-side filtering for 'Under Review' and 'Verified' statuses on ALL data ---
-        originalData = allApiData.filter(spec => {
-            const status = (spec.registrationStatus || '').toLowerCase();
-            return status === 'under review' || status === 'verified';
-        });
-        // --- End Proposed Change ---
-
-        totalSpecifications = originalData.length; // totalSpecifications now reflects the count of ALL filtered items
-
-        console.log(`Fetched ${allApiData.length} raw items, filtered to ${originalData.length} (Under Review/Verified only)`);
-        
-        // Reset currentPage to 1 when filters are applied
-        currentPage = 1;
-
-        // Populate the table with the current page's slice of the filtered data
-        populateTable(originalData); // populateTable now handles its own slicing
-    } catch (error) {
-        console.error("Error fetching filtered specifications:", error);
-        alert("Failed to filter specifications. Please try again.");
-        originalData = [];
-        totalSpecifications = 0;
-        populateTable(originalData); // Pass empty data for display
-    }
-}
 
 /******************************************************************************
     Table Population Functions
@@ -632,7 +569,7 @@ function addEllipsis(pageNumbersDiv) {
  ******************************************************************************/
 // Apply the filters - now uses API instead of client-side filtering
 function applyFilters() {
-    console.log(`Applying filters, fetching from API - Page: ${currentPage}, PageSize: ${rowsPerPage}`);
+    console.log(`Applying filters, fetching from API`);
     
     // If we're in business term search mode, don't apply other filters
     if (isBusinessTermSearchActive) {
@@ -640,13 +577,29 @@ function applyFilters() {
         return;
     }
     
-    // Show loading state (optional)
-    const table = document.getElementById("myTable");
-    if (table) {
-        table.innerHTML = "<tr><td colspan='12' style='text-align: center; padding: 20px;'>Loading...</td></tr>";
-    }
-    
-    fetchSpecificationsWithFilters();
+    const searchText = document.getElementById("searchInput").value.toLowerCase();
+    const typeFilter = document.getElementById("typeFilter").value;
+    const sectorFilter = document.getElementById("sectorFilter").value.toLowerCase();
+    const countryFilter = document.getElementById("countryFilter").value;
+
+    // Filter the original data based on all active filters
+    filteredData = originalData.filter(spec => {
+        const name = getPropertyValue(spec, "Name").toLowerCase();
+        const type = getPropertyValue(spec, "Type");
+        const sector = getPropertyValue(spec, "Sector").toLowerCase();
+        const country = getPropertyValue(spec, "Country");
+
+        const nameMatch = !searchText || name.includes(searchText);
+        const typeMatch = !typeFilter || type === typeFilter;
+        const sectorMatch = !sectorFilter || sector.includes(sectorFilter);
+        const countryMatch = !countryFilter || country === countryFilter;
+
+        return nameMatch && typeMatch && sectorMatch && countryMatch;
+    });
+
+    currentPage = 1; 
+    totalSpecifications = filteredData.length;
+    populateTable(filteredData)
 }
 
 // Setup pagination event listeners
@@ -788,6 +741,7 @@ function setupFilterEventListeners() {
             applyFilters();
         });
     }
+
     if (sectorFilter) {
         sectorFilter.addEventListener("input", debounce(() => {
             // Clear business term search when using other filters
@@ -796,6 +750,7 @@ function setupFilterEventListeners() {
             applyFilters();
         }, 300));
     }
+    
     if (countryFilter) {
         countryFilter.addEventListener("change", () => {
             // Clear business term search when using other filters
@@ -900,6 +855,5 @@ window.registryTable = {
     populateTable,
     applyFilters,
     fetchSpecifications,
-    fetchSpecificationsWithFilters,
     searchByBusinessTermId
 };
