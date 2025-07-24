@@ -324,4 +324,21 @@ document.addEventListener("DOMContentLoaded", function () {
     
     // Make handleComponentChange globally accessible
     window.handleComponentChange = handleComponentChange;
+
+    window.authManager = new AuthManager();
+
+    const originalHandleLoginSuccess = window.handleLoginSuccess;
+    window.handleLoginSuccess = function(response) {
+        console.log('DEBUG: Login successful on Extension Component read-only page, redirecting to eInvoicingSpecificationRegistry.html');
+
+        if (originalHandleLoginSuccess) {
+            originalHandleLoginSuccess(response);
+        }
+
+        window.location.href = 'eInvoicingSpecificationRegistry.html';
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        window.sidebarManager.initializeSidebar(null);
+    });
 });
