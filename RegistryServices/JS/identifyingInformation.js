@@ -43,6 +43,57 @@ function handleSaveAndRedirect() {
     window.location.href = 'coreInvoiceModel.html';
 }
 
+/**
+ * File to update: RegistryServices/JS/identifyingInformation.js
+ */
+function handleCancel() {
+    if (hasActualChanges() && !confirm("You have unsaved changes. Are you sure you want to cancel? Your changes will be lost.")) {
+        return;
+    }
+
+    let targetPage = 'mySpecifications.html'; // Default fallback
+
+    // 1. Determine the correct return page using the breadcrumb context
+    if (window.breadcrumbManager) {
+        const context = window.breadcrumbManager.getContext();
+        if (context && context.source) {
+            switch (context.source) {
+                case 'govEntity':
+                    targetPage = 'governingEntityView.html';
+                    // 2. Append the required entity ID to the URL
+                    if (context.entityId) {
+                        targetPage += `?id=${context.entityId}`;
+                    } else {
+                        console.error('Cannot return to Governing Entity view without an ID. Redirecting to list.');
+                        targetPage = 'governingEntityList.html'; // Fallback to the list page if ID is missing
+                    }
+                    break;
+                case 'mySpecs':
+                    targetPage = 'mySpecifications.html';
+                    break;
+                case 'registry':
+                    targetPage = 'eInvoicingSpecificationRegistry.html';
+                    break;
+                default:
+                    console.warn(`Unknown breadcrumb source: ${context.source}. Falling back to default.`);
+                    targetPage = 'mySpecifications.html';
+            }
+        }
+    }
+
+    // 3. Clean up the session state before leaving
+    if (dataManager) {
+        dataManager.clearEditingState();
+    }
+    if (window.breadcrumbManager) {
+        window.breadcrumbManager.clearContext();
+    }
+    localStorage.removeItem("returnToPage"); // Legacy cleanup
+
+    // 4. Redirect to the determined page
+    console.log('Canceling workflow, redirecting to:', targetPage);
+    window.location.href = targetPage;
+}
 /******************************************************************************
     Initialization Functions
  ******************************************************************************/
