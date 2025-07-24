@@ -1008,63 +1008,6 @@
                 showNavigationConfirmationModal();
             }
 
-            function handleCancel() {
-                if (hasActualChanges() && !confirm("You have unsaved changes. Are you sure you want to cancel?")) {
-                    return;
-                }
-                
-                // Clear editing state
-                if (dataManager) {
-                    dataManager.clearEditingState();
-                }
-                
-                // Smart navigation: return to calling page or default to mySpecifications.html
-                let targetPage = 'mySpecifications.html'; // Default fallback
-                
-                try {
-                    // 1. Check if there's a stored return page in localStorage
-                    const storedReturnPage = localStorage.getItem('returnToPage');
-                    console.log('handleCancel: Stored return page:', storedReturnPage);
-                    
-                    if (storedReturnPage) {
-                        targetPage = storedReturnPage;
-                        localStorage.removeItem('returnToPage'); // Clean up after use
-                        console.log('handleCancel: Using stored return page:', targetPage);
-                    }
-                    // 2. Otherwise, try to use document.referrer
-                    else if (document.referrer) {
-                        console.log('handleCancel: Document referrer:', document.referrer);
-                        const referrerUrl = new URL(document.referrer);
-                        const referrerPage = referrerUrl.pathname.split('/').pop();
-                        console.log('handleCancel: Extracted referrer page:', referrerPage);
-                        
-                        // Only navigate back to valid registry pages, avoid loops
-                        const validPages = [
-                            'mySpecifications.html', 
-                            'eInvoicingSpecificationRegistry.html',
-                            'viewSpecification.html',
-                            'specificationPreview.html'
-                        ];
-                        
-                        if (validPages.includes(referrerPage) && referrerPage !== 'IdentifyingInformation.html') {
-                            targetPage = referrerPage;
-                            console.log('handleCancel: Using valid referrer page:', targetPage);
-                        } else {
-                            console.log('handleCancel: Referrer page not valid or is self, using default');
-                        }
-                    } else {
-                        console.log('handleCancel: No referrer available, using default');
-                    }
-                    
-                    console.log('handleCancel: Final target page:', targetPage);
-                    window.location.href = targetPage;
-                    
-                } catch (error) {
-                    console.warn('handleCancel: Error determining return page, using default:', error);
-                    window.location.href = 'mySpecifications.html';
-                }
-            }
-
             // Cleanup function to remove any session-related elements
             function cleanupSessionNotifications() {
                 let removedCount = 0;
