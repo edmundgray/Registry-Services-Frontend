@@ -75,7 +75,7 @@ document.addEventListener("DOMContentLoaded", function () {
         section.innerHTML = `
             <select class="component-select" onchange="handleComponentChange(this)">${options}</select>
             <p style="margin-top: 5px;">Select the required Extension Component and view its required elements</p>
-            <table class="styled-table" style="width:100%;">
+            <table class="styled-table extension-component-table-read" style="width:100%;">
                 <thead>
                     <tr>
                         <th>ID</th><th>Level</th><th>Cardinality</th><th>Business Term</th><th>Usage Note</th>

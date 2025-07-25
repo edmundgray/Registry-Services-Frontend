@@ -660,10 +660,10 @@ body {
 
 .show-more-btn {
     display: inline-block;
-    white-space: nowrap;
-    min-width: 90px;
-    padding: 10px 20px;
-    font-size: 14px;
+    white-space: wrap;
+    min-width: auto;
+    padding: 4px 12px !important; /* Reduce padding significantly */
+    font-size: 12px !important;
     color: #fff;
     background-color: #F4A261;
     border: none;
@@ -996,6 +996,55 @@ button[onclick*="deleteRow"]:active {
     color: #000 !important;
 }
 
+/******************************************************************************
+    Styling for the Extension Component table on its dedicated pages
+ ******************************************************************************/
+.extension-component-table, .extension-component-table-read {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.extension-component-table th,
+.extension-component-table-read th {
+    vertical-align: middle;
+    padding: 12px 8px; /* Reduced horizontal padding */
+}
+
+/* Apply nowrap only to specific single-word headers by default */
+.extension-component-table th:nth-child(1), .extension-component-table-read th:nth-child(1), /* ID */
+.extension-component-table th:nth-child(2), .extension-component-table-read th:nth-child(2), /* Level */
+.extension-component-table th:nth-child(3), .extension-component-table-read th:nth-child(3), /* Cardinality */
+.extension-component-table th:nth-child(7), .extension-component-table-read td:nth-child(7), /* Data Type */
+.extension-component-table th:nth-child(11), .extension-component-table-read th:nth-child(10) /* Actions */
+{
+    white-space: nowrap;
+}
+
+
+/* Editable Workflow Table (11 columns) */
+.extension-component-table th:nth-child(1), .extension-component-table td:nth-child(1) { width: 4%; }  /* ID */
+.extension-component-table th:nth-child(2), .extension-component-table td:nth-child(2) { width: 5%; }  /* Level */
+.extension-component-table th:nth-child(3), .extension-component-table td:nth-child(3) { width: 7%; }  /* Cardinality */
+.extension-component-table th:nth-child(4), .extension-component-table td:nth-child(4) { width: 10%; } /* Business Term */
+.extension-component-table th:nth-child(5), .extension-component-table td:nth-child(5) { width: 20%; min-width: 150px; } /* Usage Note */
+.extension-component-table th:nth-child(6), .extension-component-table td:nth-child(6) { width: 12%; min-width: 150px; } /* Justification */
+.extension-component-table th:nth-child(7), .extension-component-table td:nth-child(7) { width: 7%; }  /* Data Type */
+.extension-component-table th:nth-child(8), .extension-component-table td:nth-child(8) { width: 12%; } /* Type of Extension */
+.extension-component-table th:nth-child(9), .extension-component-table td:nth-child(9) { width: 9%; }  /* Core Conformant */
+.extension-component-table th:nth-child(10), .extension-component-table td:nth-child(10){ width: 7%; text-align: center; } /* Included in Spec */
+.extension-component-table th:nth-child(11), .extension-component-table td:nth-child(11){ width: 7%; text-align: center; } /* Actions */
+
+/* Read-Only Table (10 columns) */
+.extension-component-table-read th:nth-child(1), .extension-component-table-read td:nth-child(1) { width: 4%; }  /* ID */
+.extension-component-table-read th:nth-child(2), .extension-component-table-read td:nth-child(2) { width: 4%; }  /* Level */
+.extension-component-table-read th:nth-child(3), .extension-component-table-read td:nth-child(3) { width: 7%; }  /* Cardinality */
+.extension-component-table-read th:nth-child(4), .extension-component-table-read td:nth-child(4) { width: 12%; } /* Business Term */
+.extension-component-table-read th:nth-child(5), .extension-component-table-read td:nth-child(5) { width: 18%; min-width: 150px; } /* Usage Note */
+.extension-component-table-read th:nth-child(6), .extension-component-table-read td:nth-child(6) { width: 13%; min-width: 150px; } /* Justification */
+.extension-component-table-read th:nth-child(7), .extension-component-table-read td:nth-child(7) { width: 7%; }  /* Data Type */
+.extension-component-table-read th:nth-child(8), .extension-component-table-read td:nth-child(8) { width: 12%; } /* Type of Extension */
+.extension-component-table-read th:nth-child(9), .extension-component-table-read td:nth-child(9) { width: 9%; }  /* Core Conformant */
+.extension-component-table-read th:nth-child(10), .extension-component-table-read td:nth-child(10){ width: 7%; text-align: center; } /* Actions */
 
 
 /******************************************************************************
