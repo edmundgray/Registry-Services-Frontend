@@ -589,16 +589,6 @@ body {
     background-color: #f3f3f3;
 }
 
-.styled-table .has-children-parent-row,
-.styled-table .has-children-show-more-row {
-    background-color: #217a36 !important;
-    color: #fff;
-}
-
-.styled-table tr.child-row.has-children-parent-row td {
-    background-color: #217a36 !important;
-    color: #fff;
-}
 
 .styled-table tbody tr.level-2-green.child-row td,
 .styled-table tbody tr.level-2-green.child-row.has-children-parent-row td {
