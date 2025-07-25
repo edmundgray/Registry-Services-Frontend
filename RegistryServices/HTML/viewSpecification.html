@@ -621,9 +621,7 @@
                 
                 const table = document.createElement("table");
                 table.id = "detailsTable";
-                table.style.width = "100%";
-                table.style.border = "1px solid #ccc";
-                table.style.borderCollapse = "collapse";
+                
                 
                 // Create header row
                 const headerRow = table.insertRow();
@@ -631,9 +629,6 @@
                 headers.forEach(header => {
                     const th = document.createElement("th");
                     th.textContent = header;
-                    th.style.border = "1px solid #ccc";
-                    th.style.padding = "8px";
-                    th.style.backgroundColor = "#f5f5f5";
                     headerRow.appendChild(th);
                 });
                 

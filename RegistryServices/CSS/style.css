@@ -136,6 +136,12 @@ body {
     text-align: left;
     padding: 8px;
   }
+
+  #myTable th {
+    background-color: #F4A261;
+    color: #ffffff;
+    border: 1px solid #fff;
+  }
   
   #myTable tr {
     border-bottom: 1px solid #ddd;
@@ -156,7 +162,19 @@ body {
 #detailsTable th, #detailsTable td {
     text-align: left;
     padding: 8px;
+    border: 1px solid #ddd;
 }
+
+#detailsTable th {
+    background-color: #F4A261;
+    color: #ffffff;
+    border: 1px solid #fff;
+}
+
+#detailsTable tbody tr:hover td {
+    background-color: #f1f1f1;
+}
+
 
 #detailsTable tr {
     border-bottom: 1px solid #ddd;
