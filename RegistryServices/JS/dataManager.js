@@ -98,42 +98,56 @@ class SpecificationDataManager {
     transformFormToApiData(formData) {
         // Get current user's group ID for new specifications
         const currentUser = getCurrentUser();
-        
-        // Get userGroupID with multiple fallback sources
-        const getUserGroupID = () => {
-            // Priority: current user from AuthManager -> localStorage -> default
-            return currentUser.userGroupID || 
-                   parseInt(localStorage.getItem('userGroupID')) || 
-                   window.authManager?.userGroupID ||
-                   1; // fallback to 1 if all else fails
-        };
-        
-        // Get governing entity - for new specs, use user's group name
-        const getGoverningEntity = () => {
-            if (this.isEditMode() && this.originalData?.governingEntity) {
-                // For edit mode, preserve original governing entity
-                return this.originalData.governingEntity;
-            } else {
-                // For create mode or if no original governing entity, use user's group name
-                return currentUser.groupName || 
-                       localStorage.getItem('groupName') || 
-                       window.authManager?.groupName || 
-                       'Default Organization';
-            }
-        };
-        
+        const isUserAdmin = currentUser.role === 'Admin';
+
         let userGroupID;
-        if (this.isEditMode()) {
-            // For edit mode, preserve the original userGroupID from API if valid, otherwise use current user's
-            userGroupID = (this.originalData?.userGroupID && this.originalData.userGroupID !== 0) 
-                ? this.originalData.userGroupID 
-                : getUserGroupID();
-        } else {
-            // For create mode, always use current user's group ID
-            userGroupID = getUserGroupID();
-        }
+        let governingEntity
+
+
+        if (formData.userGroupID && isUserAdmin) {
+            // If a userGroupID is passed from the form and the user is an admin,
+            // it means an explicit selection was made. Use these values.
+            userGroupID = parseInt(formData.userGroupID);
+            governingEntity = formData.governingEntity;
+            console.log('DEBUG: Admin has selected a new governing entity. Using form values.');
         
-        const governingEntity = getGoverningEntity();
+        } else {
+            // Get userGroupID with multiple fallback sources
+            const getUserGroupID = () => {
+                // Priority: current user from AuthManager -> localStorage -> default
+                return currentUser.userGroupID || 
+                    parseInt(localStorage.getItem('userGroupID')) || 
+                    window.authManager?.userGroupID ||
+                    1; // fallback to 1 if all else fails
+            };
+            
+            // Get governing entity - for new specs, use user's group name
+            const getGoverningEntity = () => {
+                if (this.isEditMode() && this.originalData?.governingEntity) {
+                    
+                    return this.originalData.governingEntity;
+                } else {
+                    // For create mode or if no original governing entity, use user's group name
+                    return currentUser.groupName || 
+                        localStorage.getItem('groupName') || 
+                        window.authManager?.groupName || 
+                        'Default Organization';
+                }
+            };
+            
+            if (this.isEditMode()) {
+                // For edit mode, preserve the original userGroupID from API if valid, otherwise use current user's
+                userGroupID = (this.originalData?.userGroupID && this.originalData.userGroupID !== 0) 
+                    ? this.originalData.userGroupID 
+                    : getUserGroupID();
+            } else {
+                // For create mode, always use current user's group ID
+                userGroupID = getUserGroupID();
+            }
+            
+            
+            governingEntity = getGoverningEntity();
+        }
         
         console.log('DEBUG: transformFormToApiData - userGroupID logic:', {
             mode: this.currentMode,
@@ -167,6 +181,9 @@ class SpecificationDataManager {
                 ? (this.originalData?.userGroupID && this.originalData.userGroupID !== 0 ? 'Original API data' : 'Current user fallback')
                 : 'Current user (create mode)'
         });
+
+        console.log('DEBUG: transformFormToApiData - final governingEntity:', governingEntity);
+
         
         // Validate userGroupID before proceeding
         if (!userGroupID || userGroupID === 0) {

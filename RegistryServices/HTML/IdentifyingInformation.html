@@ -293,10 +293,65 @@
             let dataManager = null;
             let suppressBeforeUnload = false; // Flag to temporarily suppress beforeunload warning
 
+            async function createGoverningEntityDropdown() {
+                try {
+                    console.log('DEBUG: Admin user detected. Creating governing entity dropdown.');
+                    
+                    // Fetch all user groups (governing entities)
+                    const response = await window.authManager.authenticatedFetch(`${AUTH_CONFIG.baseUrl}/usergroups`, {
+                        method: 'GET',
+                        forceAuth: true
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch governing entities for dropdown');
+                    }
+                    const userGroups = await response.json();
+
+                    const inputElement = document.getElementById('governingEntity');
+                    if (!inputElement) return;
+
+                    const selectElement = document.createElement('select');
+                    selectElement.id = 'governingEntity';
+                    selectElement.name = 'governingEntity';
+                    // Apply existing styling to the new dropdown
+                    selectElement.style.width = '100%';
+                    selectElement.style.maxWidth = '240px';
+                    selectElement.style.padding = '4.5px';
+                    selectElement.style.fontSize = '0.75rem';
+
+                    // Add options to the dropdown
+                    userGroups.forEach(group => {
+                        const option = document.createElement('option');
+                        option.value = group.userGroupID; // The value is the ID
+                        option.textContent = group.groupName; // The text is the name
+                        selectElement.appendChild(option);
+                    });
+
+                    // Replace the original input element with the new select element
+                    inputElement.parentNode.replaceChild(selectElement, inputElement);
+                    console.log('DEBUG: Replaced governing entity input with a dropdown.');
+
+                } catch (error) {
+                    console.error('Error creating governing entity dropdown:', error);
+                    // If the API call fails, the original input field will remain, which is a safe fallback.
+                }
+            }
+            
             // Initialize data manager and load data
             async function initializeDataManager() {
                 try {
                     console.log('DEBUG: IdentifyingInformation - Starting initializeDataManager');
+                    
+                    window.authManager.init();
+                    const currentUser = getCurrentUser();
+                    const isUserAdmin = currentUser.role === 'Admin';
+
+                    // If the user is an admin, create the dropdown immediately.
+                    if (isUserAdmin) {
+                        await createGoverningEntityDropdown();
+                    }
+
                     console.log('DEBUG: IdentifyingInformation - LocalStorage state:');
                     console.log('  - editMode:', localStorage.getItem('editMode'));
                     console.log('  - specificationIdentityId:', localStorage.getItem('specificationIdentityId'));
@@ -308,8 +363,7 @@
                     }
                     
                     // Ensure AuthManager is properly initialized with userGroupID
-                    window.authManager.init();
-                    const currentUser = getCurrentUser();
+                   
                     console.log('DEBUG: IdentifyingInformation - Current user after re-init:', currentUser);
                     
                     dataManager = new SpecificationDataManager();
@@ -374,7 +428,7 @@
                         if (workingData) {
                             console.log('DEBUG: IdentifyingInformation - Found working data, populating form');
                             populateForm(workingData);
-                            // Update save button appearance
+                            
                             setTimeout(() => {
                                 updateSaveButtonAppearance();
                             }, 100);
@@ -484,20 +538,19 @@
                 
                 // Get current user for governing entity population
                 const currentUser = getCurrentUser();
-                
-                // Determine governing entity
-                let governingEntity = '';
+                let governingEntityName = '';
+
                 if (dataManager && dataManager.isEditMode()) {
                     // For edit mode, use the data from API
-                    governingEntity = data.governingEntity || '';
-                    console.log('DEBUG: populateForm - Edit mode, using API governing entity:', governingEntity);
+                    governingEntityName = data.governingEntity || '';
+                    console.log('DEBUG: populateForm - Edit mode, using API governing entity:', governingEntityName);
                 } else {
                     // For create mode, use current user's group name
-                    governingEntity = currentUser.groupName || 
+                    governingEntityName = currentUser.groupName || 
                                      localStorage.getItem('groupName') || 
                                      window.authManager?.groupName || 
                                      '';
-                    console.log('DEBUG: populateForm - Create mode, using user group name as governing entity:', governingEntity);
+                    console.log('DEBUG: populateForm - Create mode, using user group name as governing entity:', governingEntityName);
                     console.log('DEBUG: populateForm - Group name sources:', {
                         fromCurrentUser: currentUser.groupName,
                         fromLocalStorage: localStorage.getItem('groupName'),
@@ -509,7 +562,7 @@
                 // Populate all form fields
                 const fieldMappings = {
                     specName: data.specName,
-                    governingEntity: governingEntity,
+                    governingEntity: governingEntityName,
                     contactInfo: data.contactInfo,
                     sector: data.sector,
                     subSector: data.subSector,
@@ -528,12 +581,23 @@
                 
                 Object.keys(fieldMappings).forEach(fieldName => {
                     const field = form.elements[fieldName];
-                    if (field && fieldMappings[fieldName] !== undefined) {
+                    if (field) {
                         const oldValue = field.value;
-                        field.value = fieldMappings[fieldName] || '';
+                        
+                        if (fieldName === 'governingEntity' && field.tagName === 'SELECT') {
+                            const optionToSelect = Array.from(field.options).find(opt => opt.text === governingEntityName);
+                            if (optionToSelect) {
+                                field.value = optionToSelect.value; 
+                            } else if (currentUser.role === 'Admin' && !dataManager.isEditMode()) {
+                                
+                                const adminOption = Array.from(field.options).find(opt => opt.text === currentUser.groupName);
+                                if (adminOption) field.value = adminOption.value;
+                            }
+                        } else {
+                            field.value = fieldMappings[fieldName] || '';
+                        }
+                     
                         console.log(`DEBUG: populateForm - Set ${fieldName}: "${oldValue}" -> "${field.value}"`);
-                    } else if (!field) {
-                        console.warn(`DEBUG: populateForm - Field "${fieldName}" not found in form`);
                     }
                 });
 
@@ -542,9 +606,24 @@
 
             function getFormData() {
                 const form = document.getElementById('identifyingForm');
+                const govEntityElement = form.elements.governingEntity;
+                let governingEntityName = '';
+                let selectedUserGroupID = null;
+
+                if (govEntityElement.tagName === 'SELECT') {
+                    const selectedOption = govEntityElement.options[govEntityElement.selectedIndex];
+                    if (selectedOption) {
+                        governingEntityName = selectedOption.text;
+                        selectedUserGroupID = selectedOption.value; // Capture the ID
+                    }
+                } else {
+                    governingEntityName = govEntityElement.value;
+                }
+
                 return {
                     specName: form.specName.value,
-                    governingEntity: form.governingEntity.value,
+                    governingEntity: form.governingEntityName,
+                    userGroupID: selectedUserGroupID, // Include the user group ID
                     contactInfo: form.contactInfo.value,
                     sector: form.sector.value,
                     subSector: form.subSector.value,
