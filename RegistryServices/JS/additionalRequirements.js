@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025 CEN - European Committee for Standardization
+// SPDX-License-Identifier: EUPL-1.2
 // Change detection system using baseline comparison approach
 // Note: Deprecated unsavedChanges flag replaced with hasActualChanges() pattern
 let baselineData = null;

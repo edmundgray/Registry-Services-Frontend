@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025 CEN - European Committee for Standardization
+// SPDX-License-Identifier: EUPL-1.2
 // JS/auth/authManager.js
 // Authentication configuration and AuthManager class for Registry Services
 //<!-- Session logic is now centralized in authManager.js -->

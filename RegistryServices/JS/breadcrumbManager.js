@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025 CEN - European Committee for Standardization
+// SPDX-License-Identifier: EUPL-1.2
 /**
  * Breadcrumb Manager - Handles dynamic breadcrumb navigation with workflow tracking
  * Uses sessionStorage for persistence across page navigation
