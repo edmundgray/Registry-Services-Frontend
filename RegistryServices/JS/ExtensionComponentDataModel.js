@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025 CEN - European Committee for Standardization
+// SPDX-License-Identifier: EUPL-1.2
 // --- Authenticated Fetch and Session Expiry Logic ---
 // All session/auth logic is now centralized in JS/auth/authManager.js
 // Use window.authManager.authenticatedFetch for all API calls

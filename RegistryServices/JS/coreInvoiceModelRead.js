@@ -51,6 +51,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 TypeOfChange: item.typeOfChange || item.TypeOfChange || 'No change',
                 rowPos: item.rowPos,
                 children: []
+            // SPDX-FileCopyrightText: 2025 CEN - European Committee for Standardization
+            // SPDX-License-Identifier: EUPL-1.2
             }));
 
             // Sort elements by rowPos to ensure correct processing order for hierarchy building

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025 CEN - European Committee for Standardization
+// SPDX-License-Identifier: EUPL-1.2
 /**
  * Specification Preview Module
  * Handles specification preview functionality with centralized data management

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025 CEN - European Committee for Standardization
+// SPDX-License-Identifier: EUPL-1.2
 /******************************************************************************
     Identifying Information Page Specific Functions
     Contains form handling and navigation logic for IdentifyingInformation.html

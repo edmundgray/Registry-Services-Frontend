@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025 CEN - European Committee for Standardization
+// SPDX-License-Identifier: EUPL-1.2
 // JS/sidebarManager.js
 // Dynamic Sidebar Manager for Registry Services
 

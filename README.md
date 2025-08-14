@@ -1,3 +1,8 @@
+## License
+
+This project is licensed under the **European Union Public Licence v1.2 (EUPL-1.2)**.  
+**Licensor (as defined by the EUPL):** `CEN` — `https://www.cencenelec.eu/about-cen`.
+See the full text in [`LICENSE`](./RegistryServices/LICENSE.md).
 # Registry Services Frontend
 
 A JavaScript-based frontend application for managing eInvoicing specifications with JWT-based authentication.

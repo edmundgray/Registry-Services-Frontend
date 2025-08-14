@@ -132,6 +132,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 rowPos: item.rowPos, // Keep rowPos for sorting
                 children: [], // Initialize children array for hierarchy
                 parent: null
+            // SPDX-FileCopyrightText: 2025 CEN - European Committee for Standardization
+            // SPDX-License-Identifier: EUPL-1.2
             }));
 
             // Sort elements by rowPos to ensure correct processing order for hierarchy building

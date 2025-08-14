@@ -77,6 +77,8 @@ document.addEventListener("DOMContentLoaded", function () {
             <p style="margin-top: 5px;">Select the required Extension Component and view its required elements</p>
             <table class="styled-table extension-component-table-read" style="width:100%;">
                 <thead>
+                    // SPDX-FileCopyrightText: 2025 CEN - European Committee for Standardization
+                    // SPDX-License-Identifier: EUPL-1.2
                     <tr>
                         <th>ID</th><th>Level</th><th>Cardinality</th><th>Business Term</th><th>Usage Note</th>
                         <th>Justification</th><th>Data Type</th><th>Type of Extension</th>
