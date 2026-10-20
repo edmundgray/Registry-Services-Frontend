@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", function () {
     
     async function fetchCoreInvoiceModelsFromAPI() {
         try {
-            const apiUrl = "https://registryservices-staging.azurewebsites.net/api/coreinvoicemodels";
+            const apiUrl = "/api/coreinvoicemodels";
             console.log(`Attempting to fetch Core Invoice Models from API: ${apiUrl}`);
 
             const response = await fetch(apiUrl, {
