@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     async function loadExtensionData() {
         try {
-            const headersApiUrl = "https://registryservices-staging.azurewebsites.net/api/extensionmodels/headers";
+            const headersApiUrl = "/api/extensionmodels/headers";
             console.log(`Attempting to fetch Extension Component Headers from API: ${headersApiUrl}`);
             
             const headersResponse = await fetch(headersApiUrl, {
@@ -55,7 +55,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // If no available components provided, fetch them
         if (!availableComponents) {
             try {
-                const headersApiUrl = "https://registryservices-staging.azurewebsites.net/api/extensionmodels/headers";
+                const headersApiUrl = "/api/extensionmodels/headers";
                 const headersResponse = await fetch(headersApiUrl, { method: 'GET' });
                 const headersData = await headersResponse.json();
                 availableComponents = headersData.items || headersData;
@@ -132,7 +132,7 @@ document.addEventListener("DOMContentLoaded", function () {
             console.log(`Loaded ${selectedComponentId} elements from cache.`);
         } else {
             // Fetch elements for the selected component using public endpoint
-            const elementsApiUrl = `https://registryservices-staging.azurewebsites.net/api/extensionmodels/elements/${selectedComponentId}`;
+            const elementsApiUrl = `/api/extensionmodels/elements/${selectedComponentId}`;
             console.log(`Fetching elements for component: ${elementsApiUrl}`);
             
             try {

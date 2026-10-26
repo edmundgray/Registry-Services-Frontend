@@ -14,7 +14,7 @@ let filteredData = [];
 let totalSpecifications = 0;
 
 // API base URL
-const API_BASE_URL = "https://registryservices-staging.azurewebsites.net/api";
+const API_BASE_URL = "/api";
 
 // Global variable to track if we're in business term search mode
 let isBusinessTermSearchActive = false;

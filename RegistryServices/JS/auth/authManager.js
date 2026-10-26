@@ -4,10 +4,10 @@
 // Authentication configuration and AuthManager class for Registry Services
 //<!-- Session logic is now centralized in authManager.js -->
 window.AUTH_CONFIG = {
-    baseUrl: 'https://registryservices-staging.azurewebsites.net/api',
+    baseUrl: '/api', // Same-origin; the hosting web server proxies /api to the backend
     endpoints: {
         login: '/auth/login',
-        refresh: '/auth/refresh'  // Added refresh endpoint
+        refresh: '/auth/refresh-token'
     },
     tokenKeys: {
         access: 'access_token'
@@ -440,8 +440,10 @@ window.AuthManager = class {
                 headers: {
                     'Content-Type': 'application/json'
                 },
+                // Backend RefreshTokenDto requires both: it validates the (possibly expired) access token first
                 body: JSON.stringify({
-                    refreshToken: this.refreshToken
+                    refreshToken: this.refreshToken,
+                    accessToken: this.accessToken || this.token
                 })
             });
 
