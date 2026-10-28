@@ -170,7 +170,7 @@ function createLoginModal() {
                 <form id="loginForm">
                     <div style="margin-bottom: 15px;">
                         <label for="username">Username:</label>
-                        <input type="text" id="username" name="username" value="Admin" required style="
+                        <input type="text" id="username" name="username" autocomplete="username" required style="
                             width: 100%;
                             padding: 8px;
                             margin-top: 5px;
@@ -180,7 +180,7 @@ function createLoginModal() {
                     </div>
                     <div style="margin-bottom: 15px;">
                         <label for="password">Password:</label>
-                        <input type="password" id="password" name="password" value="Password123" required style="
+                        <input type="password" id="password" name="password" autocomplete="current-password" required style="
                             width: 100%;
                             padding: 8px;
                             margin-top: 5px;
@@ -373,7 +373,8 @@ async function loginUser(username, password) {
         console.log('DEBUG: Group Name:', groupName);
 
         // IMPORTANT: Clear any old authentication data first
-        window.authManager.logout();
+        // Clear local state only: revoking on the server now would wipe the session just issued
+        window.authManager.logout({ revokeOnServer: false });
         localStorage.clear(); // Clear all old data
 
         // Set up the auth manager with real data from API
@@ -426,113 +427,8 @@ async function loginUser(username, password) {
     } catch (error) {
         console.error('DEBUG: Login failed:', error);
         
-        // For development/testing fallback - only if API call fails due to network issues
-        if (error.message.includes('fetch') || error.message.includes('Failed to fetch') || error.message.includes('network')) {
-            console.warn('DEBUG: API seems unavailable, falling back to test mode');
-            
-            // Only allow test credentials in fallback mode
-            if ((username === 'Admin' && password === 'Password123') || 
-                (username === 'Admin' && password === 'Admin')) {
-                
-                console.log('DEBUG: Using test fallback login');
-                
-                // Clear any old authentication data first
-                window.authManager.logout();
-                localStorage.clear();
-                
-                // Set up the auth manager with test data
-                const testToken = `test-token-for-${username.toLowerCase()}-${Date.now()}`;
-                
-                window.authManager.isAuthenticated = true;
-                window.authManager.username = username;
-                window.authManager.userRole = 'Admin';
-                window.authManager.userID = username === 'Admin' ? 1 : 2;
-                window.authManager.accessToken = testToken;
-                
-                // Store in localStorage
-                localStorage.setItem('access_token', testToken);
-                localStorage.setItem('userRole', 'Admin');
-                localStorage.setItem('username', username);
-                
-                console.log('DEBUG: Test token stored:', testToken.substring(0, 30) + '...');
-                
-                return {
-                    success: true,
-                    username: username,
-                    role: 'Admin',
-                    token: testToken
-                };
-            }
-        }
-        
-        // Re-throw the original error if not a network issue or invalid credentials
+        // Let the caller show the error
         throw error;
-    }
-}
-
-// Admin login function for testing
-async function adminLogin() {
-    console.log('DEBUG: Admin login as Admin/Admin');
-    try {
-        const result = await loginUser('Admin', 'Password123');
-        console.log('DEBUG: Login result:', result);
-        
-        // Force refresh the auth manager to ensure it has the latest token
-        window.authManager.init();
-        
-        loggedInStatus = true;
-        updateVisibility();
-        updateUserDisplay();
-        showMessage('Admin login successful! Logged in as Admin (Admin)', 'success');
-        
-        // Trigger specification reload if on mySpecifications page
-        if (typeof window.reloadSpecificationsAfterLogin === 'function') {
-            setTimeout(() => window.reloadSpecificationsAfterLogin(), 200);
-        }
-        
-        // Redirect to eInvoicingSpecificationRegistry.html after successful login
-        setTimeout(() => {
-            window.location.href = 'eInvoicingSpecificationRegistry.html';
-        }, 1000);
-        
-        return true;
-    } catch (error) {
-        console.error('DEBUG: Admin login failed:', error);
-        showMessage(`Admin login failed: ${error.message}`, 'error');
-        return false;
-    }
-}
-
-// Demo login function for easy testing
-async function demoLogin() {
-    console.log('DEBUG: Demo login as Admin/Admin');
-    try {
-        const result = await loginUser('Admin', 'Password123');
-        console.log('DEBUG: Login result:', result);
-        
-        // Force refresh the auth manager to ensure it has the latest token
-        window.authManager.init();
-        
-        loggedInStatus = true;
-        updateVisibility();
-        updateUserDisplay();
-        showMessage('Demo login successful! Logged in as Admin (Admin)', 'success');
-        
-        // Trigger specification reload if on mySpecifications page
-        if (typeof window.reloadSpecificationsAfterLogin === 'function') {
-            setTimeout(() => window.reloadSpecificationsAfterLogin(), 200);
-        }
-        
-        // Redirect to eInvoicingSpecificationRegistry.html after successful login
-        setTimeout(() => {
-            window.location.href = 'eInvoicingSpecificationRegistry.html';
-        }, 1000);
-        
-        return true;
-    } catch (error) {
-        console.error('DEBUG: Demo login failed:', error);
-        showMessage(`Demo login failed: ${error.message}`, 'error');
-        return false;
     }
 }
 

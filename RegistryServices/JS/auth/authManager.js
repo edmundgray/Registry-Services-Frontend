@@ -7,7 +7,8 @@ window.AUTH_CONFIG = {
     baseUrl: '/api', // Same-origin; the hosting web server proxies /api to the backend
     endpoints: {
         login: '/auth/login',
-        refresh: '/auth/refresh-token'
+        refresh: '/auth/refresh-token',
+        logout: '/auth/logout'
     },
     tokenKeys: {
         access: 'access_token'
@@ -520,8 +521,19 @@ window.AuthManager = class {
         return this.isAuthenticated;
     }
 
-    logout() {
+    // revokeOnServer: false when only clearing local state (e.g. during login, after the new session exists)
+    logout({ revokeOnServer = true } = {}) {
         console.log('DEBUG: AuthManager logout called');
+
+        // Ask the server to revoke the refresh token so this session can't be renewed later.
+        // Fire-and-forget: local logout must not depend on the network.
+        if (revokeOnServer && this.accessToken) {
+            fetch(`${window.AUTH_CONFIG.baseUrl}${window.AUTH_CONFIG.endpoints.logout}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${this.accessToken}` },
+                keepalive: true
+            }).catch(() => {});
+        }
         
         // Clear timers
         this.clearTokenTimers();
